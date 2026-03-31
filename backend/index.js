@@ -85,6 +85,37 @@ app.post('/login', (req, res) => {
   });
 });
 
+// --- ADMIN LOGIN ROUTE ---
+app.post('/adminlogin', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: "Missing fields" });
+  }
+
+  // Check the admins table 
+  db.query("SELECT * FROM admins WHERE username = ?", [username], (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: "Database error" });
+    if (results.length === 0) return res.status(400).json({ success: false, message: "Admin not found" });
+
+    const admin = results[0];
+
+    // Check plain text password (matches your PHP setup)
+    if (password === admin.password) {
+      res.json({
+        success: true,
+        message: "Login successful",
+        admin: {
+          id: admin.id,
+          username: admin.username,
+          role: 'admin' // Used by your React frontend to verify admin status
+        }
+      });
+    } else {
+      res.status(400).json({ success: false, message: "Invalid password" });
+    }
+  });
+});
+
 
 // ==========================================
 // 2. CLIENT BOOKING ROUTES
