@@ -23,12 +23,12 @@ const UserProfile = () => {
     const fetchData = async () => {
       try {
         // Fetch Bookings
-        const resBookings = await fetch(`http://localhost/fetch_user_appointments.php?user_id=${storedUser.id}`);
+        const resBookings = await fetch(`${import.meta.env.VITE_API_URL}/fetch_user_appointments?user_id=${storedUser.id}`);
         const dataBookings = await resBookings.json();
         if (dataBookings.success) setBookings(dataBookings.appointments);
 
         // Fetch Transactions & Stats
-        const resTrans = await fetch(`http://localhost/fetch_user_transactions.php?user_id=${storedUser.id}`);
+        const resTrans = await fetch(`${import.meta.env.VITE_API_URL}/fetch_user_transactions?user_id=${storedUser.id}`);
         const dataTrans = await resTrans.json();
         if (dataTrans.success) {
             setTransactions(dataTrans.transactions);

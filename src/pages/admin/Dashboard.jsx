@@ -12,7 +12,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost/admin_fetch_dashboard_stats.php")
+    fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_dashboard_stats`)
       .then((res) => {
         if (!res.ok) throw new Error("Network response was not ok");
         return res.json();

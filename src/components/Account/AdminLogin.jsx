@@ -12,7 +12,7 @@ const AdminLogin = ({ onAdminLogin }) => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost/adminlogin.php", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/adminlogin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -36,7 +36,8 @@ const Auth = ({ onLogin }) => {
     try {
       // Logic for Admin detection
       if (loginEmail === "admin" || loginEmail.includes("admin")) {
-         const res = await fetch("http://localhost/adminlogin.php", {
+         const apiUrl = import.meta.env.VITE_API_URL;
+          const res = await fetch(`${apiUrl}/adminlogin`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username: loginEmail, password: loginPassword })
@@ -51,7 +52,7 @@ const Auth = ({ onLogin }) => {
       }
 
       // Regular User Login
-      const res = await fetch("http://localhost/login.php", {
+      const res = await fetch(`${apiUrl}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
@@ -77,7 +78,8 @@ const Auth = ({ onLogin }) => {
       return;
     }
     try {
-      const res = await fetch("http://localhost/register.php", {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const res = await fetch(`${apiUrl}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: regName, email: regEmail, password: regPassword }),
