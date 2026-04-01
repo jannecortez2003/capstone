@@ -21,11 +21,8 @@ const Auth = ({ onLogin }) => {
     setModal({ isOpen: true, title, message, isError, callback });
   };
 
-  // ADDED: closeModal function to handle clicking "OK"
   const closeModal = () => {
-    // Hide the modal
     setModal((prev) => ({ ...prev, isOpen: false }));
-    // If there is a callback (like switching to login after success), run it!
     if (modal.callback) {
       modal.callback();
     }
@@ -34,17 +31,19 @@ const Auth = ({ onLogin }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
+      // FIX: apiUrl is now at the very top so both Admin and User blocks can use it!
+      const apiUrl = import.meta.env.VITE_API_URL;
+
       // Logic for Admin detection
       if (loginEmail === "admin" || loginEmail.includes("admin")) {
-         const apiUrl = import.meta.env.VITE_API_URL;
-          const res = await fetch(`${apiUrl}/adminlogin`, {
+         const res = await fetch(`${apiUrl}/adminlogin`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username: loginEmail, password: loginPassword })
          });
          const data = await res.json();
          if (data.success) {
-            onLogin(data.user || { role: 'admin' });
+            onLogin(data.admin || { role: 'admin' });
          } else {
             showModal("Login Failed", data.message, true);
          }
@@ -67,6 +66,7 @@ const Auth = ({ onLogin }) => {
         showModal("Login Failed", data.message || "Invalid credentials.", true);
       }
     } catch (error) {
+      console.error(error);
       showModal("Error", "Failed to connect to the server.", true);
     }
   };
