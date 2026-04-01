@@ -58,7 +58,7 @@ const Inventory = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to DELETE this item?")) return;
     try {
-        await fetch("http://localhost/admin_delete_inventory.php", {
+        await fetch(`${import.meta.env.VITE_API_URL}/admin_delete_inventory`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id })

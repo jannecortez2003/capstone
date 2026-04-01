@@ -10,7 +10,7 @@ const DishSelectionModal = ({ isOpen, onClose, packageInfo, onConfirmSelection }
 
     useEffect(() => {
         if (isOpen) {
-            fetch("http://localhost/admin_fetch_menu.php")
+            fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {

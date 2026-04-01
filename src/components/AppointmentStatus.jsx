@@ -15,11 +15,7 @@ const AppointmentStatus = ({ userId }) => {
     setLoading(true);
     setError(null);
     try {
-        const res = await fetch("http://localhost/fetch_user_appointments.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId }),
-        });
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/fetch_user_appointments?user_id=${userId}`);
 
         if (!res.ok) {
             throw new Error(`HTTP error! Status: ${res.status}`);
