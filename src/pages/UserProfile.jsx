@@ -1,5 +1,6 @@
 // src/pages/UserProfile.jsx
 import React, { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom"; // IMPORT NAVIGATE HERE
 import { FaUser, FaEnvelope, FaPhone, FaCalendarCheck, FaMoneyBillWave, FaHistory, FaClock, FaCheckCircle } from "react-icons/fa";
 
 const UserProfile = () => {
@@ -7,16 +8,20 @@ const UserProfile = () => {
   const [bookings, setBookings] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [stats, setStats] = useState({ total_bookings: 0, pending: 0, confirmed: 0, total_spent: 0 });
-  const [activeTab, setActiveTab] = useState("overview"); // 'overview' or 'transactions'
+  const [activeTab, setActiveTab] = useState("overview"); 
   const [loading, setLoading] = useState(true);
+  const [shouldRedirect, setShouldRedirect] = useState(false); // NEW STATE FOR REDIRECT
 
   useEffect(() => {
     // 1. Get User Info from LocalStorage
     const storedUser = JSON.parse(localStorage.getItem("user"));
+    
+    // THE BOUNCER: If nobody is logged in, trigger the redirect!
     if (!storedUser) {
-      window.location.href = "/auth"; // Redirect if not logged in
+      setShouldRedirect(true);
       return;
     }
+    
     setUser(storedUser);
 
     // 2. Fetch Data
@@ -43,6 +48,11 @@ const UserProfile = () => {
 
     fetchData();
   }, []);
+
+  // IMMEDIATELY REDIRECT IF BOUNCER WAS TRIGGERED
+  if (shouldRedirect) {
+    return <Navigate to="/auth" replace />;
+  }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-pink-600 font-bold">Loading Profile...</div>;
 
@@ -82,11 +92,11 @@ const UserProfile = () => {
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
                     <span className="text-gray-600 text-sm">Total Spent</span>
-                    <span className="font-bold text-green-600">₱{stats.total_spent.toLocaleString()}</span>
+                    <span className="font-bold text-green-600">₱{stats.total_spent?.toLocaleString() || '0'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                     <span className="text-gray-600 text-sm">Events Booked</span>
-                    <span className="font-bold text-pink-600">{stats.total_bookings}</span>
+                    <span className="font-bold text-pink-600">{stats.total_bookings || 0}</span>
                 </div>
             </div>
           </div>
@@ -119,21 +129,21 @@ const UserProfile = () => {
                         <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-yellow-400 flex items-center gap-3">
                             <div className="bg-yellow-50 p-2 rounded-full text-yellow-500"><FaClock /></div>
                             <div>
-                                <div className="text-2xl font-bold text-gray-800">{stats.pending}</div>
+                                <div className="text-2xl font-bold text-gray-800">{stats.pending || 0}</div>
                                 <div className="text-xs text-gray-500">Pending Approval</div>
                             </div>
                         </div>
                         <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-400 flex items-center gap-3">
                             <div className="bg-blue-50 p-2 rounded-full text-blue-500"><FaCalendarCheck /></div>
                             <div>
-                                <div className="text-2xl font-bold text-gray-800">{stats.confirmed}</div>
+                                <div className="text-2xl font-bold text-gray-800">{stats.confirmed || 0}</div>
                                 <div className="text-xs text-gray-500">Confirmed Events</div>
                             </div>
                         </div>
                         <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-400 flex items-center gap-3">
                             <div className="bg-green-50 p-2 rounded-full text-green-500"><FaCheckCircle /></div>
                             <div>
-                                <div className="text-2xl font-bold text-gray-800">{stats.completed}</div>
+                                <div className="text-2xl font-bold text-gray-800">{stats.completed || 0}</div>
                                 <div className="text-xs text-gray-500">Completed</div>
                             </div>
                         </div>
@@ -155,7 +165,7 @@ const UserProfile = () => {
                                             <p className="text-sm text-gray-500">{new Date(booking.preferred_date).toLocaleDateString()} • {booking.package_type}</p>
                                             <div className="mt-1 flex gap-2">
                                                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Guests: {booking.guest_count}</span>
-                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Total: ₱{parseFloat(booking.total_cost).toLocaleString()}</span>
+                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Total: ₱{parseFloat(booking.total_cost || 0).toLocaleString()}</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
