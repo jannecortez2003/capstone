@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, FaBars, FaTimes } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, FaBars, FaTimes, FaSignOutAlt } from 'react-icons/fa'; // Added FaSignOutAlt
 
 const Sidebar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Securely clears admin data and forces a redirect to the home page
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('isLoggedIn');
+    window.location.href = '/'; // Forces a full page reload to clear React state
+  };
 
   // Array of all admin tabs to make the code much cleaner
   const navItems = [
@@ -37,7 +45,7 @@ const Sidebar = () => {
         
         {/* The Dropdown Menu */}
         {isOpen && (
-          <div className="bg-pink-700 w-full absolute top-full left-0 flex flex-col shadow-2xl max-h-[80vh] overflow-y-auto border-t border-pink-500">
+          <div className="bg-pink-700 w-full absolute top-full left-0 flex flex-col shadow-2xl max-h-[80vh] overflow-y-auto border-t border-pink-500 pb-2">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -53,6 +61,15 @@ const Sidebar = () => {
                 <span>{item.label}</span>
               </Link>
             ))}
+
+            {/* 🔥 MOBILE LOGOUT BUTTON 🔥 */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-4 p-4 mt-2 border-t-2 border-pink-900 bg-pink-800 hover:bg-pink-900 text-white font-bold transition w-full text-left"
+            >
+              <span className="text-xl"><FaSignOutAlt /></span>
+              <span>Logout</span>
+            </button>
           </div>
         )}
       </div>
@@ -64,6 +81,8 @@ const Sidebar = () => {
         <div className="p-6 text-center font-bold text-2xl border-b border-pink-500 tracking-widest mt-4">
           ADMIN
         </div>
+        
+        {/* Navigation Links */}
         <div className="flex-1 overflow-y-auto py-4">
           {navItems.map((item) => (
             <Link
@@ -79,6 +98,17 @@ const Sidebar = () => {
               <span>{item.label}</span>
             </Link>
           ))}
+        </div>
+
+        {/* 🔥 DESKTOP LOGOUT BUTTON 🔥 */}
+        <div className="border-t border-pink-500 bg-pink-700">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-4 px-6 py-5 hover:bg-pink-800 text-white font-bold transition"
+          >
+            <span className="text-xl"><FaSignOutAlt /></span>
+            <span>Logout</span>
+          </button>
         </div>
       </div>
     </>
