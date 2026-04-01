@@ -10,7 +10,7 @@ const VerificationRequests = () => {
 
     const fetchRequests = async () => {
         try {
-            const res = await fetch("http://localhost/admin_fetch_verification.php");
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_verification`);
             const data = await res.json();
             if (data.success) setRequests(data.requests);
         } catch (err) { console.error(err); }
@@ -21,7 +21,7 @@ const VerificationRequests = () => {
     const handleVerify = async (id, status) => {
         if (!window.confirm(`Are you sure you want to ${status} this user?`)) return;
         try {
-            const res = await fetch("http://localhost/admin_verify_user.php", {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_verify_user`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ requestId: id, status })
             });
@@ -92,7 +92,7 @@ const VerificationRequests = () => {
                 <Modal isOpen={!!selectedRequest} onClose={() => setSelectedRequest(null)} title="Review Document">
                     <div className="space-y-4">
                         <div className="bg-gray-100 p-4 rounded-lg flex justify-center">
-                            <img src={`http://localhost/${selectedRequest.id_image_path}`} alt="ID" className="max-h-64 object-contain rounded shadow" />
+                            <img src={`${import.meta.env.VITE_API_URL}/${selectedRequest.id_image_path}`} alt="ID" className="max-h-64 object-contain rounded shadow" />
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <p><strong>Name:</strong> {selectedRequest.first_name} {selectedRequest.last_name}</p>

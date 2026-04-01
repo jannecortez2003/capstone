@@ -11,7 +11,7 @@ const Inventory = () => {
 
   const fetchInventory = async () => {
     try {
-      const res = await fetch("http://localhost/admin_fetch_inventory.php");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_inventory`);
       const data = await res.json();
       if (data.success && Array.isArray(data.inventory)) {
           setItems(data.inventory);
@@ -38,8 +38,8 @@ const Inventory = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const url = editingItem 
-      ? "http://localhost/admin_update_inventory.php" 
-      : "http://localhost/admin_add_inventory.php";
+      ? `${import.meta.env.VITE_API_URL}/admin_update_inventory` 
+      : `${import.meta.env.VITE_API_URL}/admin_add_inventory`;
 
     try {
       const res = await fetch(url, {

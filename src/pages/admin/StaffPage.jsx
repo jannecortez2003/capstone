@@ -10,7 +10,7 @@ const StaffPage = () => {
 
     const fetchStaff = async () => {
         try {
-            const res = await fetch("http://localhost/admin_fetch_staff.php");
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_staff`);
             const data = await res.json();
             if (data.success) setStaff(data.staff);
         } catch (err) { console.error(err); }
@@ -25,7 +25,7 @@ const StaffPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const url = editingStaff ? "http://localhost/admin_update_staff.php" : "http://localhost/admin_add_staff.php";
+        const url = editingStaff ? `${import.meta.env.VITE_API_URL}/admin_update_staff` : `${import.meta.env.VITE_API_URL}/admin_add_staff`;
         try {
             await fetch(url, {
                 method: "POST", headers: { "Content-Type": "application/json" },
@@ -39,7 +39,7 @@ const StaffPage = () => {
 
     const handleDelete = async (id) => {
         if (!window.confirm("Remove this staff member?")) return;
-        await fetch("http://localhost/admin_delete_staff.php", {
+        await fetch(`${import.meta.env.VITE_API_URL}/admin_delete_staff`, {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
         });
         fetchStaff();

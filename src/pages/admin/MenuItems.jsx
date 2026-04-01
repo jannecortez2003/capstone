@@ -12,7 +12,7 @@ const MenuItems = () => {
 
   const fetchMenu = async () => {
     try {
-      const res = await fetch("http://localhost/admin_fetch_menu.php");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`);
       const data = await res.json();
       if (data.success) setItems(data.items);
     } catch (err) { console.error(err); } 
@@ -30,7 +30,7 @@ const MenuItems = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const url = editingItem ? "http://localhost/admin_update_menu.php" : "http://localhost/admin_add_menu.php";
+    const url = editingItem ? `${import.meta.env.VITE_API_URL}/admin_update_menu` : `${import.meta.env.VITE_API_URL}/admin_add_menu`;
     try {
       await fetch(url, {
         method: "POST",
@@ -45,7 +45,7 @@ const MenuItems = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to DELETE this dish?")) return;
-    await fetch("http://localhost/admin_delete_menu.php", {
+    await fetch(`${import.meta.env.VITE_API_URL}/admin_delete_menu`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id })
     });
     fetchMenu();

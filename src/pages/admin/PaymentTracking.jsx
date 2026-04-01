@@ -23,7 +23,7 @@ const PaymentTracking = () => {
 
   const fetchPaymentData = async () => {
     try {
-      const res = await fetch("http://localhost/admin_fetch_bookings.php");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_bookings`);
       const data = await res.json();
       if (data.success) {
         
@@ -59,7 +59,7 @@ const PaymentTracking = () => {
 
   const fetchHistory = async (bookingId) => {
     try {
-      const res = await fetch(`http://localhost/admin_fetch_payment_history.php?appointmentId=${bookingId}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_payment_history?appointmentId=${bookingId}`);
       const data = await res.json();
       if (data.success) setPaymentHistory(data.history);
     } catch (err) { console.error(err); }
@@ -78,7 +78,7 @@ const PaymentTracking = () => {
     }
 
     try {
-      const res = await fetch("http://localhost/admin_process_payment.php", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_process_payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

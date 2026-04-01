@@ -58,7 +58,7 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
     formData.append("idImage", idImage);
 
     try {
-      const res = await fetch("http://localhost/verify.php", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/verify`, {
         method: "POST",
         body: formData,
       });

@@ -11,7 +11,7 @@ const Reports = () => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const res = await fetch("http://localhost/admin_fetch_reports.php");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_reports`);
         const data = await res.json();
         if (data.success) {
           setReportData(data);
