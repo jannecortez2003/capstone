@@ -1,128 +1,137 @@
-// src/components/Navbar.jsx
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaUserCircle, FaBars, FaTimes } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaCheckCircle } from 'react-icons/fa';
 
 const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Check if current user is admin
-  const isAdmin = user?.role === 'admin' || user?.username === 'admin';
+  // Helper function to close menu when a link is clicked
+  const handleNavigation = (path) => {
+    setIsOpen(false);
+    navigate(path);
+  };
 
-  // Check verification status (Matches 'is_verified' from DB or 'verified' from App state)
-  const isVerified = user?.is_verified === 1 || user?.is_verified === true || user?.verified === 1 || user?.verified === true;
-
-  const handleNavClick = (path) => {
-    if (location.pathname !== '/') {
-        navigate('/');
-        setTimeout(() => {
-            const section = document.querySelector(path);
-            if (section) section.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-    } else {
-        const section = document.querySelector(path);
-        if (section) section.scrollIntoView({ behavior: 'smooth' });
-    }
-    setMobileMenuOpen(false);
+  const handleAction = (action) => {
+    setIsOpen(false);
+    action();
   };
 
   return (
-    <nav className="fixed w-full bg-white/95 backdrop-blur-sm shadow-md z-50 transition-all duration-300">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        {/* Logo */}
-        <Link to="/" className="text-2xl font-bold text-pink-600 flex items-center gap-2">
-           Mommy Rosal's <span className="text-gray-700 font-light">Catering</span>
-        </Link>
-
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center space-x-8">
-          <button onClick={() => handleNavClick('#home')} className="text-gray-600 hover:text-pink-600 font-medium transition">Home</button>
-          <button onClick={() => handleNavClick('#services')} className="text-gray-600 hover:text-pink-600 font-medium transition">Services</button>
-          <button onClick={() => handleNavClick('#packages')} className="text-gray-600 hover:text-pink-600 font-medium transition">Packages</button>
-          <button onClick={() => handleNavClick('#contact')} className="text-gray-600 hover:text-pink-600 font-medium transition">Contact</button>
+    <nav className="fixed w-full z-50 bg-white shadow-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
           
-          {isLoggedIn ? (
-            <div className="relative">
-              <button 
-                className="flex items-center gap-2 text-gray-700 hover:text-pink-600 font-medium focus:outline-none"
-                onClick={() => setShowDropdown(!showDropdown)}
-              >
-                <FaUserCircle className="text-2xl" />
-                <span>{user?.fullName || user?.username}</span>
-              </button>
+          {/* Logo */}
+          <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => handleNavigation('/')}>
+            <h1 className="text-2xl font-bold text-pink-600">Mommy Rosal's</h1>
+          </div>
 
-              {/* Dropdown Menu */}
-              {showDropdown && (
-                <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-xl py-2 border border-gray-100 animate-fade-in-down">
-                  {isAdmin ? (
-                    <Link to="/admin" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition" onClick={() => setShowDropdown(false)}>
-                        Admin Dashboard
-                    </Link>
-                  ) : (
-                    <>
-                        {/* HIDE VERIFY BUTTON IF USER IS ALREADY VERIFIED */}
-                        {!isVerified && (
-                            <button 
-                                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition"
-                                onClick={() => {
-                                    onShowVerifyModal();
-                                    setShowDropdown(false);
-                                }}
-                            >
-                                Verify Account
-                            </button>
-                        )}
-                        
-                        <Link to="/profile" className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition" onClick={() => setShowDropdown(false)}>
-                            My Profile
-                        </Link>
-                    </>
-                  )}
+          {/* ========================================== */}
+          {/* DESKTOP MENU (Hidden on Mobile)              */}
+          {/* ========================================== */}
+          <div className="hidden md:flex items-center space-x-6">
+            <button onClick={() => handleNavigation('/')} className="text-gray-700 hover:text-pink-600 font-medium transition">Home</button>
+            <a href="/#services" className="text-gray-700 hover:text-pink-600 font-medium transition">Services</a>
+            <a href="/#packages" className="text-gray-700 hover:text-pink-600 font-medium transition">Packages</a>
+            <a href="/#contact" className="text-gray-700 hover:text-pink-600 font-medium transition">Contact</a>
+            
+            {isLoggedIn ? (
+              <div className="flex items-center space-x-4">
+                {/* Verify Button (Only show if unverified and not admin) */}
+                {!user?.verified && user?.role !== 'admin' && user?.username !== 'admin' && (
                   <button 
-                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition border-t"
-                    onClick={() => {
-                        onLogout();
-                        setShowDropdown(false);
-                    }}
+                    onClick={onShowVerifyModal}
+                    className="flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full font-bold hover:bg-yellow-200 transition"
                   >
-                    Logout
+                    <FaCheckCircle /> Verify Account
                   </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link 
-                to="/auth" 
-                className="bg-pink-600 text-white px-6 py-2 rounded-full font-medium hover:bg-pink-700 transition shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-            >
-              Login
-            </Link>
-          )}
-        </div>
+                )}
+                {/* Profile Button */}
+                <button 
+                  onClick={() => handleNavigation('/profile')}
+                  className="flex items-center gap-2 text-pink-600 font-bold hover:text-pink-700 transition"
+                >
+                  <FaUserCircle className="text-2xl" /> Profile
+                </button>
+                {/* Logout Button */}
+                <button 
+                  onClick={onLogout}
+                  className="flex items-center gap-2 bg-pink-600 text-white px-5 py-2 rounded-full font-bold hover:bg-pink-700 transition"
+                >
+                  <FaSignOutAlt /> Logout
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setActiveForm('login')} 
+                className="bg-pink-600 text-white px-6 py-2 rounded-full font-bold hover:bg-pink-700 transition"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
 
-        {/* Mobile Toggle */}
-        <button className="md:hidden text-gray-600 text-2xl" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <FaTimes /> : <FaBars />}
-        </button>
+          {/* ========================================== */}
+          {/* MOBILE HAMBURGER ICON                        */}
+          {/* ========================================== */}
+          <div className="md:hidden flex items-center">
+            <button onClick={() => setIsOpen(!isOpen)} className="text-gray-700 hover:text-pink-600 focus:outline-none text-2xl">
+              {isOpen ? <FaTimes /> : <FaBars />}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t p-4 flex flex-col space-y-4 shadow-lg">
-            <button onClick={() => handleNavClick('#home')} className="text-left text-gray-600 font-medium">Home</button>
-            <button onClick={() => handleNavClick('#services')} className="text-left text-gray-600 font-medium">Services</button>
-            <button onClick={() => handleNavClick('#packages')} className="text-left text-gray-600 font-medium">Packages</button>
-            <button onClick={() => handleNavClick('#contact')} className="text-left text-gray-600 font-medium">Contact</button>
-            {isLoggedIn ? (
-                <button onClick={onLogout} className="text-left text-red-600 font-bold">Logout</button>
-            ) : (
-                <Link to="/auth" className="bg-pink-600 text-white text-center py-2 rounded-lg font-bold" onClick={() => setMobileMenuOpen(false)}>
-                    Login
-                </Link>
-            )}
+      {/* ========================================== */}
+      {/* MOBILE DROPDOWN MENU                         */}
+      {/* ========================================== */}
+      {isOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 shadow-xl absolute w-full left-0">
+          <div className="px-4 pt-2 pb-6 space-y-2 flex flex-col">
+            <button onClick={() => handleNavigation('/')} className="block w-full text-left px-3 py-3 text-gray-700 hover:bg-pink-50 hover:text-pink-600 font-medium rounded-md">Home</button>
+            <a href="/#services" onClick={() => setIsOpen(false)} className="block w-full text-left px-3 py-3 text-gray-700 hover:bg-pink-50 hover:text-pink-600 font-medium rounded-md">Services</a>
+            <a href="/#packages" onClick={() => setIsOpen(false)} className="block w-full text-left px-3 py-3 text-gray-700 hover:bg-pink-50 hover:text-pink-600 font-medium rounded-md">Packages</a>
+            <a href="/#contact" onClick={() => setIsOpen(false)} className="block w-full text-left px-3 py-3 text-gray-700 hover:bg-pink-50 hover:text-pink-600 font-medium rounded-md">Contact</a>
+            
+            {/* Mobile Auth & Action Buttons */}
+            <div className="pt-4 mt-2 border-t border-gray-200 flex flex-col gap-3">
+              {isLoggedIn ? (
+                <>
+                  {/* Verify Button for Mobile */}
+                  {!user?.verified && user?.role !== 'admin' && user?.username !== 'admin' && (
+                    <button 
+                      onClick={() => handleAction(onShowVerifyModal)}
+                      className="flex justify-center items-center gap-2 w-full bg-yellow-100 text-yellow-700 px-4 py-3 rounded-md font-bold hover:bg-yellow-200 transition"
+                    >
+                      <FaCheckCircle /> Verify Account
+                    </button>
+                  )}
+                  {/* Profile Button for Mobile */}
+                  <button 
+                    onClick={() => handleNavigation('/profile')}
+                    className="flex justify-center items-center gap-2 w-full bg-pink-100 text-pink-700 px-4 py-3 rounded-md font-bold hover:bg-pink-200 transition"
+                  >
+                    <FaUserCircle className="text-xl" /> My Profile
+                  </button>
+                  {/* Logout Button for Mobile */}
+                  <button 
+                    onClick={() => handleAction(onLogout)}
+                    className="flex justify-center items-center gap-2 w-full bg-pink-600 text-white px-4 py-3 rounded-md font-bold hover:bg-pink-700 transition"
+                  >
+                    <FaSignOutAlt /> Logout
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => handleAction(() => setActiveForm('login'))}
+                  className="w-full bg-pink-600 text-white px-4 py-3 rounded-md font-bold hover:bg-pink-700 transition"
+                >
+                  Sign In / Sign Up
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </nav>
