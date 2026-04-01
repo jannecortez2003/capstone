@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Modal, { SuccessModal } from './components/Modal'; 
@@ -32,6 +32,8 @@ import './App.css';
 
 function App() {
   const navigate = useNavigate();
+  const location = useLocation(); // ADDED: To check which page we are on
+  
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeForm, setActiveForm] = useState(null);
   const [user, setUser] = useState(null);
@@ -119,26 +121,30 @@ function App() {
     setShowEventFormModal(true); 
   };
 
+  // ADDED: Check if we are currently inside the Admin panel
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   return (
     <>
-      <Navbar
-        setActiveForm={setActiveForm}
-        isLoggedIn={isLoggedIn}
-        onLogout={handleLogout}
-        user={user}
-        onShowVerifyModal={handleShowVerifyModal} 
-      />
+      {/* ONLY show the public Navbar if we are NOT in the admin panel */}
+      {!isAdminRoute && (
+        <Navbar
+          setActiveForm={setActiveForm}
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          user={user}
+          onShowVerifyModal={handleShowVerifyModal} 
+        />
+      )}
 
-      {/* Global Features */}
-      <ChatBot />
+      {/* Global Features (Hidden on Admin pages) */}
+      {!isAdminRoute && <ChatBot />}
 
       <Routes>
         {/* PUBLIC ROUTES */}
         <Route path="/auth" element={<Auth onLogin={handleAuthLogin} />} />
-        
-        {/* ✨ NEW PROFILE ROUTE */}
         <Route path="/profile" element={<UserProfile />} />
-
+        
         <Route path="/" element={
           <>
             <Hero
@@ -147,7 +153,6 @@ function App() {
               startBookingFlow={startBookingFlow} 
             />
             <Services />
-            
             <Packages 
                 isLoggedIn={isLoggedIn} 
                 setActiveForm={setActiveForm} 
@@ -156,7 +161,6 @@ function App() {
                 onClose={() => setShowPackagesModal(false)}
                 onConfirmBooking={handleBookingConfirmed}
             />
-            
             <Events 
                 isLoggedIn={isLoggedIn} 
                 setActiveForm={setActiveForm}
