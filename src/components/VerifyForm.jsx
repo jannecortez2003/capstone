@@ -47,7 +47,7 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
     setLoading(true);
     setMessage(null);
 
-    // CRITICAL FIX: Ensure keys match the backend's expected variables
+    // FIXED: Added phone and email back to the payload to satisfy the database!
     const formData = new FormData();
     formData.append("userId", user?.id);
     formData.append("idType", form.idType);
@@ -55,12 +55,14 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
     formData.append("lastName", form.lastName);
     formData.append("firstName", form.firstName);
     formData.append("address", form.address);
-    formData.append("idImage", idImage); // Must match upload.single('idImage')
+    formData.append("phone", form.phone); // MUST BE HERE
+    formData.append("email", form.email); // MUST BE HERE
+    formData.append("idImage", idImage); 
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/verify`, {
         method: "POST",
-        body: formData, // Browser automatically sets Content-Type to multipart/form-data
+        body: formData, 
       });
 
       const responseData = await res.json();
