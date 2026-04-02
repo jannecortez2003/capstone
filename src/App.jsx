@@ -1,10 +1,10 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Modal, { SuccessModal } from './components/Modal'; 
 import EventFormModal from './components/EventFormModal';
+import DishSelectionModal from './components/DishSelectionModal'; // <-- RESTORED
 import Services from './components/Services';
 import Events from './components/Events';
 import Contact from './components/Contact';
@@ -38,13 +38,13 @@ function App() {
   
   // Modal States
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [showDishModal, setShowDishModal] = useState(false); // <-- RESTORED
   const [showEventFormModal, setShowEventFormModal] = useState(false); 
   const [selectedPackageForBooking, setSelectedPackageForBooking] = useState(null); 
   const [finalSelectedDishes, setFinalSelectedDishes] = useState([]); 
   const [showBookingSuccessModal, setShowBookingSuccessModal] = useState(false);
   const [bookingSuccessMessage, setBookingSuccessMessage] = useState('');
   
-  // NEW: Store the event type chosen from Events.jsx
   const [preSelectedEventType, setPreSelectedEventType] = useState("");
 
   useEffect(() => {
@@ -97,19 +97,17 @@ function App() {
     setShowBookingSuccessModal(true); 
   };
 
-  // 1. Hero Booking: Clears event type and scrolls to Packages
   const handleHeroBooking = () => {
     setPreSelectedEventType("");
     document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // 2. Events Booking: Records Event Type and scrolls to Packages
   const handleEventSelection = (eventType) => {
     setPreSelectedEventType(eventType);
     document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // 3. Packages Booking: Verifies Auth and Opens the Form
+  // RESTORED FIX: Opens the Dish Modal first instead of the Event Form
   const handlePackageSelection = (pkg) => {
     if (!isLoggedIn) {
       navigate('/auth');
@@ -117,9 +115,15 @@ function App() {
       setShowVerifyModal(true);
     } else {
       setSelectedPackageForBooking(pkg);
-      setFinalSelectedDishes(pkg.features);
-      setShowEventFormModal(true);
+      setShowDishModal(true); 
     }
+  };
+
+  // RESTORED FIX: Handles transitioning from Dish Selection to Event Form
+  const handleDishSelectionConfirm = (dishes) => {
+    setFinalSelectedDishes(dishes);
+    setShowDishModal(false);
+    setShowEventFormModal(true);
   };
 
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -167,6 +171,14 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* RESTORED: Dish Selection Modal */}
+      <DishSelectionModal 
+        isOpen={showDishModal} 
+        onClose={() => setShowDishModal(false)} 
+        packageData={selectedPackageForBooking} 
+        onConfirm={handleDishSelectionConfirm} 
+      />
 
       <EventFormModal 
         isOpen={showEventFormModal} 

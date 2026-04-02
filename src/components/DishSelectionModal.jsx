@@ -1,165 +1,127 @@
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
+import { FaUtensils, FaTimes, FaArrowRight } from 'react-icons/fa';
 
-const DishSelectionModal = ({ isOpen, onClose, packageInfo, onConfirmSelection }) => {
-    const dishLimit = packageInfo?.dishes || 0;
-    const [selectedDishes, setSelectedDishes] = useState([]);
-    const [error, setError] = useState('');
-    
-    const [allDishes, setAllDishes] = useState([]);
+const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
+  const [menuItems, setMenuItems] = useState([]);
+  const [selections, setSelections] = useState({});
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (isOpen) {
-            fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        setAllDishes(data.items);
-                    } else {
-                        console.error("Failed to load menu items");
-                    }
-                })
-                .catch(err => console.error("Error fetching menu:", err));
-        }
-    }, [isOpen]);
+  useEffect(() => {
+    if (isOpen && packageData) {
+      // Create empty slots for each required dish category
+      const initialSelections = {};
+      packageData.features.forEach(feature => {
+        initialSelections[feature] = '';
+      });
+      setSelections(initialSelections);
 
-    const allowedCategories = ["Appetizer", "Main Course", "Dessert"];
-
-    const dishesByCategory = allDishes
-        .filter(dish => allowedCategories.includes(dish.category))
-        .reduce((acc, dish) => {
-            const { category } = dish;
-            if (!acc[category]) {
-                acc[category] = [];
-            }
-            acc[category].push(dish);
-            return acc;
-        }, {});
-
-    const handleDishToggle = (dishId) => {
-        const id = parseInt(dishId);
-        const isSelected = selectedDishes.includes(id);
-        setError('');
-
-        if (isSelected) {
-            setSelectedDishes(selectedDishes.filter(item => item !== id));
-        } else if (selectedDishes.length < dishLimit) {
-            setSelectedDishes([...selectedDishes, id]);
-        } else {
-            setError(`Limit reached. You can only select ${dishLimit} dishes for the ${packageInfo.title}.`);
-        }
-    };
-
-    const handleConfirm = () => {
-        if (selectedDishes.length !== dishLimit) {
-            setError(`Action blocked. You must select exactly ${dishLimit} dishes.`);
-            return;
-        }
-        
-        const selectedNames = selectedDishes.map(id => {
-            const dish = allDishes.find(d => parseInt(d.id) === id);
-            return dish ? dish.name : "Unknown Dish";
+      // Fetch the actual menu items from your backend
+      fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setMenuItems(data.items);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to load menu", err);
+          setLoading(false);
         });
+    }
+  }, [isOpen, packageData]);
 
-        onConfirmSelection(packageInfo.title, selectedNames);
-        onClose(); 
-    };
+  if (!isOpen || !packageData) return null;
+
+  const handleSelect = (feature, value) => {
+    setSelections(prev => ({ ...prev, [feature]: value }));
+  };
+
+  const handleNext = () => {
+    // Prevent user from skipping dishes
+    const unselected = packageData.features.filter(f => !selections[f]);
+    if (unselected.length > 0) {
+      alert(`⚠️ Please select an option for: ${unselected.join(', ')}`);
+      return;
+    }
     
-    const confirmButtonDisabled = selectedDishes.length !== dishLimit;
+    // Pass the finalized array of dishes to the main Event Form
+    const chosenDishes = Object.values(selections);
+    onConfirm(chosenDishes);
+  };
 
-    return (
-        <Modal 
-            isOpen={isOpen} 
-            onClose={onClose} 
-            title={null} 
-            size="max-w-4xl" 
-        >
-            <div className="bg-pink-500 rounded-lg shadow-lg p-6 relative">
-                
-                <button
-                    className="absolute top-3 right-3 bg-white  p-2 text-gray-600 hover:text-red-600 rounded-full"
-                    onClick={onClose}
-                    aria-label="Close"
-                >
-                    &times;
-                </button>
-                
-                <div className="p-2">
-                    
-                    <div className="text-center mb-6 text-white">
-                        <h3 className="text-2xl font-bold">
-                            Dish Selection for {packageInfo?.title || ''}
-                        </h3>
-                        <p className="text-lg mt-2">
-                            You must select exactly <span className="font-extrabold text-white text-3xl">{dishLimit}</span> dishes.
-                        </p>
-                        <p className="text-sm">
-                            Selected: <span className="font-semibold">{selectedDishes.length} / {dishLimit}</span>
-                        </p>
-                        {error && <div className="text-red-200 mt-2 text-sm font-semibold">{error}</div>}
-                    </div>
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-black/40 flex items-center justify-center z-50 p-4 transition-colors duration-300">
+      <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-lg shadow-2xl border dark:border-gray-700 flex flex-col max-h-[90vh]">
+        
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <FaUtensils className="text-pink-500" /> Choose Your Menu
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-red-500 transition-colors text-xl"><FaTimes /></button>
+        </div>
 
-                    <div className="max-h-[60vh] overflow-y-auto space-y-8 p-4 rounded-lg bg-white shadow-inner">
-                        {allDishes.length === 0 ? (
-                            <p className="text-center text-gray-500 py-10">Loading menu items...</p>
-                        ) : Object.keys(dishesByCategory).length === 0 ? (
-                             <p className="text-center text-gray-500 py-10">No dishes available in the selected categories.</p>
-                        ) : (
-                            allowedCategories.map((category) => {
-                                const dishes = dishesByCategory[category];
-                                if (!dishes) return null;
+        {/* Scrollable List */}
+        <div className="p-4 overflow-y-auto custom-scrollbar">
+          <div className="bg-pink-50 dark:bg-gray-700/50 p-3 rounded-lg mb-5 border dark:border-gray-700 text-center">
+            <p className="text-sm text-gray-700 dark:text-gray-200 font-bold">{packageData.title} Selection</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Please select one dish for each required category.</p>
+          </div>
 
-                                return (
-                                    <div key={category}>
-                                        <h4 className="text-lg font-bold text-pink-600 border-b-2 border-pink-100 pb-1 mb-3 uppercase tracking-wider">
-                                            {category}
-                                        </h4>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                            {dishes.map((dish) => {
-                                                const dishId = parseInt(dish.id);
-                                                const isSelected = selectedDishes.includes(dishId);
-                                                const isDisabled = selectedDishes.length >= dishLimit && !isSelected;
-                                                
-                                                const dishClasses = isSelected 
-                                                    ? 'bg-pink-600 text-white border-pink-700 shadow-md transform scale-105' 
-                                                    : isDisabled 
-                                                        ? 'bg-gray-200 text-gray-500 border-gray-300 opacity-60'
-                                                        : 'bg-white text-gray-700 hover:bg-pink-100 border-gray-300 hover:border-pink-500';
+          {loading ? (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-8 font-bold animate-pulse">Loading menu options...</div>
+          ) : (
+            <div className="space-y-4">
+              {packageData.features.map((feature, idx) => {
+                // Look for menu items that match the category name (e.g., "Pork", "Chicken")
+                const options = menuItems.filter(item => 
+                    item.category && item.category.toLowerCase() === feature.toLowerCase()
+                );
 
-                                                return (
-                                                    <button
-                                                        key={dishId}
-                                                        onClick={() => handleDishToggle(dishId)}
-                                                        className={`p-3 rounded-lg text-sm font-medium transition duration-200 border text-center ${dishClasses}`}
-                                                        disabled={isDisabled}
-                                                    >
-                                                        {dish.name} {isSelected && '✓'}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-
-                    <div className="mt-6">
-                        <button
-                            onClick={handleConfirm}
-                            disabled={confirmButtonDisabled}
-                            className={`w-full py-3 rounded-lg text-pink-600 bg-white font-bold transition duration-300 shadow-lg border border-white ${confirmButtonDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
-                        >
-                            {confirmButtonDisabled 
-                                ? `Please Select ${dishLimit - selectedDishes.length} More Dish(es)`
-                                : 'Confirm Selection and Proceed'
-                            }
-                        </button>
-                    </div>
-                </div>
+                return (
+                  <div key={idx} className="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-lg border dark:border-gray-600 transition-colors duration-300">
+                    <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-2">
+                      {feature} (Choose 1) <span className="text-red-500">*</span>
+                    </label>
+                    {options.length > 0 ? (
+                      <select 
+                        value={selections[feature]} 
+                        onChange={(e) => handleSelect(feature, e.target.value)}
+                        className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded p-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-500 transition-colors shadow-sm"
+                      >
+                        <option value="">-- Select {feature} Dish --</option>
+                        {options.map(opt => (
+                          <option key={opt.id} value={opt.name}>{opt.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      // Backup input in case no dishes have been added to the database yet for this category
+                      <input 
+                        type="text"
+                        placeholder={`Type preferred ${feature} dish`}
+                        value={selections[feature]}
+                        onChange={(e) => handleSelect(feature, e.target.value)}
+                        className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500 transition-colors shadow-sm"
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
-        </Modal>
-    );
+          )}
+        </div>
+
+        {/* Footer Buttons */}
+        <div className="p-4 border-t dark:border-gray-700 flex justify-end gap-3 bg-white dark:bg-gray-800 rounded-b-xl z-10 transition-colors duration-300">
+          <button onClick={onClose} className="px-5 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">Cancel</button>
+          <button onClick={handleNext} className="px-6 py-2 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 transition flex items-center gap-2 shadow-md">
+            Next <FaArrowRight />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default DishSelectionModal;
