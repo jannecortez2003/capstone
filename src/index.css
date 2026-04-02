@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
-/* 1. Tell Tailwind v4 to enable manual Class-Based Dark Mode */
-@custom-variant dark (&:where(.dark, .dark *));
+/* 1. Tell Tailwind v4 to trigger dark mode when our button is clicked */
+@variant dark (&:where(.dark, .dark *));
 
-/* 2. Global Background and Text Colors */
+/* 2. Set the global background colors */
 @layer base {
   body {
     @apply bg-white text-gray-900 transition-colors duration-300;
