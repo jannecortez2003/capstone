@@ -2,9 +2,30 @@ import React from "react";
 import { FaCheckCircle, FaStar } from "react-icons/fa";
 
 const packages = [
-  { title: "Package 1", price: "₱30,000", guestCount: "50-70 Persons", popular: false, features: ["Pork", "Chicken", "Vegetable", "Dessert", "Drinks"] },
-  { title: "Package 2", price: "₱40,000", guestCount: "100 Persons", popular: true, features: ["Beef", "Pork", "Chicken", "Vegetable", "Dessert", "Drinks"] },
-  { title: "Package 3", price: "₱55,000", guestCount: "150 Persons", popular: false, features: ["Beef", "Pork", "Chicken", "Fish", "Vegetable", "Dessert", "Drinks"] },
+  {
+    title: "Package 1",
+    price: "₱30,000",
+    guestCount: "50-70 Persons",
+    popular: false,
+    dishLimit: 7, // Limit set to 7
+    features: ["7 Menu Choices", "Standard Setup", "Tables & Chairs", "Basic Styling"],
+  },
+  {
+    title: "Package 2",
+    price: "₱40,000",
+    guestCount: "100 Persons",
+    popular: true,
+    dishLimit: 10, // Limit set to 10
+    features: ["10 Menu Choices", "Premium Setup", "Tables, Chairs & Linens", "Elegant Styling"],
+  },
+  {
+    title: "Package 3",
+    price: "₱55,000",
+    guestCount: "150 Persons",
+    popular: false,
+    dishLimit: 12, // Limit set to 12
+    features: ["12 Menu Choices", "VIP Setup", "Complete Event Styling", "Full Staff Service"],
+  },
 ];
 
 const Packages = ({ handlePackageSelection }) => {
@@ -29,16 +50,21 @@ const Packages = ({ handlePackageSelection }) => {
               
               <div className="text-center mb-6">
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white transition-colors duration-300">{pkg.title}</h3>
-                <div className="my-4"><span className="text-4xl font-black text-pink-600 dark:text-pink-400 transition-colors duration-300">{pkg.price}</span></div>
-                <span className="inline-block bg-pink-50 dark:bg-gray-700 text-pink-700 dark:text-pink-300 px-3 py-1 rounded-full text-sm font-semibold transition-colors duration-300">{pkg.guestCount}</span>
+                <div className="my-4">
+                  <span className="text-4xl font-black text-pink-600 dark:text-pink-400 transition-colors duration-300">{pkg.price}</span>
+                </div>
+                <span className="inline-block bg-pink-50 dark:bg-gray-700 text-pink-700 dark:text-pink-300 px-3 py-1 rounded-full text-sm font-semibold transition-colors duration-300">
+                  {pkg.guestCount}
+                </span>
               </div>
 
               <div className="flex-1">
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4 transition-colors duration-300">Menu Inclusions:</p>
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4 transition-colors duration-300">Inclusions:</p>
                 <ul className="space-y-3 mb-8">
                   {pkg.features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-3 text-gray-600 dark:text-gray-400 text-sm transition-colors duration-300">
-                      <FaCheckCircle className="text-pink-500 shrink-0" /><span>{feature}</span>
+                      <FaCheckCircle className="text-pink-500 shrink-0" />
+                      <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
