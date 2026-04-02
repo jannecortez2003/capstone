@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers } from 'react-icons/fa';
+import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({ bookings: 0, revenue: 0, menuItems: 0, customers: 0 });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_dashboard_stats`)
@@ -22,10 +23,45 @@ const Dashboard = () => {
       });
   }, []);
 
+  // Quick Calendar Logic
+  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+
+  const renderCalendarDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
+    
+    const days = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="p-2 text-center text-transparent">0</div>);
+    }
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+      const hasEvent = upcomingEvents.some(e => e.preferred_date && e.preferred_date.startsWith(dateStr));
+      const isToday = new Date().toISOString().split('T')[0] === dateStr;
+
+      days.push(
+        <div key={day} className={`p-2 text-center text-sm rounded-full mx-auto w-8 h-8 flex items-center justify-center font-medium transition-colors
+          ${hasEvent ? 'bg-pink-600 text-white font-bold shadow-md' : 'text-gray-700 dark:text-gray-300'}
+          ${isToday && !hasEvent ? 'border-2 border-pink-500 text-pink-600 dark:text-pink-400' : ''}
+        `}>
+          {day}
+        </div>
+      );
+    }
+    return days;
+  };
+
   if (loading) return <div className="text-center mt-10 dark:text-white">Loading dashboard...</div>;
 
   return (
-    <div>
+    <div className="fade-in transition-colors duration-300">
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 transition-colors duration-300">Dashboard Overview</h1>
       
       {/* Stat Cards */}
@@ -79,47 +115,78 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Upcoming Events Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
-          <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Upcoming Events (Next 5)</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm uppercase transition-colors duration-300">
-                <th className="p-4 font-semibold">Date</th>
-                <th className="p-4 font-semibold">Event Type</th>
-                <th className="p-4 font-semibold">Guests</th>
-                <th className="p-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {upcomingEvents.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400 transition-colors duration-300">No upcoming events scheduled.</td>
+      {/* Grid for Table and Quick Calendar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Upcoming Events Table */}
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300 h-fit">
+          <div className="p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
+            <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Upcoming Events (Next 5)</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm uppercase transition-colors duration-300">
+                  <th className="p-4 font-semibold">Date</th>
+                  <th className="p-4 font-semibold">Event Type</th>
+                  <th className="p-4 font-semibold">Guests</th>
+                  <th className="p-4 font-semibold">Status</th>
                 </tr>
-              ) : (
-                upcomingEvents.map((event) => (
-                  <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">{new Date(event.preferred_date).toLocaleDateString()}</td>
-                    <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.event_type}</td>
-                    <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.guest_count}</td>
-                    <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        event.status === 'Confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                        event.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                        'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                      }`}>
-                        {event.status}
-                      </span>
-                    </td>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {upcomingEvents.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400 transition-colors duration-300">No upcoming events scheduled.</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  upcomingEvents.map((event) => (
+                    <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                      <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">{new Date(event.preferred_date).toLocaleDateString()}</td>
+                      <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.event_type}</td>
+                      <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.guest_count}</td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          event.status === 'Confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                          event.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                        }`}>
+                          {event.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* Quick Calendar */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300 h-fit">
+          <div className="flex justify-between items-center mb-4">
+            <button onClick={handlePrevMonth} className="text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 transition"><FaChevronLeft /></button>
+            <h2 className="font-bold text-gray-800 dark:text-white transition-colors">
+              {currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}
+            </h2>
+            <button onClick={handleNextMonth} className="text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 transition"><FaChevronRight /></button>
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1 text-center mb-2">
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+              <div key={day} className="text-xs font-bold text-gray-400 dark:text-gray-500">{day}</div>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1">
+            {renderCalendarDays()}
+          </div>
+          
+          <div className="mt-6 border-t dark:border-gray-700 pt-4 flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="w-3 h-3 bg-pink-600 rounded-full"></div>
+            <span>Dates with booked events</span>
+          </div>
+        </div>
+
       </div>
     </div>
   );

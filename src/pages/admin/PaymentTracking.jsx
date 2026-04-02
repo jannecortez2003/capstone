@@ -130,27 +130,26 @@ const PaymentTracking = () => {
         </div>
       </div>
 
-      {/* Payment Entry Modal */}
       <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="Process Payment">
         <form onSubmit={handleProcessPayment} className="p-2 text-gray-800 dark:text-gray-200">
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-4 text-sm transition-colors duration-300">
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-4 text-sm transition-colors duration-300 border dark:border-blue-800/50">
                 <p><strong>Customer:</strong> {selectedBooking?.customer_name}</p>
                 <p className="text-red-600 dark:text-red-400 font-bold mt-1 transition-colors duration-300">Current Balance: ₱{parseFloat(selectedBooking?.balance || 0).toLocaleString()}</p>
             </div>
             
             <div className="space-y-4">
                 <div>
-                    <label className="text-sm font-medium mb-1 block">Amount to Pay (₱)</label>
+                    <label className="text-sm font-medium mb-1 block text-gray-700 dark:text-gray-300">Amount to Pay (₱)</label>
                     <input 
                         type="number" step="0.01" max={selectedBooking?.balance}
-                        className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 p-2 rounded focus:ring-2 focus:ring-pink-500 outline-none transition-colors duration-300" 
+                        className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white p-2 rounded focus:ring-2 focus:ring-pink-500 outline-none transition-colors duration-300" 
                         value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} required 
                     />
                 </div>
                 <div>
-                    <label className="text-sm font-medium mb-1 block">Payment Method</label>
+                    <label className="text-sm font-medium mb-1 block text-gray-700 dark:text-gray-300">Payment Method</label>
                     <select 
-                        className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 p-2 rounded focus:ring-2 focus:ring-pink-500 outline-none transition-colors duration-300"
+                        className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white p-2 rounded focus:ring-2 focus:ring-pink-500 outline-none transition-colors duration-300"
                         value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} required
                     >
                         <option value="Cash">Cash</option>
@@ -161,13 +160,12 @@ const PaymentTracking = () => {
             </div>
 
             <div className="flex justify-end gap-2 pt-6">
-                <button type="button" onClick={() => setShowPaymentModal(false)} className="px-4 py-2 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300">Cancel</button>
+                <button type="button" onClick={() => setShowPaymentModal(false)} className="px-4 py-2 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-white transition-colors duration-300">Cancel</button>
                 <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition flex items-center gap-2 font-bold"><FaMoneyCheckAlt /> Save Payment</button>
             </div>
         </form>
       </Modal>
 
-      {/* Payment History Modal */}
       <Modal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} title={`History: ${selectedBooking?.customer_name}`}>
         <div className="p-2 text-gray-800 dark:text-gray-200">
             {paymentHistory.length === 0 ? (
@@ -178,7 +176,10 @@ const PaymentTracking = () => {
                         <div key={ph.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-3 rounded border dark:border-gray-600 transition-colors duration-300">
                             <div>
                                 <div className="font-bold text-green-600 dark:text-green-400 transition-colors duration-300">₱{parseFloat(ph.amount_paid).toLocaleString()}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors duration-300">{new Date(ph.payment_date).toLocaleString()}</div>
+                                {/* CRITICAL FIX: Safe date logic that handles both PHP and Node database column names */}
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors duration-300">
+                                    {new Date(ph.transaction_date || ph.payment_date || ph.created_at).toLocaleString()}
+                                </div>
                             </div>
                             <span className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-1 rounded text-xs font-bold transition-colors duration-300">{ph.payment_method}</span>
                         </div>

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 
 const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelectedDishes, onBookingSuccess, preSelectedEventType }) => {
   const [formData, setFormData] = useState({ eventType: '', preferredDate: '', guestCount: '', notes: '' });
+  const [bookedDates, setBookedDates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Fetch booked dates when the modal opens
   useEffect(() => {
     if (isOpen) {
       setFormData(prev => ({
@@ -13,12 +15,35 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
         preferredDate: '', guestCount: '', notes: ''
       }));
       setError(null);
+
+      fetch(`${import.meta.env.VITE_API_URL}/fetch_booked_dates`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            // Normalize dates to YYYY-MM-DD for easy comparison
+            const dates = data.bookedDates.map(d => new Date(d).toISOString().split('T')[0]);
+            setBookedDates(dates);
+          }
+        })
+        .catch(err => console.error("Failed to load booked dates", err));
     }
   }, [isOpen, preSelectedEventType]);
 
   if (!isOpen) return null;
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  // Custom handler to check if the date is already booked
+  const handleDateChange = (e) => {
+    const selectedDate = e.target.value;
+    if (bookedDates.includes(selectedDate)) {
+      setError("❌ This date is already fully booked. Please select another.");
+      setFormData({ ...formData, preferredDate: '' });
+    } else {
+      setError(null);
+      setFormData({ ...formData, preferredDate: selectedDate });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,21 +60,21 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
     finally { setLoading(false); }
   };
 
+  // Get today's date in YYYY-MM-DD to disable past dates
+  const today = new Date().toISOString().split("T")[0];
+
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-black/40 flex items-center justify-center z-50 p-4 transition-colors duration-300">
       <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md shadow-2xl border dark:border-gray-700 flex flex-col max-h-[90vh]">
         
-        {/* Header */}
         <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">Book Your Event</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-red-500 transition-colors text-2xl leading-none">&times;</button>
         </div>
 
-        {/* Scrollable Body */}
         <div className="p-4 overflow-y-auto custom-scrollbar">
             {error && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded mb-4 text-sm font-bold">{error}</div>}
             
-            {/* Package Summary */}
             <div className="mb-4 bg-pink-50 dark:bg-gray-700/50 p-3 rounded-lg text-sm border dark:border-gray-700">
                 <p className="text-gray-700 dark:text-gray-300"><strong className="text-pink-600 dark:text-pink-400">Package:</strong> {preSelectedPackage}</p>
                 <p className="text-gray-700 dark:text-gray-300 mt-1"><strong className="text-pink-600 dark:text-pink-400">Menu:</strong> {preSelectedDishes?.join(', ')}</p>
@@ -71,7 +96,15 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
               <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Date</label>
-                    <input type="date" name="preferredDate" value={formData.preferredDate} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500 transition-colors" required />
+                    <input 
+                      type="date" 
+                      name="preferredDate" 
+                      min={today} 
+                      value={formData.preferredDate} 
+                      onChange={handleDateChange} 
+                      className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500 transition-colors" 
+                      required 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Guests</label>
@@ -86,7 +119,6 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
             </form>
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t dark:border-gray-700 flex gap-3">
           <button type="button" onClick={onClose} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">Cancel</button>
           <button type="submit" form="bookingForm" disabled={loading} className="flex-1 px-4 py-2 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 transition disabled:opacity-50">
