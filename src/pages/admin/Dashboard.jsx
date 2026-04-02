@@ -1,153 +1,124 @@
-import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaClock } from "react-icons/fa";
+import React, { useState, useEffect } from 'react';
+import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers } from 'react-icons/fa';
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    bookings: 0,
-    revenue: 0,
-    menuItems: 0,
-    customers: 0
-  });
+  const [stats, setStats] = useState({ bookings: 0, revenue: 0, menuItems: 0, customers: 0 });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_dashboard_stats`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Network response was not ok");
-        return res.json();
-      })
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
         if (data.success) {
           setStats(data.stats);
-          setUpcomingEvents(data.upcomingEvents);
+          setUpcomingEvents(data.upcomingEvents || []);
         }
+        setLoading(false);
       })
-      .catch((err) => console.error("Error fetching stats:", err))
-      .finally(() => setLoading(false));
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
-  const statCards = [
-    {
-      label: "Total Bookings",
-      value: stats.bookings,
-      icon: <FaCalendarAlt className="text-pink-500 text-3xl" />,
-      note: "All time records",
-      noteColor: "text-gray-500",
-      borderColor: "border-pink-200"
-    },
-    {
-      label: "Total Revenue",
-      value: `₱${parseFloat(stats.revenue || 0).toLocaleString()}`,
-      icon: <FaMoneyBillWave className="text-green-500 text-3xl" />,
-      note: "Verified payments",
-      noteColor: "text-green-600",
-      borderColor: "border-green-200"
-    },
-    {
-      label: "Menu Items",
-      value: stats.menuItems,
-      icon: <FaUtensils className="text-pink-500 text-3xl" />,
-      note: "Active dishes",
-      noteColor: "text-gray-500",
-      borderColor: "border-pink-200"
-    },
-    {
-      label: "Verified Customers",
-      value: stats.customers,
-      icon: <FaUsers className="text-blue-400 text-3xl" />,
-      note: "Registered users",
-      noteColor: "text-blue-500",
-      borderColor: "border-blue-200"
-    },
-  ];
+  if (loading) return <div className="text-center mt-10 dark:text-white">Loading dashboard...</div>;
 
   return (
-    <div className="p-6 fade-in">
-      <h1 className="text-3xl font-bold mb-2 text-gray-800">Admin Dashboard</h1>
-      <p className="text-gray-500 mb-8">Welcome back! Here is your catering business overview.</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((stat, i) => (
-          <div key={i} className={`bg-white rounded-xl shadow-sm hover:shadow-md p-6 flex items-center gap-4 transition border-l-4 ${stat.borderColor}`}>
-            <div className="bg-pink-50 p-3 rounded-full">
-              {stat.icon}
-            </div>
+    <div>
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 transition-colors duration-300">Dashboard Overview</h1>
+      
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-pink-500 transition-colors duration-300">
+          <div className="flex justify-between items-center">
             <div>
-              <div className="text-2xl font-bold text-gray-800">
-                {loading ? "..." : stat.value}
-              </div>
-              <div className="text-sm font-medium text-gray-600">{stat.label}</div>
-              <div className={`text-xs mt-1 ${stat.noteColor}`}>{stat.note}</div>
+              <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase transition-colors duration-300">Total Bookings</h3>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">{stats.bookings}</div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white rounded-xl shadow-sm p-6 col-span-2">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <FaClock className="text-pink-500" /> Upcoming Events
-            </h2>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-gray-500 text-sm border-b">
-                  <th className="py-2">Event Type</th>
-                  <th className="py-2">Date</th>
-                  <th className="py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="3" className="py-4 text-center">Loading events...</td></tr>
-                ) : upcomingEvents.length === 0 ? (
-                  <tr><td colSpan="3" className="py-4 text-center text-gray-500">No upcoming events found.</td></tr>
-                ) : (
-                  upcomingEvents.map((event) => (
-                    <tr key={event.id} className="border-b last:border-0 hover:bg-pink-50 transition">
-                      <td className="py-3 font-medium capitalize">{event.event_type}</td>
-                      <td className="py-3 text-gray-600">{event.preferred_date}</td>
-                      <td className="py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${
-                          event.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
-                          event.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {event.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <div className="bg-pink-100 dark:bg-gray-700 p-3 rounded-full text-pink-600 dark:text-pink-400 transition-colors duration-300">
+              <FaCalendarAlt className="text-xl" />
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold mb-4 text-gray-800">Quick Calendar</h2>
-            <div className="bg-pink-50 p-4 rounded-lg text-center border border-pink-100">
-                <p className="text-pink-600 font-bold text-lg mb-2">
-                    {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
-                </p>
-                <div className="grid grid-cols-7 gap-1 text-xs text-gray-600 font-medium">
-                    {['S','M','T','W','T','F','S'].map(d => <div key={d} className="py-1">{d}</div>)}
-                    {[...Array(30)].map((_, i) => (
-                        <div 
-                            key={i} 
-                            className={`aspect-square flex items-center justify-center rounded-sm ${
-                                (i + 1) === new Date().getDate() ? 'bg-pink-500 text-white font-bold shadow-md' : 'hover:bg-pink-200 cursor-pointer'
-                            }`}
-                        >
-                            {i + 1}
-                        </div>
-                    ))}
-                </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500 transition-colors duration-300">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase transition-colors duration-300">Total Revenue</h3>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">₱{parseFloat(stats.revenue || 0).toLocaleString()}</div>
             </div>
+            <div className="bg-green-100 dark:bg-gray-700 p-3 rounded-full text-green-600 dark:text-green-400 transition-colors duration-300">
+              <FaMoneyBillWave className="text-xl" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-yellow-500 transition-colors duration-300">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase transition-colors duration-300">Menu Items</h3>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">{stats.menuItems}</div>
+            </div>
+            <div className="bg-yellow-100 dark:bg-gray-700 p-3 rounded-full text-yellow-600 dark:text-yellow-400 transition-colors duration-300">
+              <FaUtensils className="text-xl" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-blue-500 transition-colors duration-300">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase transition-colors duration-300">Verified Customers</h3>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">{stats.customers}</div>
+            </div>
+            <div className="bg-blue-100 dark:bg-gray-700 p-3 rounded-full text-blue-600 dark:text-blue-400 transition-colors duration-300">
+              <FaUsers className="text-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Upcoming Events Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
+          <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Upcoming Events (Next 5)</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm uppercase transition-colors duration-300">
+                <th className="p-4 font-semibold">Date</th>
+                <th className="p-4 font-semibold">Event Type</th>
+                <th className="p-4 font-semibold">Guests</th>
+                <th className="p-4 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              {upcomingEvents.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400 transition-colors duration-300">No upcoming events scheduled.</td>
+                </tr>
+              ) : (
+                upcomingEvents.map((event) => (
+                  <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">{new Date(event.preferred_date).toLocaleDateString()}</td>
+                    <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.event_type}</td>
+                    <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.guest_count}</td>
+                    <td className="p-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        event.status === 'Confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
+                        event.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                        'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                      }`}>
+                        {event.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -7,8 +7,8 @@ export const SuccessModal = ({ isOpen, onClose, title, message, icon }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl text-center">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4 transition-colors duration-300">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full shadow-2xl text-center border dark:border-gray-700 transition-colors duration-300">
                 <div className="flex justify-center mb-4 text-pink-500">
                     {icon || (
                         <svg className="h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -16,8 +16,8 @@ export const SuccessModal = ({ isOpen, onClose, title, message, icon }) => {
                         </svg>
                     )}
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">{title || "Success"}</h3>
-                <p className="text-gray-600 mb-6">{message}</p>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 transition-colors duration-300">{title || "Success"}</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 transition-colors duration-300">{message}</p>
                 <button
                     onClick={onClose}
                     className="w-full bg-pink-500 text-white px-4 py-2 rounded-md hover:bg-pink-600 transition"
@@ -38,18 +38,18 @@ function Modal({ isOpen, onClose, title, children, modalType, handleLogin, handl
   
   const contentClasses = isCustomContainer 
     ? `${modalSizeClass}`
-    : `bg-white/90 backdrop-blur-md rounded-lg p-8 ${modalSizeClass}`;
+    : `bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-lg p-8 border dark:border-gray-700 transition-colors duration-300 ${modalSizeClass}`;
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
+    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 transition-colors duration-300">
       <div className={`${contentClasses} shadow-xl`}>
         
         {title !== null && (
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             >
               <svg
                 className="h-6 w-6"
