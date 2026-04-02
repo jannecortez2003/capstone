@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Modal, { SuccessModal } from './components/Modal'; 
@@ -23,16 +23,14 @@ import VerificationRequests from './pages/admin/VerificationRequests';
 import AppointmentStatus from './components/AppointmentStatus';
 import VerifyForm from './components/VerifyForm';
 
-// ✨ FEATURES IMPORT
 import ChatBot from './components/ChatBot'; 
 import Auth from './pages/Auth'; 
 import UserProfile from './pages/UserProfile';
-
 import './App.css'; 
 
 function App() {
   const navigate = useNavigate();
-  const location = useLocation(); // ADDED: To check which page we are on
+  const location = useLocation(); 
   
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeForm, setActiveForm] = useState(null);
@@ -40,12 +38,14 @@ function App() {
   
   // Modal States
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [showPackagesModal, setShowPackagesModal] = useState(false); 
   const [showEventFormModal, setShowEventFormModal] = useState(false); 
   const [selectedPackageForBooking, setSelectedPackageForBooking] = useState(null); 
   const [finalSelectedDishes, setFinalSelectedDishes] = useState([]); 
   const [showBookingSuccessModal, setShowBookingSuccessModal] = useState(false);
   const [bookingSuccessMessage, setBookingSuccessMessage] = useState('');
+  
+  // NEW: Store the event type chosen from Events.jsx
+  const [preSelectedEventType, setPreSelectedEventType] = useState("");
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user') || localStorage.getItem('adminUser');
@@ -55,7 +55,6 @@ function App() {
         setUser(JSON.parse(storedUser));
         setIsLoggedIn(true);
       } catch (e) {
-        console.error("Error parsing user data", e);
         localStorage.removeItem('user');
       }
     }
@@ -91,87 +90,62 @@ function App() {
   };
 
   const handleShowVerifyModal = () => setShowVerifyModal(true);
-  const handleVerificationSuccess = () => setShowVerifyModal(false);
   
   const handleBookingSuccess = (message) => {
     setShowEventFormModal(false); 
     setBookingSuccessMessage(message);
     setShowBookingSuccessModal(true); 
   };
-  
-  const handleCloseBookingSuccessModal = () => {
-      setShowBookingSuccessModal(false);
-      setBookingSuccessMessage('');
+
+  // 1. Hero Booking: Clears event type and scrolls to Packages
+  const handleHeroBooking = () => {
+    setPreSelectedEventType("");
+    document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const startBookingFlow = () => {
+  // 2. Events Booking: Records Event Type and scrolls to Packages
+  const handleEventSelection = (eventType) => {
+    setPreSelectedEventType(eventType);
+    document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // 3. Packages Booking: Verifies Auth and Opens the Form
+  const handlePackageSelection = (pkg) => {
     if (!isLoggedIn) {
       navigate('/auth');
-    } else if (!user?.verified) { 
-      setShowVerifyModal(true); 
+    } else if (!user?.verified) {
+      setShowVerifyModal(true);
     } else {
-      setShowPackagesModal(true); 
+      setSelectedPackageForBooking(pkg);
+      setFinalSelectedDishes(pkg.features);
+      setShowEventFormModal(true);
     }
   };
 
-  const handleBookingConfirmed = (pkgData, dishes) => {
-    setSelectedPackageForBooking(pkgData);
-    setFinalSelectedDishes(dishes);
-    setShowPackagesModal(false); 
-    setShowEventFormModal(true); 
-  };
-
-  // ADDED: Check if we are currently inside the Admin panel
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
     <>
-      {/* ONLY show the public Navbar if we are NOT in the admin panel */}
       {!isAdminRoute && (
-        <Navbar
-          setActiveForm={setActiveForm}
-          isLoggedIn={isLoggedIn}
-          onLogout={handleLogout}
-          user={user}
-          onShowVerifyModal={handleShowVerifyModal} 
-        />
+        <Navbar setActiveForm={setActiveForm} isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} onShowVerifyModal={handleShowVerifyModal} />
       )}
-
-      {/* Global Features (Hidden on Admin pages) */}
       {!isAdminRoute && <ChatBot />}
 
       <Routes>
-        {/* PUBLIC ROUTES */}
         <Route path="/auth" element={<Auth onLogin={handleAuthLogin} />} />
         <Route path="/profile" element={<UserProfile />} />
         
         <Route path="/" element={
           <>
-            <Hero
-              isLoggedIn={isLoggedIn}
-              setActiveForm={setActiveForm}
-              startBookingFlow={startBookingFlow} 
-            />
+            <Hero handleHeroBooking={handleHeroBooking} />
             <Services />
-            <Packages 
-                isLoggedIn={isLoggedIn} 
-                setActiveForm={setActiveForm} 
-                startBookingFlow={startBookingFlow} 
-                isOpen={showPackagesModal}
-                onClose={() => setShowPackagesModal(false)}
-                onConfirmBooking={handleBookingConfirmed}
-            />
-            <Events 
-                isLoggedIn={isLoggedIn} 
-                setActiveForm={setActiveForm}
-                startBookingFlow={startBookingFlow} 
-            />
+            <Packages handlePackageSelection={handlePackageSelection} />
+            <Events handleEventSelection={handleEventSelection} />
             <Contact />
             <Footer />
           </>
         } />
 
-        {/* ADMIN ROUTES */}
         <Route path="/admin/*" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="booking-requests" element={<BookingRequests />} />
@@ -185,21 +159,11 @@ function App() {
         </Route>
       </Routes>
 
-      {/* GLOBAL MODALS */}
       {showVerifyModal && user && (
         <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-pink-500 rounded-lg shadow-lg w-full max-w-lg p-6 relative">
-            <button
-              className="absolute top-5.5 right-6 bg-white text-1x2 p-2 text-gray-600 hover:text-red-600 border-pink-400 border-2"
-              onClick={() => setShowVerifyModal(false)}
-            >
-              ×
-            </button>
-            <VerifyForm
-              user={user}
-              onClose={() => setShowVerifyModal(false)}
-              onSuccess={handleVerificationSuccess}
-            />
+            <button className="absolute top-5.5 right-6 bg-white p-2 text-gray-600 hover:text-red-600 border-pink-400 border-2" onClick={() => setShowVerifyModal(false)}>×</button>
+            <VerifyForm user={user} onClose={() => setShowVerifyModal(false)} onSuccess={() => setShowVerifyModal(false)} />
           </div>
         </div>
       )}
@@ -210,15 +174,11 @@ function App() {
         userId={user?.id} 
         preSelectedPackage={selectedPackageForBooking?.title}
         preSelectedDishes={finalSelectedDishes}
+        preSelectedEventType={preSelectedEventType} 
         onBookingSuccess={handleBookingSuccess} 
       />
       
-      <SuccessModal
-          isOpen={showBookingSuccessModal}
-          onClose={handleCloseBookingSuccessModal}
-          title="Booking Confirmed!"
-          message={bookingSuccessMessage}
-      />
+      <SuccessModal isOpen={showBookingSuccessModal} onClose={() => setShowBookingSuccessModal(false)} title="Booking Confirmed!" message={bookingSuccessMessage} />
     </>
   );
 }

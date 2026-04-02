@@ -1,69 +1,38 @@
-import React from "react";
-import weddingImg from "../assets/wedding.jpg";
-import birthdayImg from "../assets/birthday.jpg";
-import corporateImg from "../assets/corporate.jpg";
-import anniversaryImg from "../assets/anniversary.jpg";
-import familyImg from "../assets/family.jpg";
-import specialImg from "../assets/special.jpg";
+import React from 'react';
+import weddingImg from '../assets/wedding.jpg';
+import birthdayImg from '../assets/birthday.jpg';
+import corporateImg from '../assets/corporate.jpg';
+import familyImg from '../assets/family.jpg';
 
 const events = [
-  {
-    title: "Weddings",
-    description: "Customized catering services for your wedding with special menu options.",
-    image: weddingImg,
-  },
-  {
-    title: "Birthdays",
-    description: "Customized catering services for your birthdays with special menu options.",
-    image: birthdayImg,
-  },
-  {
-    title: "Corporate Events",
-    description: "Customized catering services for your corporate events with special menu options.",
-    image: corporateImg,
-  },
-  {
-    title: "Anniversaries",
-    description: "Customized catering services for your anniversaries with special menu options.",
-    image: anniversaryImg,
-  },
-  {
-    title: "Family Gatherings",
-    description: "Customized catering services for your family gatherings with special menu options.",
-    image: familyImg,
-  },
-  {
-    title: "Special Occasions",
-    description: "Customized catering services for your special occasions with special menu options.",
-    image: specialImg,
-  },
+  { title: "Wedding", image: weddingImg },
+  { title: "Birthday", image: birthdayImg },
+  { title: "Corporate Event", image: corporateImg },
+  { title: "Family Gathering", image: familyImg },
 ];
 
-const Events = ({ isLoggedIn, setActiveForm, startBookingFlow }) => {
-  const handleBookNow = () => {
-    startBookingFlow();
-  };
-
+const Events = ({ handleEventSelection }) => {
   return (
-    <section id="events" className="bg-pink-100 py-16">
-      <div className="container mx-auto px-4 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-10">Events We Cater</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <section id="events" className="py-16 bg-pink-50 dark:bg-gray-800 transition-colors duration-300">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 transition-colors duration-300">Events We Cater</h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto transition-colors duration-300">We provide exceptional catering for a wide variety of special occasions.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {events.map((event, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-lg overflow-hidden shadow hover:shadow-md transition"
-            >
+            <div key={index} className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col border dark:border-gray-700">
               <img src={event.image} alt={event.title} className="w-full h-48 object-cover" />
-              <div className="p-4 text-left">
-                <h3 className="text-lg font-semibold text-gray-800 mb-1">{event.title}</h3>
-                <p className="text-sm text-gray-600 mb-3">{event.description}</p>
-                <button 
-                  onClick={handleBookNow}
-                  className="text-sm text-white bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded"
-                >
-                  Book Now
-                </button>
+              <div className="p-4 flex flex-col flex-grow text-center">
+                <h3 className="font-bold text-gray-800 dark:text-white mb-3 text-lg transition-colors duration-300">{event.title}</h3>
+                <div className="mt-auto">
+                  <button 
+                    onClick={() => handleEventSelection(event.title)} 
+                    className="bg-pink-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-gray-600 w-full py-2 rounded font-bold hover:bg-pink-600 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white transition-colors duration-300"
+                  >
+                    Book Now
+                  </button>
+                </div>
               </div>
             </div>
           ))}
