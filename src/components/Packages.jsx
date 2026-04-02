@@ -71,7 +71,14 @@ const Packages = ({ isLoggedIn, setActiveForm, startBookingFlow, isOpen, onClose
               </div>
 
               <button 
-                onClick={() => startBookingFlow()}
+                // CRITICAL FIX: It now checks if you are logged in, then directly passes the package data!
+                onClick={() => {
+                  if (isLoggedIn) {
+                    onConfirmBooking(pkg, pkg.features);
+                  } else {
+                    startBookingFlow();
+                  }
+                }}
                 className={`w-full py-3 rounded-xl font-bold transition shadow-sm ${
                   pkg.popular 
                     ? 'bg-pink-600 text-white hover:bg-pink-700' 
