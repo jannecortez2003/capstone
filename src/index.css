@@ -1,7 +1,19 @@
 @import "tailwindcss";
 
-html {
-    scroll-behavior: smooth;
+/* 1. Tell Tailwind v4 to enable manual Class-Based Dark Mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 2. Global Background and Text Colors */
+@layer base {
+  body {
+    @apply bg-white text-gray-900 transition-colors duration-300;
   }
   
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+}
 
+html {
+  scroll-behavior: smooth;
+}
