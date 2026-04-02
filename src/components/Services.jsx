@@ -21,26 +21,36 @@ const services = [
 
 const Services = () => {
   return (
-    <section id="services" className="py-16 bg-pink-100">
+    // Alternating background to dark:bg-gray-800 to separate it from the Hero section
+    <section id="services" className="py-16 bg-pink-100 dark:bg-gray-800 transition-colors duration-300">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-10 text-center">Our Services</h2>
+        {/* Added dark:text-white */}
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-10 text-center transition-colors duration-300">
+          Our Services
+        </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {services.map((service, index) => (
-            // Dashboard Card UI Style applied here
+            // Changed card bg to dark:bg-gray-900 and updated the border to dark:border-pink-500
             <div 
               key={index} 
-              className="bg-white rounded-xl shadow-sm hover:shadow-md p-6 flex items-center gap-4 transition border-l-4 border-pink-300"
+              className="bg-white dark:bg-gray-900 rounded-xl shadow-sm dark:shadow-gray-900 hover:shadow-md p-6 flex items-center gap-4 transition-all duration-300 border-l-4 border-pink-300 dark:border-pink-500"
             >
-              {/* Icon Container (Bubble) */}
-              <div className="bg-pink-50 p-3 rounded-full shrink-0">
+              {/* Changed icon bubble background to dark:bg-gray-800 */}
+              <div className="bg-pink-50 dark:bg-gray-800 p-3 rounded-full shrink-0 transition-colors duration-300">
                 {service.icon}
               </div>
               
               {/* Text Content */}
               <div>
-                <h3 className="text-lg font-bold text-gray-800">{service.title}</h3>
-                <p className="text-sm text-gray-600 mt-1 leading-snug">{service.description}</p>
+                {/* Updated Title Text */}
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 transition-colors duration-300">
+                  {service.title}
+                </h3>
+                {/* Updated Description Text */}
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-snug transition-colors duration-300">
+                  {service.description}
+                </p>
               </div>
             </div>
           ))}
