@@ -133,7 +133,7 @@ function App() {
       {!isAdminRoute && (
         <Navbar setActiveForm={setActiveForm} isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} onShowVerifyModal={handleShowVerifyModal} />
       )}
-      {!isAdminRoute && <ChatBot />}
+      {!isAdminRoute && isLoggedIn && user && user.role !== 'admin' && <ChatBot user={user} />}
 
       <Routes>
         <Route path="/auth" element={<Auth onLogin={handleAuthLogin} />} />
