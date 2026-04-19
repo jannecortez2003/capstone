@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'; // Added import
+import { getFirestore } from 'firebase/firestore'; // 1. MUST IMPORT THIS
 
 const firebaseConfig = {
   apiKey: "AIzaSyBkkFF0XhNZeWuDmOfEhsgdfX1VBG7WTas",
@@ -13,13 +13,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app); // Initialize Firestore
+const db = getFirestore(app); // 2. MUST INITIALIZE THIS
 
 // Create default admin account if it doesn't exist
 const createDefaultAdmin = async () => {
   try {
     const adminEmail = "admin@mommyrosal.com";
     const adminPassword = "Admin@123";
+    
     await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
     console.log("Default admin account created successfully");
   } catch (error) {
@@ -33,5 +34,6 @@ const createDefaultAdmin = async () => {
 
 createDefaultAdmin();
 
-export { auth, db }; // Export db here
+// 3. MUST EXPORT BOTH auth AND db HERE
+export { auth, db }; 
 export default app;
