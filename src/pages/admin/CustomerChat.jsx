@@ -91,12 +91,13 @@ const CustomerChat = () => {
                 onClick={() => setActiveChatId(c.id)}
                 className={`flex items-center gap-2 p-3 rounded cursor-pointer transition ${activeChatId === c.id ? "bg-pink-50 border-l-4 border-pink-600" : "hover:bg-gray-50"}`}
               >
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
-                  {c.customerName ? c.customerName.substring(0, 2).toUpperCase() : 'G'}
+                <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center font-bold text-pink-700">
+                  {c.customerName ? c.customerName.substring(0, 2).toUpperCase() : 'C'}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <div className="font-semibold text-sm">{c.customerName || "Guest User"}</div>
-                  <div className="text-xs text-gray-500 truncate">{c.lastMessage}</div>
+                  <div className="font-semibold text-sm">{c.customerName || "Customer"}</div>
+                  {/* Show email if available, otherwise show last message preview */}
+                  <div className="text-xs text-gray-500 truncate">{c.email || c.lastMessage}</div>
                 </div>
               </div>
             ))}
