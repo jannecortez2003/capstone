@@ -1,26 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaComments, FaTimes, FaPaperPlane, FaRobot } from 'react-icons/fa';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase'; // Adjust the import path if necessary
+import { db } from '../firebase'; 
 
-const ChatBot = () => {
+const ChatBot = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
-  const [sessionId, setSessionId] = useState("");
   const messagesEndRef = useRef(null);
 
-  // Initialize a unique session for the guest user
-  useEffect(() => {
-    let currentSession = localStorage.getItem('chatSessionId');
-    if (!currentSession) {
-      currentSession = `guest_${Date.now()}`;
-      localStorage.setItem('chatSessionId', currentSession);
-    }
-    setSessionId(currentSession);
-  }, []);
+  // 1. Create a permanent session ID based on the user's actual database ID
+  const sessionId = `user_${user?.id}`;
+  const customerName = user?.fullName || user?.username || "Customer";
 
-  // Listen for real-time messages from Firestore
+  // 2. Listen for real-time messages from Firestore
   useEffect(() => {
     if (!sessionId) return;
     
@@ -28,16 +21,20 @@ const ChatBot = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      // If no messages exist yet, show a welcome message
+      // If no messages exist yet, show a personalized welcome message
       if (fetchedMessages.length === 0) {
-        setMessages([{ id: 1, text: "Hello! Welcome to Mommy Rosal's Catering. 👋 How can I help you today?", sender: 'bot' }]);
+        setMessages([{ 
+          id: 1, 
+          text: `Hello ${customerName}! Welcome to Mommy Rosal's Catering. 👋 How can I help you today?`, 
+          sender: 'bot' 
+        }]);
       } else {
         setMessages(fetchedMessages);
       }
     });
 
     return () => unsubscribe();
-  }, [sessionId]);
+  }, [sessionId, customerName]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -52,14 +49,15 @@ const ChatBot = () => {
     setInputMessage(""); // Clear input
 
     try {
-      // 1. Ensure the parent Chat Document exists (so admin can see the conversation list)
+      // 3. Save the main Chat Document with the REAL user's details
       await setDoc(doc(db, "chats", sessionId), {
-        customerName: "Website Guest",
+        customerName: customerName,
+        email: user?.email || "",
         lastMessage: textToSend,
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
-      // 2. Save message to subcollection
+      // 4. Save message to subcollection
       await addDoc(collection(db, `chats/${sessionId}/messages`), {
         text: textToSend,
         sender: 'user',
@@ -105,7 +103,6 @@ const ChatBot = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* New Input Form */}
           <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-gray-100 flex gap-2">
             <input
               type="text"
