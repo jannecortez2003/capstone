@@ -13,3 +13,5 @@ app.post('/book_event', (req, res) => {
     return res.json({ success: true, message: "Event booking successful!", booking_id: result.insertId });
   });
 });
+
+export default PaymentTracking;
