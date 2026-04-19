@@ -16,7 +16,7 @@ import Inventory from './pages/admin/Inventory';
 import MenuItems from './pages/admin/MenuItems';
 import CustomerChat from './pages/admin/CustomerChat';
 import StaffPage from './pages/admin/StaffPage';
-import { PaymentTracking } from './pages/admin/PaymentTracking';
+import PaymentTracking from './pages/admin/PaymentTracking';
 import Reports from './pages/admin/Reports';
 import Packages from './components/Packages';
 import VerificationRequests from './pages/admin/VerificationRequests';
