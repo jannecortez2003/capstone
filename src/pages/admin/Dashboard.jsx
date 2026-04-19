@@ -36,24 +36,15 @@ const Dashboard = () => {
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
     
-    // Get today's actual local date
-    const today = new Date();
-    
     const days = [];
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="p-2 text-center text-transparent">0</div>);
     }
     
     for (let day = 1; day <= daysInMonth; day++) {
-      // Create a safely padded local date string (e.g., "2026-04-19") instead of using toISOString()
-      const paddedMonth = String(month + 1).padStart(2, '0');
-      const paddedDay = String(day).padStart(2, '0');
-      const dateStr = `${year}-${paddedMonth}-${paddedDay}`;
-      
+      const dateStr = new Date(year, month, day).toISOString().split('T')[0];
       const hasEvent = upcomingEvents.some(e => e.preferred_date && e.preferred_date.startsWith(dateStr));
-      
-      // Compare year, month, and day directly in local time to avoid timezone shifts
-      const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+      const isToday = new Date().toISOString().split('T')[0] === dateStr;
 
       days.push(
         <div key={day} className={`p-2 text-center text-sm rounded-full mx-auto w-8 h-8 flex items-center justify-center font-medium transition-colors
