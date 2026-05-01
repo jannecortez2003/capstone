@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaCheckCircle, FaListAlt } from "react-icons/fa";
-import Modal, { SuccessModal } from '../../components/Modal'; 
+import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen } from "react-icons/fa";
+import Modal, { SuccessModal } from '../../components/Modal';
 
 const BookingRequests = () => {
-    // ... [KEEP ALL YOUR STATE AND FETCH LOGIC EXACTLY THE SAME] ...
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
-    const [selectedBooking, setSelectedBooking] = useState(null); 
-    const [actionDetails, setActionDetails] = useState(null); 
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const [actionDetails, setActionDetails] = useState(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+
+    // --- NEW: RECONCILIATION STATE ---
+    const [showReconcileModal, setShowReconcileModal] = useState(false);
+    const [reconcileBooking, setReconcileBooking] = useState(null);
+    const [damagedItems, setDamagedItems] = useState({});
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -33,6 +37,7 @@ const BookingRequests = () => {
 
     useEffect(() => { fetchBookings(); }, []);
 
+    // Standard Status Update (Approve / Reject)
     const handleStatusUpdate = async () => {
         if (!actionDetails) return;
         setLoading(true);
@@ -54,12 +59,46 @@ const BookingRequests = () => {
         finally { setLoading(false); }
     };
 
+    // --- NEW: RECONCILIATION SUBMIT LOGIC ---
+    const handleReconciliationSubmit = async () => {
+        if (!reconcileBooking) return;
+        setLoading(true);
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${apiUrl}/admin_reconcile_booking`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    bookingId: reconcileBooking.id, 
+                    damagedItems: damagedItems 
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                await fetchBookings();
+                setShowReconcileModal(false);
+                setReconcileBooking(null);
+                setDamagedItems({});
+                setSuccessMessage(data.message);
+                setShowSuccessModal(true);
+            }
+        } catch (err) { alert("Reconciliation failed"); }
+        finally { setLoading(false); }
+    };
+
+    const handleDamagedInputChange = (itemName, value) => {
+        setDamagedItems(prev => ({
+            ...prev,
+            [itemName]: value
+        }));
+    };
+
     const getStatusBadgeClass = (status) => {
         switch (status) {
             case 'Confirmed': return 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400';
             case 'Completed': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400';
             case 'Cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400';
-            default: return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400'; 
+            default: return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400';
         }
     };
 
@@ -76,7 +115,6 @@ const BookingRequests = () => {
                         <div className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-300">Pending Requests</div>
                     </div>
                 </div>
-
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-green-300 transition-colors duration-300">
                     <div className="bg-green-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300"><FaCheckCircle className="text-green-500 text-2xl" /></div>
                     <div>
@@ -84,7 +122,6 @@ const BookingRequests = () => {
                         <div className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-300">Confirmed Events</div>
                     </div>
                 </div>
-
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-blue-300 transition-colors duration-300">
                     <div className="bg-blue-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300"><FaCalendarAlt className="text-blue-500 text-2xl" /></div>
                     <div>
@@ -136,9 +173,17 @@ const BookingRequests = () => {
                                                 </button>
                                             </>
                                         )}
+                                        {/* NEW: TRIGGER RECONCILIATION MODAL INSTEAD OF DIRECT UPDATE */}
                                         {b.status === 'Confirmed' && (
-                                            <button onClick={() => { setActionDetails({id: b.id, newStatus: 'Completed', customerName: b.customer_name}); setShowStatusModal(true); }} className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400 px-3 py-1 rounded text-xs font-bold hover:bg-purple-200 transition">
-                                                COMPLETE
+                                            <button 
+                                                onClick={() => { 
+                                                    setReconcileBooking(b); 
+                                                    setDamagedItems({}); // clear old data
+                                                    setShowReconcileModal(true); 
+                                                }} 
+                                                className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400 px-3 py-1 rounded text-xs font-bold hover:bg-purple-200 transition"
+                                            >
+                                                COMPLETE & RECONCILE
                                             </button>
                                         )}
                                     </td>
@@ -151,7 +196,7 @@ const BookingRequests = () => {
                 </div>
             </div>
 
-            {/* Note: In Modal component, you should add dark mode classes to the modal box itself if you haven't yet! */}
+            {/* View Details Modal */}
             {selectedBooking && (
                 <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title="Booking Details">
                     <div className="space-y-4">
@@ -163,11 +208,11 @@ const BookingRequests = () => {
                             <p className="col-span-2"><strong>Dishes:</strong> {selectedBooking.selected_dishes || 'None selected'}</p>
                         </div>
                         <div>
-                            <p className="font-bold text-gray-700 dark:text-gray-300">Inventory Needed:</p>
+                            <p className="font-bold text-gray-700 dark:text-gray-300">Inventory Allocated:</p>
                             <div className="grid grid-cols-2 gap-1 text-xs text-gray-500 dark:text-gray-400 mt-2">
                                 {selectedBooking.required_inventory ? 
-                                    selectedBooking.required_inventory.split('; ').map((item, i) => <span key={i}>• {item}</span>) 
-                                    : <i className="text-gray-400">Standard catering setup</i>
+                                     selectedBooking.required_inventory.split('; ').map((item, i) => <span key={i}>• {item}</span>)
+                                     : <i className="text-gray-400">Standard catering setup</i>
                                 }
                             </div>
                         </div>
@@ -176,18 +221,71 @@ const BookingRequests = () => {
                 </Modal>
             )}
 
+            {/* Basic Status Modal */}
             {showStatusModal && (
                 <Modal isOpen={showStatusModal} onClose={() => setShowStatusModal(false)} title="Confirm Status Change">
                     <div className="p-4 text-center text-gray-800 dark:text-gray-200">
-                        <p className="mb-6">Change status for <strong>{actionDetails.customerName}</strong> to <strong>{actionDetails.newStatus}</strong>?</p>
+                        <p className="mb-6">Approve booking for <strong>{actionDetails.customerName}</strong>?</p>
+                        <p className="text-xs text-orange-500 mb-6 font-bold flex items-center justify-center gap-2">
+                            <FaBoxOpen /> Note: This will automatically deduct required inventory from the warehouse.
+                        </p>
                         <div className="flex justify-center gap-4">
-                            <button onClick={() => setShowStatusModal(false)} className="px-6 py-2 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition">No</button>
-                            <button onClick={handleStatusUpdate} className="px-6 py-2 bg-pink-600 text-white rounded hover:bg-pink-700 transition">Yes, Confirm</button>
+                            <button onClick={() => setShowStatusModal(false)} className="px-6 py-2 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
+                            <button onClick={handleStatusUpdate} className="px-6 py-2 bg-pink-600 text-white rounded hover:bg-pink-700 transition">Yes, Approve</button>
                         </div>
                     </div>
                 </Modal>
             )}
-            
+
+            {/* NEW: RECONCILIATION MODAL */}
+            {showReconcileModal && reconcileBooking && (
+                <Modal isOpen={showReconcileModal} onClose={() => setShowReconcileModal(false)} title="Post-Event Reconciliation">
+                    <div className="p-2 text-gray-800 dark:text-gray-200">
+                        <p className="text-sm mb-4">
+                            Please record any damaged or missing inventory for <strong>{reconcileBooking.customer_name}'s</strong> event. 
+                            The remaining items will be automatically returned to the warehouse.
+                        </p>
+                        
+                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-60 overflow-y-auto border dark:border-gray-700">
+                            {reconcileBooking.required_inventory ? (
+                                <div className="space-y-3">
+                                    {reconcileBooking.required_inventory.split('; ').map((itemStr, i) => {
+                                        const [itemName, allocatedQty] = itemStr.split(': ');
+                                        return (
+                                            <div key={i} className="flex justify-between items-center border-b dark:border-gray-700 pb-2">
+                                                <div>
+                                                    <p className="font-bold text-sm">{itemName}</p>
+                                                    <p className="text-xs text-gray-500">Allocated: {allocatedQty}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <label className="text-xs text-red-500 font-bold">Lost/Broken:</label>
+                                                    <input 
+                                                        type="number" 
+                                                        min="0" 
+                                                        max={allocatedQty}
+                                                        placeholder="0"
+                                                        value={damagedItems[itemName] || ''}
+                                                        onChange={(e) => handleDamagedInputChange(itemName, e.target.value)}
+                                                        className="w-16 p-1 border dark:border-gray-600 bg-white dark:bg-gray-800 rounded text-center focus:ring-2 focus:ring-pink-500 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-500 italic">No specific inventory was allocated.</p>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button onClick={() => setShowReconcileModal(false)} className="px-4 py-2 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
+                            <button onClick={handleReconciliationSubmit} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-bold transition">Reconcile & Complete</button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
             <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} message={successMessage} />
         </div>
     );

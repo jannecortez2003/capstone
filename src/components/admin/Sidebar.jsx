@@ -19,11 +19,11 @@ const Sidebar = () => {
     { path: '/admin/inventory', icon: <FaBox />, label: 'Inventory' },
     { path: '/admin/menu-items', icon: <FaUtensils />, label: 'Menu Items' },
     { path: '/admin/customer-chat', icon: <FaComments />, label: 'Chat' },
-    { path: '/admin/staff', icon: <FaUsers />, label: 'Staff' },
-    { path: '/admin/accounts', icon: <FaIdBadge />, label: 'Accounts' }, 
+    { path: '/admin/staff', icon: <FaUsers />, label: 'Staff' }, 
     { path: '/admin/payment-tracking', icon: <FaMoneyBillWave />, label: 'Payments' },
     { path: '/admin/reports', icon: <FaChartBar />, label: 'Reports' },
     { path: '/admin/verification', icon: <FaUserCheck />, label: 'Verification' },
+    { path: '/admin/accounts', icon: <FaIdBadge />, label: 'Accounts' },
     { path: '/admin/activity-logs', icon: <FaHistory />, label: 'Activity Logs' },
   ];
 

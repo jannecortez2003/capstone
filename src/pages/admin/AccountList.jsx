@@ -23,44 +23,52 @@ const AccountList = () => {
       <h1 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white transition-colors duration-300">Account Directory</h1>
       <p className="text-gray-500 dark:text-gray-400 mb-8 transition-colors duration-300">Manage all registered client accounts.</p>
       
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
-              <tr>
-                <th className="p-4 text-left">User</th>
-                <th className="p-4 text-left">Email</th>
-                <th className="p-4 text-left">Status</th>
-                <th className="p-4 text-left">Joined</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
-                <tr><td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400">Loading accounts...</td></tr>
-              ) : users.length === 0 ? (
-                <tr><td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400">No accounts found.</td></tr>
-              ) : (
-                users.map((u) => (
-                  <tr key={u.id} className="hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-300">
-                    <td className="p-4 font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <FaUserCircle className="text-gray-400 text-xl" /> {u.username}
-                    </td>
-                    <td className="p-4 text-gray-600 dark:text-gray-300">{u.email}</td>
-                    <td className="p-4">
-                        {u.is_verified ? 
-                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 w-max"><FaCheckCircle/> Verified</span> : 
-                            <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 w-max"><FaTimesCircle/> Unverified</span>
-                        }
-                    </td>
-                    <td className="p-4 text-gray-600 dark:text-gray-300">{new Date(u.created_at).toLocaleDateString()}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors duration-300">
+        {loading ? (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-10">Loading accounts...</div>
+        ) : users.length === 0 ? (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-10">No accounts found.</div>
+        ) : (
+            <div className="space-y-6">
+                {users.map((u, idx) => (
+                    <div key={u.id} className="flex gap-4">
+                        {/* Icon and Timeline Line */}
+                        <div className="flex flex-col items-center">
+                            <div className="bg-blue-50 dark:bg-gray-700 text-blue-500 p-3 rounded-full shadow-sm z-10 transition-colors duration-300">
+                                <FaUserCircle className="text-xl" />
+                            </div>
+                            {idx !== users.length - 1 && <div className="w-0.5 h-full bg-gray-200 dark:bg-gray-700 mt-2 transition-colors duration-300"></div>}
+                        </div>
+                        
+                        {/* Content Area */}
+                        <div className="pt-2 pb-6 flex-1">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                                <div>
+                                    <p className="font-bold text-gray-800 dark:text-white text-lg transition-colors duration-300">{u.username}</p>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 transition-colors duration-300">{u.email}</p>
+                                </div>
+                                <div>
+                                    {u.is_verified ? 
+                                        <span className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-max transition-colors duration-300">
+                                            <FaCheckCircle/> Verified
+                                        </span> : 
+                                        <span className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-max transition-colors duration-300">
+                                            <FaTimesCircle/> Unverified
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <span className="text-xs text-gray-400 dark:text-gray-500 mt-3 block transition-colors duration-300">
+                                Joined: {new Date(u.created_at).toLocaleDateString()}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
       </div>
     </div>
   );
 };
+
 export default AccountList;
