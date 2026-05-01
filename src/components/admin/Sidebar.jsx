@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, FaBars, FaTimes, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, FaBars, FaTimes, FaSignOutAlt, FaIdBadge, FaHistory } from 'react-icons/fa';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -20,9 +20,11 @@ const Sidebar = () => {
     { path: '/admin/menu-items', icon: <FaUtensils />, label: 'Menu Items' },
     { path: '/admin/customer-chat', icon: <FaComments />, label: 'Chat' },
     { path: '/admin/staff', icon: <FaUsers />, label: 'Staff' },
+    { path: '/admin/accounts', icon: <FaIdBadge />, label: 'Accounts' }, 
     { path: '/admin/payment-tracking', icon: <FaMoneyBillWave />, label: 'Payments' },
     { path: '/admin/reports', icon: <FaChartBar />, label: 'Reports' },
     { path: '/admin/verification', icon: <FaUserCheck />, label: 'Verification' },
+    { path: '/admin/activity-logs', icon: <FaHistory />, label: 'Activity Logs' },
   ];
 
   return (
@@ -83,7 +85,6 @@ const Sidebar = () => {
             </Link>
           ))}
         </div>
-
         <div className="border-t border-pink-500 dark:border-gray-800 bg-pink-700 dark:bg-gray-900 transition-colors duration-300">
           <button onClick={handleLogout} className="w-full flex items-center gap-4 px-6 py-5 hover:bg-pink-800 dark:hover:bg-gray-800 text-white dark:text-gray-300 font-bold transition">
             <span className="text-xl"><FaSignOutAlt /></span>
