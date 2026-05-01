@@ -4,7 +4,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Modal, { SuccessModal } from './components/Modal'; 
 import EventFormModal from './components/EventFormModal';
-import DishSelectionModal from './components/DishSelectionModal'; // <-- RESTORED
+import DishSelectionModal from './components/DishSelectionModal';
 import Services from './components/Services';
 import Events from './components/Events';
 import Contact from './components/Contact';
@@ -23,6 +23,10 @@ import VerificationRequests from './pages/admin/VerificationRequests';
 import AppointmentStatus from './components/AppointmentStatus';
 import VerifyForm from './components/VerifyForm';
 
+// ADDED NEW IMPORTS
+import AccountList from './pages/admin/AccountList';
+import ActivityLogs from './pages/admin/ActivityLogs';
+
 import ChatBot from './components/ChatBot'; 
 import Auth from './pages/Auth'; 
 import UserProfile from './pages/UserProfile';
@@ -36,9 +40,8 @@ function App() {
   const [activeForm, setActiveForm] = useState(null);
   const [user, setUser] = useState(null);
   
-  // Modal States
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [showDishModal, setShowDishModal] = useState(false); // <-- RESTORED
+  const [showDishModal, setShowDishModal] = useState(false); 
   const [showEventFormModal, setShowEventFormModal] = useState(false); 
   const [selectedPackageForBooking, setSelectedPackageForBooking] = useState(null); 
   const [finalSelectedDishes, setFinalSelectedDishes] = useState([]); 
@@ -107,7 +110,6 @@ function App() {
     document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // RESTORED FIX: Opens the Dish Modal first instead of the Event Form
   const handlePackageSelection = (pkg) => {
     if (!isLoggedIn) {
       navigate('/auth');
@@ -119,7 +121,6 @@ function App() {
     }
   };
 
-  // RESTORED FIX: Handles transitioning from Dish Selection to Event Form
   const handleDishSelectionConfirm = (dishes) => {
     setFinalSelectedDishes(dishes);
     setShowDishModal(false);
@@ -157,9 +158,12 @@ function App() {
           <Route path="menu-items" element={<MenuItems />} />
           <Route path="customer-chat" element={<CustomerChat />} />
           <Route path="staff" element={<StaffPage />} />
+          {/* ADDED ROUTES */}
+          <Route path="accounts" element={<AccountList />} />
           <Route path="payment-tracking" element={<PaymentTracking />} />
           <Route path="reports" element={<Reports />} />
           <Route path="verification" element={<VerificationRequests />} />
+          <Route path="activity-logs" element={<ActivityLogs />} />
         </Route>
       </Routes>
 
@@ -172,7 +176,6 @@ function App() {
         </div>
       )}
 
-      {/* RESTORED: Dish Selection Modal */}
       <DishSelectionModal 
         isOpen={showDishModal} 
         onClose={() => setShowDishModal(false)} 
