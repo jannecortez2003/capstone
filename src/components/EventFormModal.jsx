@@ -199,4 +199,4 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
   );
 };
 
-export default EventFormModal;
+export default EventFormModal;  

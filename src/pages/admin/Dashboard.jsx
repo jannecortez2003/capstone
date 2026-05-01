@@ -23,7 +23,6 @@ const Dashboard = () => {
       });
   }, []);
 
-  // Quick Calendar Logic
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
@@ -36,15 +35,23 @@ const Dashboard = () => {
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
     
+    // FIX: Get true local today date
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
     const days = [];
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="p-2 text-center text-transparent">0</div>);
     }
     
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = new Date(year, month, day).toISOString().split('T')[0];
+      // FIX: Build date string locally to prevent UTC timezone shifts
+      const m = String(month + 1).padStart(2, '0');
+      const d = String(day).padStart(2, '0');
+      const dateStr = `${year}-${m}-${d}`;
+      
       const hasEvent = upcomingEvents.some(e => e.preferred_date && e.preferred_date.startsWith(dateStr));
-      const isToday = new Date().toISOString().split('T')[0] === dateStr;
+      const isToday = todayStr === dateStr;
 
       days.push(
         <div key={day} className={`p-2 text-center text-sm rounded-full mx-auto w-8 h-8 flex items-center justify-center font-medium transition-colors
@@ -64,7 +71,6 @@ const Dashboard = () => {
     <div className="fade-in transition-colors duration-300">
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 transition-colors duration-300">Dashboard Overview</h1>
       
-      {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-pink-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
@@ -82,7 +88,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase transition-colors duration-300">Total Revenue</h3>
-              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">₱{parseFloat(stats.revenue || 0).toLocaleString()}</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">₱ {parseFloat(stats.revenue || 0).toLocaleString()}</div>
             </div>
             <div className="bg-green-100 dark:bg-gray-700 p-3 rounded-full text-green-600 dark:text-green-400 transition-colors duration-300">
               <FaMoneyBillWave className="text-xl" />
@@ -115,10 +121,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Grid for Table and Quick Calendar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Upcoming Events Table */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300 h-fit">
           <div className="p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
             <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Upcoming Events (Next 5)</h2>
@@ -141,7 +144,10 @@ const Dashboard = () => {
                 ) : (
                   upcomingEvents.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                      <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">{new Date(event.preferred_date).toLocaleDateString()}</td>
+                      {/* FIX: Appended T00:00:00 to prevent the date from shifting forward 1 day */}
+                      <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">
+                        {new Date(event.preferred_date + 'T00:00:00').toLocaleDateString()}
+                      </td>
                       <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.event_type}</td>
                       <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.guest_count}</td>
                       <td className="p-4">
@@ -161,7 +167,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Quick Calendar */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-300 h-fit">
           <div className="flex justify-between items-center mb-4">
             <button onClick={handlePrevMonth} className="text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 transition"><FaChevronLeft /></button>
@@ -186,7 +191,6 @@ const Dashboard = () => {
             <span>Dates with booked events</span>
           </div>
         </div>
-
       </div>
     </div>
   );
