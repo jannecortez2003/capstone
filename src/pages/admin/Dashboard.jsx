@@ -35,7 +35,7 @@ const Dashboard = () => {
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
     
-    // Get true local today date
+    // FIX: Build today's date safely in local time
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -45,7 +45,7 @@ const Dashboard = () => {
     }
     
     for (let day = 1; day <= daysInMonth; day++) {
-      // Build date string locally to prevent UTC timezone shifts
+      // FIX: Manually build the YYYY-MM-DD string to bypass UTC shifting
       const m = String(month + 1).padStart(2, '0');
       const d = String(day).padStart(2, '0');
       const dateStr = `${year}-${m}-${d}`;
@@ -124,7 +124,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300 h-fit">
           <div className="p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
-            <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Upcoming Events (Next 5)</h2>
+            <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Upcoming Events</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -144,6 +144,7 @@ const Dashboard = () => {
                 ) : (
                   upcomingEvents.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                      {/* FIX: Force local time mapping so the table lists exact dates without shifting */}
                       <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">
                         {new Date(event.preferred_date + 'T00:00:00').toLocaleDateString()}
                       </td>
