@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight, FaSun, FaMoon } from 'react-icons/fa';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({ bookings: 0, revenue: 0, menuItems: 0, customers: 0 });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // ADDED DARK MODE LOGIC HERE
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [theme]);
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_dashboard_stats`)
@@ -25,7 +38,6 @@ const Dashboard = () => {
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
-
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
@@ -35,7 +47,6 @@ const Dashboard = () => {
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
     
-    // FIX: Build today's date safely in local time
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -45,7 +56,6 @@ const Dashboard = () => {
     }
     
     for (let day = 1; day <= daysInMonth; day++) {
-      // FIX: Manually build the YYYY-MM-DD string to bypass UTC shifting
       const m = String(month + 1).padStart(2, '0');
       const d = String(day).padStart(2, '0');
       const dateStr = `${year}-${m}-${d}`;
@@ -69,7 +79,13 @@ const Dashboard = () => {
 
   return (
     <div className="fade-in transition-colors duration-300">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 transition-colors duration-300">Dashboard Overview</h1>
+      {/* ADDED DARK MODE BUTTON TO HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300">Dashboard Overview</h1>
+        <button onClick={toggleTheme} className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 p-3 rounded-full shadow-sm hover:text-pink-600 dark:hover:text-pink-400 transition border dark:border-gray-700">
+          {theme === 'dark' ? <FaSun className="text-xl" /> : <FaMoon className="text-xl" />}
+        </button>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-pink-500 transition-colors duration-300">
@@ -144,7 +160,6 @@ const Dashboard = () => {
                 ) : (
                   upcomingEvents.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                      {/* FIX: Force local time mapping so the table lists exact dates without shifting */}
                       <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">
                         {new Date(event.preferred_date + 'T00:00:00').toLocaleDateString()}
                       </td>
