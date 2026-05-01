@@ -21,7 +21,7 @@ const Contact = () => {
               </div>
               <div>
                 <h4 className="font-bold text-gray-800 dark:text-white text-lg transition-colors duration-300">Our Location</h4>
-                <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">Blk 5 Lot 16 Brgy Pob 2<br />GMA, Cavite</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">Batangas St, Brgy Casile 4024 <br />Binan, Laguna</p>
               </div>
             </div>
 
@@ -31,7 +31,7 @@ const Contact = () => {
               </div>
               <div>
                 <h4 className="font-bold text-gray-800 dark:text-white text-lg transition-colors duration-300">Phone Number</h4>
-                <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">0916 557 7925</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">0998-925-9338</p>
               </div>
             </div>
 
@@ -41,7 +41,7 @@ const Contact = () => {
               </div>
               <div>
                 <h4 className="font-bold text-gray-800 dark:text-white text-lg transition-colors duration-300">Email Address</h4>
-                <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">jannecloyde21@gmail.com</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-1 transition-colors duration-300">laurencetenido1@gmail.com</p>
               </div>
             </div>
 
