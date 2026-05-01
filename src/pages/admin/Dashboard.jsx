@@ -35,7 +35,7 @@ const Dashboard = () => {
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
     
-    // FIX: Get true local today date
+    // Get true local today date
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -45,7 +45,7 @@ const Dashboard = () => {
     }
     
     for (let day = 1; day <= daysInMonth; day++) {
-      // FIX: Build date string locally to prevent UTC timezone shifts
+      // Build date string locally to prevent UTC timezone shifts
       const m = String(month + 1).padStart(2, '0');
       const d = String(day).padStart(2, '0');
       const dateStr = `${year}-${m}-${d}`;
@@ -144,7 +144,6 @@ const Dashboard = () => {
                 ) : (
                   upcomingEvents.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                      {/* FIX: Appended T00:00:00 to prevent the date from shifting forward 1 day */}
                       <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">
                         {new Date(event.preferred_date + 'T00:00:00').toLocaleDateString()}
                       </td>

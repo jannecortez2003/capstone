@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase"; 
-import { FaSun, FaMoon } from 'react-icons/fa'; // FIX: Imported Icons
+import { FaSun, FaMoon } from 'react-icons/fa';
 
 const CustomerChat = () => {
   const [conversations, setConversations] = useState([]);
@@ -10,8 +10,9 @@ const CustomerChat = () => {
   const [adminReply, setAdminReply] = useState("");
   const messagesEndRef = useRef(null);
 
-  // FIX: Added Dark Mode State and Logic
+  // Dark Mode State and Logic
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -24,6 +25,7 @@ const CustomerChat = () => {
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
+  // Fetch List of Active Conversations
   useEffect(() => {
     const q = query(collection(db, "chats"), orderBy("updatedAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -36,6 +38,7 @@ const CustomerChat = () => {
     return () => unsubscribe();
   }, []);
 
+  // Fetch Messages for the Selected Conversation
   useEffect(() => {
     if (!activeChatId) return;
     const q = query(collection(db, `chats/${activeChatId}/messages`), orderBy("createdAt", "asc"));
@@ -45,21 +48,26 @@ const CustomerChat = () => {
     return () => unsubscribe();
   }, [activeChatId]);
 
+  // Auto-scroll when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Handle Admin Sending a Reply
   const handleSendReply = async (e) => {
     e.preventDefault();
     if (!adminReply.trim() || !activeChatId) return;
+    
     const textToSend = adminReply;
     setAdminReply("");
+    
     try {
       await addDoc(collection(db, `chats/${activeChatId}/messages`), {
         text: textToSend,
         sender: "admin",
         createdAt: serverTimestamp()
       });
+      
       await setDoc(doc(db, "chats", activeChatId), {
         lastMessage: `Admin: ${textToSend}`,
         updatedAt: serverTimestamp()
@@ -72,10 +80,9 @@ const CustomerChat = () => {
   const activeChatDetails = conversations.find(c => c.id === activeChatId);
 
   return (
-    // FIX: Added dark mode transition classes
     <div className="p-6 h-[calc(100vh-2rem)] flex flex-col transition-colors duration-300">
       
-      {/* FIX: Header with Dark Mode Toggle */}
+      {/* Header with Dark Mode Toggle */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1 text-gray-800 dark:text-white transition-colors duration-300">Admin Panel</h1>
