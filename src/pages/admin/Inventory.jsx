@@ -84,7 +84,7 @@ const Inventory = () => {
         
         <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 p-4 m-4 rounded-r-md">
             <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                <strong>💡 Reminder:</strong> Inventory item names must be entirely unique. The system will automatically block and reject duplicate entries to prevent stock tracking errors.
+                <strong>💡 Reminder:</strong> The Inventory system will automatically block and reject duplicate names to prevent stock tracking errors.
             </p>
         </div>
 

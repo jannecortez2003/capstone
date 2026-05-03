@@ -90,7 +90,7 @@ const MenuItems = () => {
 
         <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-4 m-4 rounded-r-md">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>💡 Menu Rule:</strong> To avoid client confusion on the booking page, all dish names must be unique. Duplicate dish names will be rejected by the database.
+                <strong>💡 Menu Rule:</strong> To avoid client confusion on the booking page, Duplicate dish names will be rejected by the database.
             </p>
         </div>
 
