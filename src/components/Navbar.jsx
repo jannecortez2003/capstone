@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaCheckCircle, FaSun, FaMoon } from 'react-icons/fa'; // Added FaSun & FaMoon
+import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaCheckCircle, FaSun, FaMoon } from 'react-icons/fa';
 import NotificationBell from './NotificationBell';
 
 const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }) => {
@@ -8,10 +8,8 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
   const navigate = useNavigate();
 
   // === DARK MODE LOGIC ===
-  // Check local storage so the site remembers their preference!
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-  <NotificationBell />
-
+  
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -36,7 +34,6 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
   };
 
   return (
-    // Added dark:bg-gray-900 and dark:shadow-gray-800 to the nav wrapper
     <nav className="fixed w-full z-50 bg-white dark:bg-gray-900 shadow-md dark:shadow-gray-800/50 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
@@ -66,6 +63,12 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
 
             {isLoggedIn ? (
               <div className="flex items-center space-x-4">
+                
+                {/* NEW: NOTIFICATION BELL */}
+                {user?.role !== 'admin' && user?.username !== 'admin' && (
+                  <NotificationBell />
+                )}
+
                 {!user?.verified && user?.role !== 'admin' && user?.username !== 'admin' && (
                   <button 
                     onClick={onShowVerifyModal}
@@ -74,6 +77,7 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
                     <FaCheckCircle /> Verify Account
                   </button>
                 )}
+                
                 <button 
                   onClick={() => handleNavigation('/profile')}
                   className="flex items-center gap-2 text-pink-600 dark:text-pink-400 font-bold hover:text-pink-700 transition"
@@ -100,7 +104,13 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
           {/* ========================================== */}
           {/* MOBILE HAMBURGER ICON                        */}
           {/* ========================================== */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center gap-4">
+            
+            {/* Mobile Notification Bell (Show if logged in and not admin) */}
+            {isLoggedIn && user?.role !== 'admin' && user?.username !== 'admin' && (
+                <NotificationBell />
+            )}
+
             <button onClick={() => setIsOpen(!isOpen)} className="text-gray-700 dark:text-gray-200 hover:text-pink-600 focus:outline-none text-2xl">
               {isOpen ? <FaTimes /> : <FaBars />}
             </button>
