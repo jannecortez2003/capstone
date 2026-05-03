@@ -130,11 +130,21 @@ const CustomerChat = () => {
         },
         { merge: true }
       );
+
+      // --- NEW: Trigger MySQL Notification for the Customer ---
+      if (activeChatDetails?.userId) {
+          await fetch(`${import.meta.env.VITE_API_URL}/notify_chat_message`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: activeChatDetails.userId })
+          });
+      }
+
     } catch (error) {
       console.error("Error sending reply:", error);
     }
   };
-
+  
   return (
     <div className="p-2 md:p-6 h-[100vh] flex flex-col transition-colors duration-300">
       <div className="mb-4 md:mb-6">

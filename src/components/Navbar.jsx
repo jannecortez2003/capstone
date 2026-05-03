@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaCheckCircle, FaSun, FaMoon } from 'react-icons/fa'; // Added FaSun & FaMoon
+import NotificationBell from './NotificationBell';
 
 const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,6 +10,7 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
   // === DARK MODE LOGIC ===
   // Check local storage so the site remembers their preference!
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  <NotificationBell />
 
   useEffect(() => {
     if (theme === 'dark') {
