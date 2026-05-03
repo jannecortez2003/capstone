@@ -5,14 +5,12 @@ const NotificationBell = () => {
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     
-    // Get user from localStorage (assuming you store it as 'user')
     const userString = localStorage.getItem('user');
     const user = userString ? JSON.parse(userString) : null;
 
     useEffect(() => {
         if (!user) return;
         
-        // Fetch notifications every 10 seconds
         const fetchNotifs = async () => {
             try {
                 const res = await fetch(`${import.meta.env.VITE_API_URL}/fetch_notifications?userId=${user.id}`);
@@ -35,7 +33,6 @@ const NotificationBell = () => {
     const handleOpen = async () => {
         setIsOpen(!isOpen);
         
-        // If opening and there are unread notifications, mark them as read in the database
         if (!isOpen && unreadCount > 0) {
             try {
                 await fetch(`${import.meta.env.VITE_API_URL}/mark_notifications_read`, {
@@ -44,7 +41,6 @@ const NotificationBell = () => {
                     body: JSON.stringify({ userId: user.id })
                 });
                 
-                // Locally update state so badge clears immediately
                 setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
             } catch (err) {
                 console.error("Error marking as read", err);
@@ -52,11 +48,10 @@ const NotificationBell = () => {
         }
     };
 
-    if (!user) return null; // Don't show bell if not logged in
+    if (!user) return null; 
 
     return (
         <div className="relative">
-            {/* Bell Icon */}
             <button 
                 onClick={handleOpen}
                 className="relative p-2 text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition"
@@ -69,7 +64,6 @@ const NotificationBell = () => {
                 )}
             </button>
 
-            {/* Dropdown Menu */}
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
                     <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
@@ -80,7 +74,16 @@ const NotificationBell = () => {
                             <div className="p-4 text-center text-sm text-gray-500">No notifications yet.</div>
                         ) : (
                             notifications.map(notif => (
-                                <div key={notif.id} className={`p-4 border-b border-gray-50 dark:border-gray-700/50 text-sm ${notif.is_read ? 'opacity-70' : 'bg-pink-50/50 dark:bg-pink-900/10'}`}>
+                                <div 
+                                    key={notif.id} 
+                                    onClick={() => {
+                                        if (notif.message.toLowerCase().includes('message')) {
+                                            window.dispatchEvent(new Event('open-chat'));
+                                            setIsOpen(false);
+                                        }
+                                    }}
+                                    className={`p-4 border-b border-gray-50 dark:border-gray-700/50 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition ${notif.is_read ? 'opacity-70' : 'bg-pink-50/50 dark:bg-pink-900/10'}`}
+                                >
                                     <p className="text-gray-800 dark:text-gray-200">{notif.message}</p>
                                     <p className="text-xs text-gray-400 mt-1">{new Date(notif.created_at).toLocaleString()}</p>
                                 </div>

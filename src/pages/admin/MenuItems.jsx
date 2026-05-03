@@ -3,7 +3,6 @@ import { FaPlus, FaUtensils, FaCoffee, FaIceCream, FaHamburger } from "react-ico
 import Modal from '../../components/Modal';
 
 const MenuItems = () => {
-  // ... [KEEP ALL YOUR STATE AND FETCH LOGIC EXACTLY THE SAME] ...
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,8 +32,16 @@ const MenuItems = () => {
     e.preventDefault();
     const url = editingItem ? `${import.meta.env.VITE_API_URL}/admin_update_menu` : `${import.meta.env.VITE_API_URL}/admin_add_menu`;
     try {
-      await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingItem ? { ...formData, id: editingItem.id } : formData) });
-      setShowModal(false); setEditingItem(null); fetchMenu();
+      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingItem ? { ...formData, id: editingItem.id } : formData) });
+      const data = await res.json();
+      
+      if (data.success) {
+          setShowModal(false); 
+          setEditingItem(null); 
+          fetchMenu();
+      } else {
+          alert(`⚠️ Warning: ${data.message}`);
+      }
     } catch (err) { console.error(err); }
   };
 
@@ -80,6 +87,13 @@ const MenuItems = () => {
             <FaPlus /> ADD DISH
           </button>
         </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-4 m-4 rounded-r-md">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>💡 Menu Rule:</strong> To avoid client confusion on the booking page, all dish names must be unique. Duplicate dish names will be rejected by the database.
+            </p>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
@@ -142,4 +156,5 @@ const MenuItems = () => {
     </div>
   );
 };
+
 export default MenuItems;

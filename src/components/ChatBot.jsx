@@ -12,7 +12,6 @@ import {
   getDoc
 } from "firebase/firestore";
 import { db } from "../firebase";
-
 import {
   getDatabase,
   ref,
@@ -32,7 +31,6 @@ const ChatBot = ({ user }) => {
   const userId = user?.id ? user.id.toString() : "guest_" + Math.floor(Math.random() * 10000);
   const userName = user?.fullName || user?.username || "Guest";
 
-  // SET CUSTOMER ONLINE STATUS
   useEffect(() => {
     if (!isOpen) return;
 
@@ -57,7 +55,6 @@ const ChatBot = ({ user }) => {
     };
   }, [isOpen, userId]);
 
-  // LISTEN TO ADMIN STATUS
   useEffect(() => {
     const rtdb = getDatabase();
     const adminStatusRef = ref(rtdb, `/status/admin`);
@@ -73,7 +70,6 @@ const ChatBot = ({ user }) => {
     return () => unsubscribe();
   }, []);
 
-  // INITIALIZE CHAT DOC & LOAD MESSAGES
   useEffect(() => {
     if (!isOpen) return;
 
@@ -107,6 +103,12 @@ const ChatBot = ({ user }) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const handleOpenChat = () => setIsOpen(true);
+    window.addEventListener('open-chat', handleOpenChat);
+    return () => window.removeEventListener('open-chat', handleOpenChat);
+  }, []);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -147,7 +149,6 @@ const ChatBot = ({ user }) => {
       {isOpen && (
         <div className="fixed bottom-24 right-6 w-80 md:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 transition-colors duration-300">
           
-          {/* Header */}
           <div className="bg-pink-600 text-white p-4 flex justify-between items-center">
             <div>
               <h3 className="font-bold">Live Support</h3>
@@ -161,7 +162,6 @@ const ChatBot = ({ user }) => {
             </button>
           </div>
 
-          {/* Messages */}
           <div className="h-80 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900/50 space-y-3 transition-colors duration-300">
             {messages.length === 0 && (
               <div className="text-center text-gray-500 dark:text-gray-400 text-sm mt-10">
@@ -183,7 +183,6 @@ const ChatBot = ({ user }) => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
           <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 transition-colors duration-300">
             <form onSubmit={handleSend} className="flex gap-2">
               <input

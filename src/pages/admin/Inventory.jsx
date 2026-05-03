@@ -3,7 +3,6 @@ import { FaBox, FaPlus, FaExclamationTriangle } from "react-icons/fa";
 import Modal from '../../components/Modal';
 
 const Inventory = () => {
-  // ... [KEEP ALL YOUR STATE AND FETCH LOGIC EXACTLY THE SAME] ...
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -29,8 +28,16 @@ const Inventory = () => {
     e.preventDefault();
     const url = editingItem ? `${import.meta.env.VITE_API_URL}/admin_update_inventory` : `${import.meta.env.VITE_API_URL}/admin_add_inventory`;
     try {
-      await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingItem ? { ...formData, id: editingItem.id } : formData) });
-      fetchInventory(); setShowModal(false); setEditingItem(null);
+      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingItem ? { ...formData, id: editingItem.id } : formData) });
+      const data = await res.json();
+      
+      if (data.success) {
+          fetchInventory(); 
+          setShowModal(false); 
+          setEditingItem(null);
+      } else {
+          alert(`⚠️ Warning: ${data.message}`);
+      }
     } catch (err) { console.error("Error saving item:", err); }
   };
 
@@ -74,6 +81,13 @@ const Inventory = () => {
                 <FaPlus /> ADD ITEM
             </button>
         </div>
+        
+        <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 p-4 m-4 rounded-r-md">
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                <strong>💡 Reminder:</strong> Inventory item names must be entirely unique. The system will automatically block and reject duplicate entries to prevent stock tracking errors.
+            </p>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
@@ -118,18 +132,18 @@ const Inventory = () => {
             <div>
                 <label className="block text-sm font-medium mb-1">Item Name</label>
                 <input type="text" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" 
-                    value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                     value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium mb-1">Quantity</label>
                     <input type="number" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" 
-                        value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} required />
+                         value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} required />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1">Unit</label>
                     <input type="text" placeholder="pcs, packs" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors placeholder-gray-400" 
-                        value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} required />
+                         value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} required />
                 </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
