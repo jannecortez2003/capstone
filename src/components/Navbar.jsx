@@ -58,7 +58,7 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
               className="text-gray-500 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 transition text-xl ml-2"
               title="Toggle Dark Mode"
             >
-              {theme === 'dark' ? <FaSun /> : <FaMoon />}
+              {theme === 'dark' ? <FaSun className="text-yellow-400" /> : <FaMoon />}
             </button>
 
             {isLoggedIn ? (
@@ -102,10 +102,19 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
           </div>
 
           {/* ========================================== */}
-          {/* MOBILE HAMBURGER ICON                        */}
+          {/* MOBILE HAMBURGER ICON & TOGGLES              */}
           {/* ========================================== */}
           <div className="md:hidden flex items-center gap-4">
             
+            {/* 🔥 FIXED: MOBILE DARK MODE TOGGLE (ALWAYS VISIBLE) 🔥 */}
+            <button 
+              onClick={toggleTheme} 
+              className="text-gray-500 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 transition text-xl"
+              title="Toggle Dark Mode"
+            >
+              {theme === 'dark' ? <FaSun className="text-yellow-400" /> : <FaMoon />}
+            </button>
+
             {/* Mobile Notification Bell (Show if logged in and not admin) */}
             {isLoggedIn && user?.role !== 'admin' && user?.username !== 'admin' && (
                 <NotificationBell />
@@ -131,14 +140,6 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
             
             <div className="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-3">
               
-              {/* 🔥 MOBILE DARK MODE TOGGLE 🔥 */}
-              <button 
-                onClick={toggleTheme} 
-                className="flex justify-center items-center gap-2 w-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-4 py-3 rounded-md font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-              >
-                {theme === 'dark' ? <><FaSun className="text-yellow-400"/> Light Mode</> : <><FaMoon className="text-gray-600"/> Dark Mode</>}
-              </button>
-
               {isLoggedIn ? (
                 <>
                   {!user?.verified && user?.role !== 'admin' && user?.username !== 'admin' && (
