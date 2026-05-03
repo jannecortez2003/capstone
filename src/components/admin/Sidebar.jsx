@@ -1,129 +1,99 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-    FaHome, FaCalendarCheck, FaBoxes, FaUtensils, 
-    FaComments, FaUsers, FaMoneyBillWave, FaChartBar, 
-    FaBars, FaTimes, FaMoon, FaSun, FaUserCheck, FaUserShield, FaHistory
-} from 'react-icons/fa';
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, FaBars, FaTimes, FaSignOutAlt, FaIdBadge, FaHistory } from 'react-icons/fa';
 
 const Sidebar = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    const location = useLocation();
-    const navigate = useNavigate();
+  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
 
-    // --- DARK MODE LOGIC ---
-    const [darkMode, setDarkMode] = useState(
-        localStorage.getItem('theme') === 'dark' ||
-        (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
-    );
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('isLoggedIn');
+    window.location.href = '/'; 
+  };
 
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    }, [darkMode]);
+  const navItems = [
+    { path: '/admin', icon: <FaHome />, label: 'Dashboard' },
+    { path: '/admin/booking-requests', icon: <FaCalendarAlt />, label: 'Bookings' },
+    { path: '/admin/inventory', icon: <FaBox />, label: 'Inventory' },
+    { path: '/admin/menu-items', icon: <FaUtensils />, label: 'Menu Items' },
+    { path: '/admin/customer-chat', icon: <FaComments />, label: 'Chat' },
+    { path: '/admin/staff', icon: <FaUsers />, label: 'Staff' }, 
+    { path: '/admin/payment-tracking', icon: <FaMoneyBillWave />, label: 'Payments' },
+    { path: '/admin/reports', icon: <FaChartBar />, label: 'Reports' },
+    { path: '/admin/verification', icon: <FaUserCheck />, label: 'Verification' },
+    { path: '/admin/accounts', icon: <FaIdBadge />, label: 'Accounts' },
+    { path: '/admin/activity-logs', icon: <FaHistory />, label: 'Activity Logs' },
+  ];
 
-    const toggleTheme = () => setDarkMode(!darkMode);
-    // -----------------------
+  return (
+    <>
+      {/* MOBILE VIEW */}
+      <div className="md:hidden fixed top-0 left-0 w-full bg-pink-600 dark:bg-gray-900 text-white z-50 shadow-md transition-colors duration-300 border-b dark:border-gray-800">
+        <div className="flex justify-between items-center p-4">
+          <h1 className="font-bold text-xl tracking-wider">ADMIN PANEL</h1>
+          <button onClick={() => setIsOpen(!isOpen)} className="text-2xl focus:outline-none hover:text-pink-200 dark:hover:text-pink-400 transition">
+            {isOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        </div>
+        
+        {isOpen && (
+          <div className="bg-pink-700 dark:bg-gray-900 w-full absolute top-full left-0 flex flex-col shadow-2xl max-h-[80vh] overflow-y-auto border-t border-pink-500 dark:border-gray-800 pb-2 transition-colors duration-300">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-4 p-4 border-b border-pink-600/50 dark:border-gray-800 transition ${
+                  location.pathname === item.path 
+                    ? 'bg-pink-800 dark:bg-gray-800 font-bold border-l-4 border-white dark:border-pink-500 text-white' 
+                    : 'hover:bg-pink-800 dark:hover:bg-gray-800 text-pink-100 dark:text-gray-300'
+                }`}
+              >
+                <span className="text-xl">{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            ))}
+            <button onClick={handleLogout} className="flex items-center gap-4 p-4 mt-2 border-t-2 border-pink-900 dark:border-gray-800 bg-pink-800 dark:bg-gray-900 hover:bg-pink-900 dark:hover:bg-gray-800 text-white font-bold transition w-full text-left">
+              <span className="text-xl"><FaSignOutAlt /></span>
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
+      </div>
 
-    const handleLogout = () => {
-        localStorage.removeItem('adminUser');
-        localStorage.removeItem('isLoggedIn');
-        navigate('/');
-    };
-
-    const navItems = [
-        { path: '/admin', icon: FaHome, label: 'Dashboard' },
-        { path: '/admin/booking-requests', icon: FaCalendarCheck, label: 'Bookings' },
-        { path: '/admin/inventory', icon: FaBoxes, label: 'Inventory' },
-        { path: '/admin/menu-items', icon: FaUtensils, label: 'Menu Items' },
-        { path: '/admin/customer-chat', icon: FaComments, label: 'Messages' },
-        { path: '/admin/staff', icon: FaUsers, label: 'Staff' },
-        { path: '/admin/accounts', icon: FaUserShield, label: 'Accounts' },
-        { path: '/admin/payment-tracking', icon: FaMoneyBillWave, label: 'Payments' },
-        { path: '/admin/reports', icon: FaChartBar, label: 'Reports' },
-        { path: '/admin/verification', icon: FaUserCheck, label: 'Verifications' },
-        { path: '/admin/activity-logs', icon: FaHistory, label: 'Activity Logs' }
-    ];
-
-    return (
-        <>
-            {/* Mobile Header Bar */}
-            <div className="md:hidden bg-gray-900 text-white flex justify-between items-center p-4 fixed top-0 w-full z-50 shadow-md">
-                <span className="text-xl font-bold text-pink-500">Admin Panel</span>
-                
-                <div className="flex items-center space-x-4">
-                    {/* MOBILE DARK MODE TOGGLE */}
-                    <button onClick={toggleTheme} className="text-gray-300 hover:text-white p-2 transition">
-                        {darkMode ? <FaSun className="text-xl" /> : <FaMoon className="text-xl" />}
-                    </button>
-                    
-                    <button onClick={() => setIsOpen(!isOpen)} className="text-gray-300 hover:text-white focus:outline-none">
-                        {isOpen ? <FaTimes className="text-2xl" /> : <FaBars className="text-2xl" />}
-                    </button>
-                </div>
-            </div>
-
-            {/* Sidebar Overlay for Mobile */}
-            {isOpen && (
-                <div 
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-                    onClick={() => setIsOpen(false)}
-                ></div>
-            )}
-
-            {/* Sidebar Container */}
-            <div className={`fixed inset-y-0 left-0 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:inset-0 w-64 bg-gray-900 dark:bg-black text-white h-screen overflow-y-auto transition duration-200 ease-in-out z-50 flex flex-col pt-16 md:pt-0`}>
-                
-                {/* Desktop Header */}
-                <div className="hidden md:flex p-6 border-b border-gray-800 justify-between items-center">
-                    <h2 className="text-2xl font-bold text-pink-500">Admin Panel</h2>
-                    {/* Desktop Dark Mode Toggle */}
-                    <button onClick={toggleTheme} className="text-gray-400 hover:text-white transition">
-                        {darkMode ? <FaSun className="text-xl" /> : <FaMoon className="text-xl" />}
-                    </button>
-                </div>
-
-                {/* Nav Links */}
-                <nav className="flex-1 px-4 py-6 space-y-2">
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
-                        
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                onClick={() => setIsOpen(false)}
-                                className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                                    isActive 
-                                        ? 'bg-pink-600 text-white' 
-                                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                                }`}
-                            >
-                                <Icon className={`text-lg mr-3 ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                                <span className="font-medium">{item.label}</span>
-                            </Link>
-                        );
-                    })}
-                </nav>
-
-                {/* Logout Button */}
-                <div className="p-4 border-t border-gray-800">
-                    <button 
-                        onClick={handleLogout}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold transition"
-                    >
-                        Logout
-                    </button>
-                </div>
-            </div>
-        </>
-    );
+      {/* DESKTOP VIEW */}
+      <div className="hidden md:flex flex-col w-64 bg-pink-600 dark:bg-gray-900 h-screen fixed top-0 left-0 text-white shadow-xl z-40 transition-colors duration-300 border-r dark:border-gray-800">
+        <div className="p-6 text-center font-bold text-2xl border-b border-pink-500 dark:border-gray-800 tracking-widest mt-4 transition-colors duration-300 text-white">
+          ADMIN
+        </div>
+        
+        <div className="flex-1 overflow-y-auto py-4">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-4 px-6 py-4 transition ${
+                location.pathname === item.path 
+                  ? 'bg-pink-800 dark:bg-gray-800 border-l-4 border-white dark:border-pink-500 font-bold text-white' 
+                  : 'hover:bg-pink-700 dark:hover:bg-gray-800 text-pink-50 dark:text-gray-400'
+              }`}
+            >
+              <span className="text-xl">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+        <div className="border-t border-pink-500 dark:border-gray-800 bg-pink-700 dark:bg-gray-900 transition-colors duration-300">
+          <button onClick={handleLogout} className="w-full flex items-center gap-4 px-6 py-5 hover:bg-pink-800 dark:hover:bg-gray-800 text-white dark:text-gray-300 font-bold transition">
+            <span className="text-xl"><FaSignOutAlt /></span>
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
 };
 
 export default Sidebar;
