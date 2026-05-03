@@ -196,69 +196,119 @@ const BookingRequests = () => {
                 </div>
             </div>
 
-            {/* View Details Modal */}
+            {/* --- MODERN TIMELINE VIEW MODAL --- */}
             {selectedBooking && (
-                <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title="Booking Details">
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm border-b dark:border-gray-700 pb-4 text-gray-800 dark:text-gray-200">
-                            <p><strong>Customer:</strong> {selectedBooking.customer_name}</p>
-                            <p><strong>Event Type:</strong> {selectedBooking.event_type}</p>
-                            <p><strong>Guests:</strong> {selectedBooking.guest_count}</p>
-                            <p><strong>Package:</strong> {selectedBooking.package_type}</p>
-                            <p className="col-span-2"><strong>Dishes:</strong> {selectedBooking.selected_dishes || 'None selected'}</p>
+                <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title="Booking Overview" size="max-w-2xl">
+                    <div className="px-2 py-4">
+                        {/* Customer Header */}
+                        <div className="mb-8 text-center">
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedBooking.customer_name}</h3>
+                            <p className="text-gray-500 dark:text-gray-400">{selectedBooking.customer_email}</p>
+                            <span className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase ${getStatusBadgeClass(selectedBooking.status)}`}>
+                                Status: {selectedBooking.status}
+                            </span>
                         </div>
-                        <div>
-                            <p className="font-bold text-gray-700 dark:text-gray-300">Inventory Allocated:</p>
-                            <div className="grid grid-cols-2 gap-1 text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                {selectedBooking.required_inventory ? 
-                                     selectedBooking.required_inventory.split('; ').map((item, i) => <span key={i}>• {item}</span>)
-                                     : <i className="text-gray-400">Standard catering setup</i>
-                                }
+
+                        {/* Vertical Timeline */}
+                        <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-4 space-y-8 pb-4">
+                            
+                            {/* Step 1: Event Details */}
+                            <div className="relative pl-6">
+                                <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-blue-500 border-4 border-white dark:border-gray-800"></span>
+                                <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">1. Event Specifics</h4>
+                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border dark:border-gray-700 grid grid-cols-3 gap-4">
+                                    <div><p className="text-xs text-gray-500 uppercase font-bold">Date</p><p className="font-semibold dark:text-gray-200">{selectedBooking.preferred_date}</p></div>
+                                    <div><p className="text-xs text-gray-500 uppercase font-bold">Type</p><p className="font-semibold dark:text-gray-200">{selectedBooking.event_type}</p></div>
+                                    <div><p className="text-xs text-gray-500 uppercase font-bold">Guests</p><p className="font-semibold dark:text-gray-200">{selectedBooking.guest_count} Pax</p></div>
+                                </div>
                             </div>
+
+                            {/* Step 2: Package & Menu */}
+                            <div className="relative pl-6">
+                                <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-pink-500 border-4 border-white dark:border-gray-800"></span>
+                                <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">2. Package & Menu</h4>
+                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border dark:border-gray-700">
+                                    <p className="font-black text-pink-600 dark:text-pink-400 mb-3">{selectedBooking.package_type}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedBooking.selected_dishes ? 
+                                            selectedBooking.selected_dishes.split('; ').map((dish, i) => (
+                                                <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-3 py-1 rounded-md text-xs font-medium dark:text-gray-300 shadow-sm">{dish}</span>
+                                            ))
+                                        : <span className="text-gray-400 italic text-sm">No dishes selected.</span>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Step 3: Auto-Allocated Inventory */}
+                            <div className="relative pl-6">
+                                <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-purple-500 border-4 border-white dark:border-gray-800"></span>
+                                <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">3. Auto-Allocated Inventory</h4>
+                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border dark:border-gray-700">
+                                    {selectedBooking.required_inventory ? (
+                                        <ul className="grid grid-cols-2 gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            {selectedBooking.required_inventory.split('; ').map((item, i) => (
+                                                <li key={i} className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-pink-500"></div> {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-gray-400 italic text-sm">Standard setup applies. No specific inventory recorded.</p>
+                                    )}
+                                </div>
+                            </div>
+
                         </div>
-                        <button onClick={() => setSelectedBooking(null)} className="w-full bg-gray-800 dark:bg-gray-700 text-white py-2 rounded mt-4 hover:bg-gray-700 dark:hover:bg-gray-600 transition">Close</button>
+
+                        <button onClick={() => setSelectedBooking(null)} className="w-full mt-4 bg-gray-800 dark:bg-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-md">
+                            Close Timeline
+                        </button>
                     </div>
                 </Modal>
             )}
 
-            {/* Basic Status Modal */}
+            {/* Basic Status Modal Modernized */}
             {showStatusModal && (
                 <Modal isOpen={showStatusModal} onClose={() => setShowStatusModal(false)} title="Confirm Status Change">
                     <div className="p-4 text-center text-gray-800 dark:text-gray-200">
-                        <p className="mb-6">Approve booking for <strong>{actionDetails.customerName}</strong>?</p>
-                        <p className="text-xs text-orange-500 mb-6 font-bold flex items-center justify-center gap-2">
-                            <FaBoxOpen /> Note: This will automatically deduct required inventory from the warehouse.
-                        </p>
+                        <p className="mb-6 text-lg">Approve booking for <strong className="text-pink-600 dark:text-pink-400">{actionDetails.customerName}</strong>?</p>
+                        
+                        <div className="bg-orange-50 dark:bg-orange-900/30 p-4 rounded-xl mb-6 border border-orange-100 dark:border-orange-800/50">
+                            <p className="text-sm text-orange-600 dark:text-orange-400 font-bold flex items-center justify-center gap-2">
+                                <FaBoxOpen className="text-xl" /> Note: This will automatically deduct required inventory from the warehouse.
+                            </p>
+                        </div>
+
                         <div className="flex justify-center gap-4">
-                            <button onClick={() => setShowStatusModal(false)} className="px-6 py-2 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
-                            <button onClick={handleStatusUpdate} className="px-6 py-2 bg-pink-600 text-white rounded hover:bg-pink-700 transition">Yes, Approve</button>
+                            <button onClick={() => setShowStatusModal(false)} className="px-6 py-3 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
+                            <button onClick={handleStatusUpdate} className="px-6 py-3 bg-pink-600 text-white rounded-xl font-bold hover:bg-pink-700 transition shadow-md">Yes, Approve Event</button>
                         </div>
                     </div>
                 </Modal>
             )}
 
-            {/* NEW: RECONCILIATION MODAL */}
+            {/* NEW: RECONCILIATION MODAL MODERNIZED */}
             {showReconcileModal && reconcileBooking && (
                 <Modal isOpen={showReconcileModal} onClose={() => setShowReconcileModal(false)} title="Post-Event Reconciliation">
                     <div className="p-2 text-gray-800 dark:text-gray-200">
-                        <p className="text-sm mb-4">
-                            Please record any damaged or missing inventory for <strong>{reconcileBooking.customer_name}'s</strong> event. 
+                        <p className="text-sm mb-4 text-gray-600 dark:text-gray-400">
+                            Please record any damaged or missing inventory for <strong className="text-gray-900 dark:text-white">{reconcileBooking.customer_name}'s</strong> event. 
                             The remaining items will be automatically returned to the warehouse.
                         </p>
                         
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-60 overflow-y-auto border dark:border-gray-700">
+                        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 max-h-60 overflow-y-auto border dark:border-gray-700 custom-scrollbar">
                             {reconcileBooking.required_inventory ? (
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {reconcileBooking.required_inventory.split('; ').map((itemStr, i) => {
                                         const [itemName, allocatedQty] = itemStr.split(': ');
                                         return (
-                                            <div key={i} className="flex justify-between items-center border-b dark:border-gray-700 pb-2">
+                                            <div key={i} className="flex justify-between items-center border-b dark:border-gray-700 pb-3 last:border-0 last:pb-0">
                                                 <div>
-                                                    <p className="font-bold text-sm">{itemName}</p>
-                                                    <p className="text-xs text-gray-500">Allocated: {allocatedQty}</p>
+                                                    <p className="font-bold text-gray-800 dark:text-gray-200">{itemName}</p>
+                                                    <p className="text-xs text-gray-500 font-medium">Allocated: {allocatedQty}</p>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <label className="text-xs text-red-500 font-bold">Lost/Broken:</label>
+                                                <div className="flex items-center gap-3">
+                                                    <label className="text-xs text-red-500 font-bold uppercase tracking-wider">Lost/Broken:</label>
                                                     <input 
                                                         type="number" 
                                                         min="0" 
@@ -266,7 +316,7 @@ const BookingRequests = () => {
                                                         placeholder="0"
                                                         value={damagedItems[itemName] || ''}
                                                         onChange={(e) => handleDamagedInputChange(itemName, e.target.value)}
-                                                        className="w-16 p-1 border dark:border-gray-600 bg-white dark:bg-gray-800 rounded text-center focus:ring-2 focus:ring-pink-500 outline-none"
+                                                        className="w-20 p-2 border dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-center font-bold focus:ring-2 focus:ring-pink-500 outline-none transition"
                                                     />
                                                 </div>
                                             </div>
@@ -274,13 +324,13 @@ const BookingRequests = () => {
                                     })}
                                 </div>
                             ) : (
-                                <p className="text-sm text-gray-500 italic">No specific inventory was allocated.</p>
+                                <p className="text-sm text-gray-500 italic text-center py-4">No specific inventory was allocated.</p>
                             )}
                         </div>
 
                         <div className="flex justify-end gap-3 mt-6">
-                            <button onClick={() => setShowReconcileModal(false)} className="px-4 py-2 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
-                            <button onClick={handleReconciliationSubmit} className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-bold transition">Reconcile & Complete</button>
+                            <button onClick={() => setShowReconcileModal(false)} className="px-5 py-2.5 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
+                            <button onClick={handleReconciliationSubmit} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-md transition">Reconcile & Complete</button>
                         </div>
                     </div>
                 </Modal>
