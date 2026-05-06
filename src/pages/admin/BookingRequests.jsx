@@ -17,7 +17,7 @@ const BookingRequests = () => {
     const [reconcileBooking, setReconcileBooking] = useState(null);
     const [damagedItems, setDamagedItems] = useState({});
 
-    // 🔥 NEW: TAB FILTER STATE 🔥
+    // 🔥 TAB FILTER STATE 🔥
     const [filter, setFilter] = useState('All');
 
     const fetchBookings = async () => {
@@ -40,7 +40,7 @@ const BookingRequests = () => {
 
     useEffect(() => { fetchBookings(); }, []);
 
-    // 🔥 BULLETPROOF DATE FORMATTER 🔥
+    // BULLETPROOF DATE FORMATTER
     const formatSafeDate = (dateVal) => {
         if (!dateVal) return "N/A";
         try {
@@ -57,7 +57,6 @@ const BookingRequests = () => {
         }
     };
 
-    // Standard Status Update (Approve / Reject)
     const handleStatusUpdate = async () => {
         if (!actionDetails) return;
         setLoading(true);
@@ -79,7 +78,6 @@ const BookingRequests = () => {
         finally { setLoading(false); }
     };
 
-    // --- RECONCILIATION SUBMIT LOGIC ---
     const handleReconciliationSubmit = async () => {
         if (!reconcileBooking) return;
         setLoading(true);
@@ -122,7 +120,6 @@ const BookingRequests = () => {
         }
     };
 
-    // 🔥 FILTER THE BOOKINGS FOR THE TABLE 🔥
     const filteredBookings = bookings.filter(b => {
         if (filter === 'All') return true;
         return b.status === filter;
@@ -133,6 +130,7 @@ const BookingRequests = () => {
             <h1 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white transition-colors duration-300">Booking Requests</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8 transition-colors duration-300">Manage client appointments and statuses.</p>
             
+            {/* STATS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-yellow-300 transition-colors duration-300">
                     <div className="bg-yellow-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300"><FaListAlt className="text-yellow-500 text-2xl" /></div>
@@ -159,7 +157,7 @@ const BookingRequests = () => {
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
                 
-                {/* 🔥 NEW: FILTER TABS 🔥 */}
+                {/* FILTER TABS */}
                 <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex space-x-2 overflow-x-auto">
                     {['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled'].map(status => (
                         <button
@@ -194,7 +192,6 @@ const BookingRequests = () => {
                                         <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">{b.customer_email}</div>
                                     </td>
                                     
-                                    {/* 🔥 APPLIED SAFE DATE HERE 🔥 */}
                                     <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">
                                         {formatSafeDate(b.preferred_date || b.event_date)}
                                     </td>
@@ -204,7 +201,7 @@ const BookingRequests = () => {
                                             {b.status}
                                         </span>
                                     </td>
-                                    <td className="p-4 flex justify-center gap-2">
+                                    <td className="p-4 flex flex-wrap justify-center gap-2">
                                         <button onClick={() => setSelectedBooking(b)} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition">
                                             VIEW
                                         </button>
@@ -223,7 +220,7 @@ const BookingRequests = () => {
                                             <button 
                                                 onClick={() => { 
                                                     setReconcileBooking(b); 
-                                                    setDamagedItems({}); // clear old data
+                                                    setDamagedItems({}); 
                                                     setShowReconcileModal(true); 
                                                 }} 
                                                 className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400 px-3 py-1 rounded text-xs font-bold hover:bg-purple-200 transition"
@@ -241,44 +238,53 @@ const BookingRequests = () => {
                 </div>
             </div>
 
-            {/* --- MODERN TIMELINE VIEW MODAL --- */}
+            {/* --- RESPONSIVE TIMELINE VIEW MODAL --- */}
             {selectedBooking && (
                 <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title="Booking Overview" size="max-w-2xl">
                     <div className="px-2 py-4">
                         {/* Customer Header */}
-                        <div className="mb-8 text-center">
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedBooking.customer_name}</h3>
-                            <p className="text-gray-500 dark:text-gray-400">{selectedBooking.customer_email}</p>
+                        <div className="mb-6 md:mb-8 text-center">
+                            <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">{selectedBooking.customer_name}</h3>
+                            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 break-words">{selectedBooking.customer_email}</p>
                             <span className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase ${getStatusBadgeClass(selectedBooking.status)}`}>
                                 Status: {selectedBooking.status}
                             </span>
                         </div>
 
                         {/* Vertical Timeline */}
-                        <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-4 space-y-8 pb-4">
+                        <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-4 space-y-6 md:space-y-8 pb-4">
                             
                             {/* Step 1: Event Details */}
-                            <div className="relative pl-6">
+                            <div className="relative pl-6 md:pl-8">
                                 <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-blue-500 border-4 border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">1. Event Specifics</h4>
-                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border dark:border-gray-700 grid grid-cols-3 gap-4">
-                                    {/* 🔥 APPLIED SAFE DATE HERE 🔥 */}
-                                    <div><p className="text-xs text-gray-500 uppercase font-bold">Date</p><p className="font-semibold dark:text-gray-200">{formatSafeDate(selectedBooking.preferred_date)}</p></div>
-                                    <div><p className="text-xs text-gray-500 uppercase font-bold">Type</p><p className="font-semibold dark:text-gray-200">{selectedBooking.event_type}</p></div>
-                                    <div><p className="text-xs text-gray-500 uppercase font-bold">Guests</p><p className="font-semibold dark:text-gray-200">{selectedBooking.guest_count} Pax</p></div>
+                                <h4 className="font-bold text-base md:text-lg text-gray-800 dark:text-white mb-2">1. Event Specifics</h4>
+                                {/* 🔥 RESPONSIVE GRID (1 column mobile, 3 columns desktop) 🔥 */}
+                                <div className="bg-gray-50 dark:bg-gray-900 p-3 md:p-4 rounded-xl border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-2 sm:pb-0">
+                                        <p className="text-xs text-gray-500 uppercase font-bold">Date</p>
+                                        <p className="font-semibold text-sm md:text-base dark:text-gray-200 break-words">{formatSafeDate(selectedBooking.preferred_date)}</p>
+                                    </div>
+                                    <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-2 sm:pb-0">
+                                        <p className="text-xs text-gray-500 uppercase font-bold">Type</p>
+                                        <p className="font-semibold text-sm md:text-base dark:text-gray-200 break-words">{selectedBooking.event_type}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase font-bold">Guests</p>
+                                        <p className="font-semibold text-sm md:text-base dark:text-gray-200">{selectedBooking.guest_count} Pax</p>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Step 2: Package & Menu */}
-                            <div className="relative pl-6">
+                            <div className="relative pl-6 md:pl-8">
                                 <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-pink-500 border-4 border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">2. Package & Menu</h4>
-                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border dark:border-gray-700">
-                                    <p className="font-black text-pink-600 dark:text-pink-400 mb-3">{selectedBooking.package_type}</p>
+                                <h4 className="font-bold text-base md:text-lg text-gray-800 dark:text-white mb-2">2. Package & Menu</h4>
+                                <div className="bg-gray-50 dark:bg-gray-900 p-3 md:p-4 rounded-xl border dark:border-gray-700">
+                                    <p className="font-black text-pink-600 dark:text-pink-400 mb-3 text-sm md:text-base">{selectedBooking.package_type}</p>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedBooking.selected_dishes ? 
                                             selectedBooking.selected_dishes.split('; ').map((dish, i) => (
-                                                <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-3 py-1 rounded-md text-xs font-medium dark:text-gray-300 shadow-sm">{dish}</span>
+                                                <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-2 md:px-3 py-1 rounded-md text-xs font-medium dark:text-gray-300 shadow-sm">{dish}</span>
                                             ))
                                         : <span className="text-gray-400 italic text-sm">No dishes selected.</span>}
                                     </div>
@@ -286,74 +292,79 @@ const BookingRequests = () => {
                             </div>
 
                             {/* Step 3: Auto-Allocated Inventory */}
-                            <div className="relative pl-6">
+                            <div className="relative pl-6 md:pl-8">
                                 <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-purple-500 border-4 border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">3. Auto-Allocated Inventory</h4>
-                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border dark:border-gray-700">
+                                <h4 className="font-bold text-base md:text-lg text-gray-800 dark:text-white mb-2">3. Auto-Allocated Inventory</h4>
+                                <div className="bg-gray-50 dark:bg-gray-900 p-3 md:p-4 rounded-xl border dark:border-gray-700">
                                     {selectedBooking.required_inventory ? (
-                                        <ul className="grid grid-cols-2 gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                        /* 🔥 RESPONSIVE GRID (1 col mobile, 2 cols desktop) 🔥 */
+                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm text-gray-700 dark:text-gray-300">
                                             {selectedBooking.required_inventory.split('; ').map((item, i) => (
                                                 <li key={i} className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-pink-500"></div> {item}
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0"></div> 
+                                                    <span className="break-words">{item}</span>
                                                 </li>
                                             ))}
                                         </ul>
                                     ) : (
-                                        <p className="text-gray-400 italic text-sm">Standard setup applies. No specific inventory recorded.</p>
+                                        <p className="text-gray-400 italic text-xs md:text-sm">Standard setup applies. No specific inventory recorded.</p>
                                     )}
                                 </div>
                             </div>
 
                         </div>
 
-                        <button onClick={() => setSelectedBooking(null)} className="w-full mt-4 bg-gray-800 dark:bg-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-md">
+                        <button onClick={() => setSelectedBooking(null)} className="w-full mt-6 bg-gray-800 dark:bg-gray-700 text-white font-bold py-3 md:py-4 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-md text-sm md:text-base">
                             Close Timeline
                         </button>
                     </div>
                 </Modal>
             )}
 
-            {/* Basic Status Modal Modernized */}
+            {/* RESPONSIVE STATUS MODAL */}
             {showStatusModal && (
                 <Modal isOpen={showStatusModal} onClose={() => setShowStatusModal(false)} title="Confirm Status Change">
-                    <div className="p-4 text-center text-gray-800 dark:text-gray-200">
-                        <p className="mb-6 text-lg">Approve booking for <strong className="text-pink-600 dark:text-pink-400">{actionDetails.customerName}</strong>?</p>
+                    <div className="p-2 md:p-4 text-center text-gray-800 dark:text-gray-200">
+                        <p className="mb-6 text-base md:text-lg">Approve booking for <strong className="text-pink-600 dark:text-pink-400 break-words">{actionDetails.customerName}</strong>?</p>
                         
-                        <div className="bg-orange-50 dark:bg-orange-900/30 p-4 rounded-xl mb-6 border border-orange-100 dark:border-orange-800/50">
-                            <p className="text-sm text-orange-600 dark:text-orange-400 font-bold flex items-center justify-center gap-2">
-                                <FaBoxOpen className="text-xl" /> Note: This will automatically deduct required inventory from the warehouse.
+                        <div className="bg-orange-50 dark:bg-orange-900/30 p-3 md:p-4 rounded-xl mb-6 border border-orange-100 dark:border-orange-800/50">
+                            <p className="text-xs md:text-sm text-orange-600 dark:text-orange-400 font-bold flex items-center justify-center gap-2 text-left md:text-center">
+                                <FaBoxOpen className="text-xl shrink-0" /> 
+                                <span>Note: This will automatically deduct required inventory from the warehouse.</span>
                             </p>
                         </div>
 
-                        <div className="flex justify-center gap-4">
-                            <button onClick={() => setShowStatusModal(false)} className="px-6 py-3 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
-                            <button onClick={handleStatusUpdate} className="px-6 py-3 bg-pink-600 text-white rounded-xl font-bold hover:bg-pink-700 transition shadow-md">Yes, Approve Event</button>
+                        {/* 🔥 FULL WIDTH BUTTONS ON MOBILE 🔥 */}
+                        <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4">
+                            <button onClick={() => setShowStatusModal(false)} className="w-full sm:w-auto px-6 py-3 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
+                            <button onClick={handleStatusUpdate} className="w-full sm:w-auto px-6 py-3 bg-pink-600 text-white rounded-xl font-bold hover:bg-pink-700 transition shadow-md">Yes, Approve Event</button>
                         </div>
                     </div>
                 </Modal>
             )}
 
-            {/* RECONCILIATION MODAL MODERNIZED */}
+            {/* RESPONSIVE RECONCILIATION MODAL */}
             {showReconcileModal && reconcileBooking && (
                 <Modal isOpen={showReconcileModal} onClose={() => setShowReconcileModal(false)} title="Post-Event Reconciliation">
                     <div className="p-2 text-gray-800 dark:text-gray-200">
-                        <p className="text-sm mb-4 text-gray-600 dark:text-gray-400">
-                            Please record any damaged or missing inventory for <strong className="text-gray-900 dark:text-white">{reconcileBooking.customer_name}'s</strong> event. 
+                        <p className="text-xs md:text-sm mb-4 text-gray-600 dark:text-gray-400">
+                            Please record any damaged or missing inventory for <strong className="text-gray-900 dark:text-white break-words">{reconcileBooking.customer_name}'s</strong> event. 
                             The remaining items will be automatically returned to the warehouse.
                         </p>
                         
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 max-h-60 overflow-y-auto border dark:border-gray-700 custom-scrollbar">
+                        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 md:p-4 max-h-60 overflow-y-auto border dark:border-gray-700 custom-scrollbar">
                             {reconcileBooking.required_inventory ? (
                                 <div className="space-y-4">
                                     {reconcileBooking.required_inventory.split('; ').map((itemStr, i) => {
                                         const [itemName, allocatedQty] = itemStr.split(': ');
                                         return (
-                                            <div key={i} className="flex justify-between items-center border-b dark:border-gray-700 pb-3 last:border-0 last:pb-0">
-                                                <div>
-                                                    <p className="font-bold text-gray-800 dark:text-gray-200">{itemName}</p>
+                                            /* 🔥 STACK INPUTS ON MOBILE 🔥 */
+                                            <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b dark:border-gray-700 pb-3 last:border-0 last:pb-0 gap-2 sm:gap-0">
+                                                <div className="w-full sm:w-auto">
+                                                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm md:text-base break-words">{itemName}</p>
                                                     <p className="text-xs text-gray-500 font-medium">Allocated: {allocatedQty}</p>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 bg-gray-100 dark:bg-gray-800 p-2 sm:p-0 rounded-lg sm:bg-transparent">
                                                     <label className="text-xs text-red-500 font-bold uppercase tracking-wider">Lost/Broken:</label>
                                                     <input 
                                                         type="number" 
@@ -362,7 +373,7 @@ const BookingRequests = () => {
                                                         placeholder="0"
                                                         value={damagedItems[itemName] || ''}
                                                         onChange={(e) => handleDamagedInputChange(itemName, e.target.value)}
-                                                        className="w-20 p-2 border dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-center font-bold focus:ring-2 focus:ring-pink-500 outline-none transition"
+                                                        className="w-16 md:w-20 p-2 border dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-center font-bold focus:ring-2 focus:ring-pink-500 outline-none transition text-sm md:text-base"
                                                     />
                                                 </div>
                                             </div>
@@ -374,9 +385,10 @@ const BookingRequests = () => {
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-3 mt-6">
-                            <button onClick={() => setShowReconcileModal(false)} className="px-5 py-2.5 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
-                            <button onClick={handleReconciliationSubmit} className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-md transition">Reconcile & Complete</button>
+                        {/* 🔥 FULL WIDTH BUTTONS ON MOBILE 🔥 */}
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                            <button onClick={() => setShowReconcileModal(false)} className="w-full sm:w-auto px-5 py-2.5 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
+                            <button onClick={handleReconciliationSubmit} className="w-full sm:w-auto px-5 py-2.5 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-md transition">Reconcile & Complete</button>
                         </div>
                     </div>
                 </Modal>
