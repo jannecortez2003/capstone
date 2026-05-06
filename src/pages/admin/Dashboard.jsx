@@ -180,7 +180,7 @@ const Dashboard = () => {
             <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Event Overview</h2>
             
             <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-              {['All', 'Pending', 'Confirmed', 'Cancelled'].map(status => (
+              {['All', 'Pending', 'Confirmed'].map(status => (
                 <button
                   key={status}
                   onClick={() => setFilter(status)}

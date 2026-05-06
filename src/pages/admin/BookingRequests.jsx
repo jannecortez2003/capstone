@@ -12,10 +12,13 @@ const BookingRequests = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
-    // --- NEW: RECONCILIATION STATE ---
+    // --- RECONCILIATION STATE ---
     const [showReconcileModal, setShowReconcileModal] = useState(false);
     const [reconcileBooking, setReconcileBooking] = useState(null);
     const [damagedItems, setDamagedItems] = useState({});
+
+    // 🔥 NEW: TAB FILTER STATE 🔥
+    const [filter, setFilter] = useState('All');
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -36,6 +39,23 @@ const BookingRequests = () => {
     };
 
     useEffect(() => { fetchBookings(); }, []);
+
+    // 🔥 BULLETPROOF DATE FORMATTER 🔥
+    const formatSafeDate = (dateVal) => {
+        if (!dateVal) return "N/A";
+        try {
+            let date = new Date(dateVal);
+            if (isNaN(date.getTime())) {
+                date = new Date(`${dateVal}T00:00:00`);
+            }
+            if (isNaN(date.getTime())) return "N/A"; 
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+        } catch(e) {
+            return "N/A";
+        }
+    };
 
     // Standard Status Update (Approve / Reject)
     const handleStatusUpdate = async () => {
@@ -59,7 +79,7 @@ const BookingRequests = () => {
         finally { setLoading(false); }
     };
 
-    // --- NEW: RECONCILIATION SUBMIT LOGIC ---
+    // --- RECONCILIATION SUBMIT LOGIC ---
     const handleReconciliationSubmit = async () => {
         if (!reconcileBooking) return;
         setLoading(true);
@@ -102,6 +122,12 @@ const BookingRequests = () => {
         }
     };
 
+    // 🔥 FILTER THE BOOKINGS FOR THE TABLE 🔥
+    const filteredBookings = bookings.filter(b => {
+        if (filter === 'All') return true;
+        return b.status === filter;
+    });
+
     return (
         <div className="p-6 transition-colors duration-300">
             <h1 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white transition-colors duration-300">Booking Requests</h1>
@@ -132,9 +158,24 @@ const BookingRequests = () => {
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
-                <div className="p-4 border-b dark:border-gray-700 transition-colors duration-300">
-                    <h2 className="font-bold text-gray-700 dark:text-white transition-colors duration-300">All Bookings</h2>
+                
+                {/* 🔥 NEW: FILTER TABS 🔥 */}
+                <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex space-x-2 overflow-x-auto">
+                    {['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled'].map(status => (
+                        <button
+                            key={status}
+                            onClick={() => setFilter(status)}
+                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 whitespace-nowrap ${
+                                filter === status
+                                ? 'bg-pink-600 text-white shadow-md'
+                                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                            }`}
+                        >
+                            {status}
+                        </button>
+                    ))}
                 </div>
+
                 <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                         <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
@@ -146,13 +187,18 @@ const BookingRequests = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                            {bookings.length > 0 ? bookings.map((b) => (
+                            {filteredBookings.length > 0 ? filteredBookings.map((b) => (
                                 <tr key={b.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
                                     <td className="p-4">
                                         <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300">{b.customer_name}</div>
                                         <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">{b.customer_email}</div>
                                     </td>
-                                    <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{b.preferred_date}</td>
+                                    
+                                    {/* 🔥 APPLIED SAFE DATE HERE 🔥 */}
+                                    <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">
+                                        {formatSafeDate(b.preferred_date || b.event_date)}
+                                    </td>
+                                    
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${getStatusBadgeClass(b.status)}`}>
                                             {b.status}
@@ -173,7 +219,6 @@ const BookingRequests = () => {
                                                 </button>
                                             </>
                                         )}
-                                        {/* NEW: TRIGGER RECONCILIATION MODAL INSTEAD OF DIRECT UPDATE */}
                                         {b.status === 'Confirmed' && (
                                             <button 
                                                 onClick={() => { 
@@ -189,7 +234,7 @@ const BookingRequests = () => {
                                     </td>
                                 </tr>
                             )) : (
-                                <tr><td colSpan="4" className="p-10 text-center text-gray-500 dark:text-gray-400 italic">No bookings found.</td></tr>
+                                <tr><td colSpan="4" className="p-10 text-center text-gray-500 dark:text-gray-400 italic">No {filter !== 'All' ? filter.toLowerCase() : ''} bookings found.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -217,7 +262,8 @@ const BookingRequests = () => {
                                 <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-blue-500 border-4 border-white dark:border-gray-800"></span>
                                 <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">1. Event Specifics</h4>
                                 <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border dark:border-gray-700 grid grid-cols-3 gap-4">
-                                    <div><p className="text-xs text-gray-500 uppercase font-bold">Date</p><p className="font-semibold dark:text-gray-200">{selectedBooking.preferred_date}</p></div>
+                                    {/* 🔥 APPLIED SAFE DATE HERE 🔥 */}
+                                    <div><p className="text-xs text-gray-500 uppercase font-bold">Date</p><p className="font-semibold dark:text-gray-200">{formatSafeDate(selectedBooking.preferred_date)}</p></div>
                                     <div><p className="text-xs text-gray-500 uppercase font-bold">Type</p><p className="font-semibold dark:text-gray-200">{selectedBooking.event_type}</p></div>
                                     <div><p className="text-xs text-gray-500 uppercase font-bold">Guests</p><p className="font-semibold dark:text-gray-200">{selectedBooking.guest_count} Pax</p></div>
                                 </div>
@@ -287,7 +333,7 @@ const BookingRequests = () => {
                 </Modal>
             )}
 
-            {/* NEW: RECONCILIATION MODAL MODERNIZED */}
+            {/* RECONCILIATION MODAL MODERNIZED */}
             {showReconcileModal && reconcileBooking && (
                 <Modal isOpen={showReconcileModal} onClose={() => setShowReconcileModal(false)} title="Post-Event Reconciliation">
                     <div className="p-2 text-gray-800 dark:text-gray-200">
