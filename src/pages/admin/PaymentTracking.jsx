@@ -174,15 +174,15 @@ const PaymentTracking = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
-                                    <select 
-                                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
-                                        value={formData.paymentType} 
-                                        onChange={e => setFormData({...formData, paymentType: e.target.value})}
-                                    >
-                                        <option value="Cash">Cash</option>
-                                        <option value="GCash">GCash</option>
-                                        <option value="Bank Transfer">Bank Transfer</option>
-                                    </select>
+                                      <select 
+                                          className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                          value={formData.paymentType} 
+                                          onChange={e => setFormData({...formData, paymentType: e.target.value})}
+                                      >
+                                          <option value="Cash">Cash</option>
+                                          <option value="GCash">GCash</option>
+                                          <option value="Bank Transfer">Bank Transfer</option>
+                                      </select>
                                 </div>
                             </div>
 
