@@ -76,7 +76,7 @@ const PaymentTracking = () => {
                 </div>
                 <button 
                     onClick={() => setIsModalOpen(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md"
+                    className="bg-pink-600 hover:bg-pink-700 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md"
                 >
                     <FaPlus /> Add Payment
                 </button>
@@ -118,7 +118,7 @@ const PaymentTracking = () => {
                                     <td className="p-4 text-sm font-bold text-gray-800 dark:text-white">{payment.customer_name}</td>
                                     <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{payment.event_type || 'N/A'}</td>
                                     <td className="p-4">
-                                        <span className="px-2.5 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 rounded-full text-xs font-bold">
+                                        <span className="px-2.5 py-1 bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400 rounded-full text-xs font-bold">
                                             {payment.payment_type}
                                         </span>
                                     </td>
@@ -139,7 +139,7 @@ const PaymentTracking = () => {
                     <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                <FaFileInvoiceDollar className="text-blue-500"/> Record Payment
+                                <FaFileInvoiceDollar className="text-pink-500"/> Record Payment
                             </h2>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-red-500 text-2xl font-bold">&times;</button>
                         </div>
@@ -149,7 +149,7 @@ const PaymentTracking = () => {
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Select Confirmed Booking</label>
                                 <select 
                                     required 
-                                    className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
                                     value={formData.appointmentId} 
                                     onChange={e => setFormData({...formData, appointmentId: e.target.value})}
                                 >
@@ -167,7 +167,7 @@ const PaymentTracking = () => {
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Amount (₱)</label>
                                     <input 
                                         type="number" required min="1"
-                                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
                                         value={formData.amount} 
                                         onChange={e => setFormData({...formData, amount: e.target.value})}
                                     />
@@ -175,7 +175,7 @@ const PaymentTracking = () => {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
                                     <select 
-                                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
                                         value={formData.paymentType} 
                                         onChange={e => setFormData({...formData, paymentType: e.target.value})}
                                     >
@@ -190,13 +190,13 @@ const PaymentTracking = () => {
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Remarks (Optional)</label>
                                 <input 
                                     type="text" placeholder="e.g. Downpayment, Final Balance"
-                                    className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
                                     value={formData.remarks} 
                                     onChange={e => setFormData({...formData, remarks: e.target.value})}
                                 />
                             </div>
 
-                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors mt-4">
+                            <button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition-colors mt-4">
                                 Confirm & Save Payment
                             </button>
                         </form>
