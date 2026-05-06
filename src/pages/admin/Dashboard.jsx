@@ -6,9 +6,12 @@ const Dashboard = () => {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // NEW: Tab Filter State
+  const [filter, setFilter] = useState('All');
 
-  // ADDED DARK MODE LOGIC HERE
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -18,6 +21,7 @@ const Dashboard = () => {
       localStorage.setItem('theme', 'light');
     }
   }, [theme]);
+  
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
@@ -36,21 +40,39 @@ const Dashboard = () => {
       });
   }, []);
 
-  // 🔥 SAFE DATE FORMATTER (Prevents "Invalid Date" bugs) 🔥
-  const formatSafeDate = (dateStr) => {
-    if (!dateStr) return "N/A";
-    // Adding T00:00:00 prevents timezone shifting bugs if it's just a YYYY-MM-DD string
-    const date = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`);
-    if (isNaN(date.getTime())) return "N/A"; 
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric', month: 'short', day: 'numeric'
-    });
+  // 🔥 BULLETPROOF DATE FORMATTER 🔥
+  const formatSafeDate = (dateVal) => {
+    if (!dateVal) return "N/A";
+    
+    try {
+        let date = new Date(dateVal);
+        
+        // If invalid, try forcing a valid string format by splitting and appending a timestamp
+        if (isNaN(date.getTime())) {
+            date = new Date(`${dateVal}T00:00:00`);
+        }
+        
+        // If STILL invalid, fallback gracefully
+        if (isNaN(date.getTime())) return "N/A"; 
+        
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
+    } catch(e) {
+        return "N/A";
+    }
   };
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+
+  // 🔥 Filter the events based on the selected tab 🔥
+  const filteredEvents = upcomingEvents.filter(event => {
+    if (filter === 'All') return true;
+    return event.status === filter;
+  });
 
   const renderCalendarDays = () => {
     const year = currentDate.getFullYear();
@@ -71,7 +93,10 @@ const Dashboard = () => {
       const d = String(day).padStart(2, '0');
       const dateStr = `${year}-${m}-${d}`;
       
-      const hasEvent = upcomingEvents.some(e => e.preferred_date && e.preferred_date.startsWith(dateStr));
+      // Events show on calendar if they are pending or confirmed
+      const hasEvent = upcomingEvents.some(e => 
+          e.preferred_date && e.preferred_date.startsWith(dateStr) && (e.status === 'Confirmed' || e.status === 'Pending')
+      );
       const isToday = todayStr === dateStr;
 
       days.push(
@@ -90,7 +115,6 @@ const Dashboard = () => {
 
   return (
     <div className="fade-in transition-colors duration-300">
-      {/* ADDED DARK MODE BUTTON TO HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300">Dashboard Overview</h1>
         <button onClick={toggleTheme} className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 p-3 rounded-full shadow-sm hover:text-pink-600 dark:hover:text-pink-400 transition border dark:border-gray-700">
@@ -150,40 +174,57 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300 h-fit">
-          <div className="p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
-            <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Upcoming Events</h2>
+          
+          {/* TABS HEADER */}
+          <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Event Overview</h2>
+            
+            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+              {['All', 'Pending', 'Confirmed', 'Cancelled'].map(status => (
+                <button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
+                    filter === status 
+                    ? 'bg-white dark:bg-gray-800 text-pink-600 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white'
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
           </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-sm uppercase transition-colors duration-300">
                   <th className="p-4 font-semibold">Date</th>
                   <th className="p-4 font-semibold">Event Type</th>
-                  <th className="p-4 font-semibold">Guests</th>
                   <th className="p-4 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                {upcomingEvents.length === 0 ? (
+                {filteredEvents.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400 transition-colors duration-300">No upcoming events scheduled.</td>
+                    <td colSpan="3" className="p-8 text-center text-gray-500 dark:text-gray-400 transition-colors duration-300">
+                      No {filter !== 'All' ? filter.toLowerCase() : ''} events found.
+                    </td>
                   </tr>
                 ) : (
-                  upcomingEvents.map((event) => (
+                  filteredEvents.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                      
-                      {/* APPLYING SAFE DATE FORMATTER HERE */}
                       <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">
+                        {/* 🔥 SAFE DATE USED HERE 🔥 */}
                         {formatSafeDate(event.preferred_date)}
                       </td>
-                      
                       <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.event_type}</td>
-                      <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.guest_count}</td>
                       <td className="p-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                           event.status === 'Confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
                           event.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                          'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                         }`}>
                           {event.status}
                         </span>
@@ -217,7 +258,7 @@ const Dashboard = () => {
           
           <div className="mt-6 border-t dark:border-gray-700 pt-4 flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <div className="w-3 h-3 bg-pink-600 rounded-full"></div>
-            <span>Dates with booked events</span>
+            <span>Dates with active bookings</span>
           </div>
         </div>
       </div>
