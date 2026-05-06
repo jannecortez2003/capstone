@@ -1,13 +1,12 @@
-// src/pages/UserProfile.jsx
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { FaUser, FaEnvelope, FaPhone, FaCalendarCheck, FaMoneyBillWave, FaHistory, FaClock, FaCheckCircle } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaCalendarCheck, FaMoneyBillWave, FaHistory, FaClock, FaCheckCircle, FaMoneyCheckAlt } from "react-icons/fa";
 
 const UserProfile = () => {
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [transactions, setTransactions] = useState([]);
-  const [stats, setStats] = useState({ total_bookings: 0, pending: 0, confirmed: 0, total_spent: 0 });
+  const [stats, setStats] = useState({ total_bookings: 0, pending: 0, confirmed: 0, completed: 0, total_spent: 0 });
   const [activeTab, setActiveTab] = useState("overview"); 
   const [loading, setLoading] = useState(true);
   const [shouldRedirect, setShouldRedirect] = useState(false); 
@@ -22,22 +21,52 @@ const UserProfile = () => {
 
     const fetchData = async () => {
       try {
-        const resBookings = await fetch(`${import.meta.env.VITE_API_URL}/fetch_user_appointments?user_id=${storedUser.id}`);
-        const dataBookings = await resBookings.json();
-        if (dataBookings.success) setBookings(dataBookings.appointments);
+        const apiUrl = import.meta.env.VITE_API_URL;
 
-        const resTrans = await fetch(`${import.meta.env.VITE_API_URL}/fetch_user_transactions?user_id=${storedUser.id}`);
-        const dataTrans = await resTrans.json();
-        if (dataTrans.success) {
-            setTransactions(dataTrans.transactions);
-            setStats(dataTrans.stats);
+        // 1. Fetch Bookings
+        const resBookings = await fetch(`${apiUrl}/fetch_user_appointments?user_id=${storedUser.id}`);
+        const dataBookings = await resBookings.json();
+        
+        let pendingCount = 0;
+        let confirmedCount = 0;
+        let completedCount = 0;
+
+        if (dataBookings.success) {
+            setBookings(dataBookings.appointments);
+            // Calculate booking stats
+            pendingCount = dataBookings.appointments.filter(b => b.status === 'Pending').length;
+            confirmedCount = dataBookings.appointments.filter(b => b.status === 'Confirmed').length;
+            completedCount = dataBookings.appointments.filter(b => b.status === 'Completed').length;
         }
+
+        // 2. Fetch Payments using the new route
+        const resTrans = await fetch(`${apiUrl}/fetch_user_payments?user_id=${storedUser.id}`);
+        const dataTrans = await resTrans.json();
+        
+        let totalSpent = 0;
+
+        if (dataTrans.success) {
+            setTransactions(dataTrans.payments);
+            // Calculate total spent
+            totalSpent = dataTrans.payments.reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+        }
+
+        // Update all stats at once
+        setStats({
+            total_bookings: dataBookings.appointments?.length || 0,
+            pending: pendingCount,
+            confirmed: confirmedCount,
+            completed: completedCount,
+            total_spent: totalSpent
+        });
+
       } catch (err) {
         console.error("Error loading profile data:", err);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchData();
   }, []);
 
@@ -190,18 +219,30 @@ const UserProfile = () => {
                                         <th className="p-4">Date</th>
                                         <th className="p-4">Event</th>
                                         <th className="p-4">Method</th>
-                                        <th className="p-4 text-right">Amount</th>
+                                        <th className="p-4 text-right">Amount Paid</th>
+                                        <th className="p-4">Remarks</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y dark:divide-gray-700">
                                     {transactions.map((t) => (
                                         <tr key={t.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
-                                            <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{new Date(t.payment_date).toLocaleDateString()}</td>
-                                            <td className="p-4 font-medium text-gray-800 dark:text-gray-200 transition-colors duration-300">
-                                                {t.event_type} <span className="text-gray-400 dark:text-gray-500 text-xs block transition-colors duration-300">{new Date(t.preferred_date).toLocaleDateString()}</span>
+                                            <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">
+                                                {new Date(t.transaction_date).toLocaleDateString()}
                                             </td>
-                                            <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{t.payment_method || 'Cash/Bank Transfer'}</td>
-                                            <td className="p-4 text-right font-bold text-gray-700 dark:text-gray-200 transition-colors duration-300">- ₱{t.amount_paid.toLocaleString()}</td>
+                                            <td className="p-4 font-medium text-gray-800 dark:text-gray-200 transition-colors duration-300">
+                                                {t.event_type}
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-bold flex items-center gap-1 w-max transition-colors duration-300">
+                                                    <FaMoneyCheckAlt/> {t.payment_type}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right font-bold text-green-600 dark:text-green-400 transition-colors duration-300">
+                                                + ₱{parseFloat(t.amount_paid).toLocaleString()}
+                                            </td>
+                                            <td className="p-4 text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
+                                                {t.remarks || '-'}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
