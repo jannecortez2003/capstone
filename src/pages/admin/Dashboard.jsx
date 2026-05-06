@@ -36,6 +36,17 @@ const Dashboard = () => {
       });
   }, []);
 
+  // 🔥 SAFE DATE FORMATTER (Prevents "Invalid Date" bugs) 🔥
+  const formatSafeDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    // Adding T00:00:00 prevents timezone shifting bugs if it's just a YYYY-MM-DD string
+    const date = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`);
+    if (isNaN(date.getTime())) return "N/A"; 
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric'
+    });
+  };
+
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -160,9 +171,12 @@ const Dashboard = () => {
                 ) : (
                   upcomingEvents.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                      
+                      {/* APPLYING SAFE DATE FORMATTER HERE */}
                       <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">
-                        {new Date(event.preferred_date + 'T00:00:00').toLocaleDateString()}
+                        {formatSafeDate(event.preferred_date)}
                       </td>
+                      
                       <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.event_type}</td>
                       <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.guest_count}</td>
                       <td className="p-4">
