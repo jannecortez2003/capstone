@@ -238,88 +238,85 @@ const BookingRequests = () => {
                 </div>
             </div>
 
-            {/* --- COMPACT TIMELINE VIEW MODAL --- */}
+            {/* --- ULTRA-COMPACT TIMELINE VIEW MODAL --- */}
             {selectedBooking && (
-                <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title="Booking Overview" size="max-w-2xl">
-                    {/* 🔥 REDUCED PADDING HERE 🔥 */}
-                    <div className="px-2 py-2">
+                <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title="Booking Overview" size="max-w-xl">
+                    <div className="px-1 py-1">
                         {/* Customer Header */}
-                        {/* 🔥 REDUCED MARGIN BOTTOM 🔥 */}
-                        <div className="mb-4 text-center">
-                            <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white break-words">{selectedBooking.customer_name}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 break-words">{selectedBooking.customer_email}</p>
-                            <span className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase ${getStatusBadgeClass(selectedBooking.status)}`}>
+                        <div className="mb-2 text-center">
+                            <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white break-words leading-tight">{selectedBooking.customer_name}</h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 break-words mt-0.5">{selectedBooking.customer_email}</p>
+                            <span className={`mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusBadgeClass(selectedBooking.status)}`}>
                                 Status: {selectedBooking.status}
                             </span>
                         </div>
 
-                        {/* Vertical Timeline */}
-                        {/* 🔥 REDUCED SPACE-Y GAP 🔥 */}
-                        <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-4 space-y-4 md:space-y-5 pb-2">
+                        {/* Vertical Timeline - Reduced Spacing */}
+                        <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-3 space-y-3 pb-1">
                             
                             {/* Step 1: Event Details */}
-                            <div className="relative pl-6 md:pl-8">
-                                <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-blue-500 border-4 border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-sm md:text-base text-gray-800 dark:text-white mb-1">1. Event Specifics</h4>
-                                {/* 🔥 REDUCED PADDING & GAP 🔥 */}
-                                <div className="bg-gray-50 dark:bg-gray-900 p-2 md:p-3 rounded-xl border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="relative pl-5 md:pl-6">
+                                {/* Smaller Dot */}
+                                <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-blue-500 border-[3px] border-white dark:border-gray-800"></span>
+                                <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">1. Event Specifics</h4>
+                                
+                                {/* Compact Grid */}
+                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-1">
                                     <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
-                                        <p className="text-[10px] md:text-xs text-gray-500 uppercase font-bold">Date</p>
-                                        <p className="font-semibold text-sm dark:text-gray-200 break-words">{formatSafeDate(selectedBooking.preferred_date)}</p>
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-0.5">Date</p>
+                                        <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{formatSafeDate(selectedBooking.preferred_date)}</p>
                                     </div>
                                     <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
-                                        <p className="text-[10px] md:text-xs text-gray-500 uppercase font-bold">Type</p>
-                                        <p className="font-semibold text-sm dark:text-gray-200 break-words">{selectedBooking.event_type}</p>
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-0.5">Type</p>
+                                        <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{selectedBooking.event_type}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] md:text-xs text-gray-500 uppercase font-bold">Guests</p>
-                                        <p className="font-semibold text-sm dark:text-gray-200">{selectedBooking.guest_count} Pax</p>
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-0.5">Guests</p>
+                                        <p className="font-semibold text-xs dark:text-gray-200 leading-tight">{selectedBooking.guest_count} Pax</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Step 2: Package & Menu */}
-                            <div className="relative pl-6 md:pl-8">
-                                <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-pink-500 border-4 border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-sm md:text-base text-gray-800 dark:text-white mb-1">2. Package & Menu</h4>
-                                {/* 🔥 REDUCED PADDING 🔥 */}
-                                <div className="bg-gray-50 dark:bg-gray-900 p-2 md:p-3 rounded-xl border dark:border-gray-700">
-                                    <p className="font-black text-pink-600 dark:text-pink-400 mb-2 text-sm">{selectedBooking.package_type}</p>
-                                    <div className="flex flex-wrap gap-2">
+                            <div className="relative pl-5 md:pl-6">
+                                <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-pink-500 border-[3px] border-white dark:border-gray-800"></span>
+                                <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">2. Package & Menu</h4>
+                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
+                                    <p className="font-bold text-pink-600 dark:text-pink-400 mb-1.5 text-xs leading-tight">{selectedBooking.package_type}</p>
+                                    <div className="flex flex-wrap gap-1">
                                         {selectedBooking.selected_dishes ? 
                                             selectedBooking.selected_dishes.split('; ').map((dish, i) => (
-                                                <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-2 py-1 rounded-md text-xs font-medium dark:text-gray-300 shadow-sm">{dish}</span>
+                                                <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium dark:text-gray-300 shadow-sm leading-tight">{dish}</span>
                                             ))
-                                        : <span className="text-gray-400 italic text-xs">No dishes selected.</span>}
+                                        : <span className="text-gray-400 italic text-[10px]">No dishes selected.</span>}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Step 3: Auto-Allocated Inventory */}
-                            <div className="relative pl-6 md:pl-8">
-                                <span className="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-purple-500 border-4 border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-sm md:text-base text-gray-800 dark:text-white mb-1">3. Auto-Allocated Inventory</h4>
-                                {/* 🔥 REDUCED PADDING 🔥 */}
-                                <div className="bg-gray-50 dark:bg-gray-900 p-2 md:p-3 rounded-xl border dark:border-gray-700">
+                            <div className="relative pl-5 md:pl-6">
+                                <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-purple-500 border-[3px] border-white dark:border-gray-800"></span>
+                                <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">3. Auto-Allocated Inventory</h4>
+                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
                                     {selectedBooking.required_inventory ? (
-                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs md:text-sm text-gray-700 dark:text-gray-300">
+                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 text-[11px] text-gray-700 dark:text-gray-300">
                                             {selectedBooking.required_inventory.split('; ').map((item, i) => (
-                                                <li key={i} className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0"></div> 
-                                                    <span className="break-words">{item}</span>
+                                                <li key={i} className="flex items-center gap-1.5">
+                                                    <div className="w-1 h-1 rounded-full bg-pink-500 shrink-0"></div> 
+                                                    <span className="break-words leading-tight">{item}</span>
                                                 </li>
                                             ))}
                                         </ul>
                                     ) : (
-                                        <p className="text-gray-400 italic text-xs">Standard setup applies. No specific inventory recorded.</p>
+                                        <p className="text-gray-400 italic text-[10px]">Standard setup applies. No specific inventory recorded.</p>
                                     )}
                                 </div>
                             </div>
 
                         </div>
 
-                        {/* 🔥 REDUCED BUTTON HEIGHT/MARGIN 🔥 */}
-                        <button onClick={() => setSelectedBooking(null)} className="w-full mt-4 bg-gray-800 dark:bg-gray-700 text-white font-bold py-2.5 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-md text-sm">
+                        {/* Compact Button */}
+                        <button onClick={() => setSelectedBooking(null)} className="w-full mt-3 bg-gray-800 dark:bg-gray-700 text-white font-bold py-2 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-sm text-xs">
                             Close Timeline
                         </button>
                     </div>
