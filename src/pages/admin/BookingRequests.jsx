@@ -68,13 +68,20 @@ const BookingRequests = () => {
                 body: JSON.stringify({ bookingId: actionDetails.id, status: actionDetails.newStatus }),
             });
             const data = await res.json();
+            
             if (data.success) {
                 await fetchBookings();
                 setShowStatusModal(false);
                 setSuccessMessage(data.message);
                 setShowSuccessModal(true);
+            } else {
+                // 🔥 FIX: Actually show the error if it fails
+                alert(`Status Update Failed: ${data.message}`);
             }
-        } catch (err) { alert("Update failed"); }
+        } catch (err) { 
+            alert("Network error. Could not reach the server."); 
+            console.error(err);
+        }
         finally { setLoading(false); }
     };
 
@@ -88,10 +95,11 @@ const BookingRequests = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     bookingId: reconcileBooking.id, 
-                    damagedItems: damagedItems 
+                    damagedItems: damagedItems || {} // Guarantee it is never undefined
                 }),
             });
             const data = await res.json();
+            
             if (data.success) {
                 await fetchBookings();
                 setShowReconcileModal(false);
@@ -99,8 +107,14 @@ const BookingRequests = () => {
                 setDamagedItems({});
                 setSuccessMessage(data.message);
                 setShowSuccessModal(true);
+            } else {
+                // 🔥 FIX: Actually show the error if it fails
+                alert(`Reconciliation Failed: ${data.message}`);
             }
-        } catch (err) { alert("Reconciliation failed"); }
+        } catch (err) { 
+            alert("Network error. Could not reach the server."); 
+            console.error(err);
+        }
         finally { setLoading(false); }
     };
 
