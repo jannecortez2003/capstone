@@ -12,7 +12,7 @@ const Inventory = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", quantity: "", unit: "" });
-  const [selectedHistory, setSelectedHistory] = useState(null); // NEW: For viewing booking log details
+  const [selectedHistory, setSelectedHistory] = useState(null);
 
   const fetchInventoryData = async () => {
     setLoading(true);
@@ -29,11 +29,8 @@ const Inventory = () => {
       if (invData.success && Array.isArray(invData.inventory)) setItems(invData.inventory);
       if (logsData.success && Array.isArray(logsData.logs)) setLogs(logsData.logs);
 
-    } catch (err) { 
-        console.error("Error fetching data:", err); 
-    } finally { 
-        setLoading(false); 
-    }
+    } catch (err) { console.error("Error fetching data:", err); } 
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchInventoryData(); }, []);
@@ -54,9 +51,7 @@ const Inventory = () => {
           fetchInventoryData(); 
           setShowModal(false); 
           setEditingItem(null);
-      } else {
-          alert(`⚠️ Warning: ${data.message}`);
-      }
+      } else { alert(`⚠️ Warning: ${data.message}`); }
     } catch (err) { console.error("Error saving item:", err); }
   };
 
@@ -73,21 +68,19 @@ const Inventory = () => {
       return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  // 🔥 NEW: Group logs by Booking ID automatically
   const groupedHistory = useMemo(() => {
       const groups = [];
       const bookingMap = new Map();
 
       logs.forEach(log => {
           const bookingMatch = log.remarks?.match(/Booking #(\d+)/);
-          
           if (bookingMatch) {
               const bId = bookingMatch[1];
               if (!bookingMap.has(bId)) {
                   const newGroup = {
                       id: `booking-${bId}`,
                       title: `Event Booking #${bId}`,
-                      date: log.created_at, // Stores the date of the first related action (usually auto-deduction)
+                      date: log.created_at, 
                       isBooking: true,
                       bookingId: bId,
                       logs: []
@@ -97,7 +90,6 @@ const Inventory = () => {
               }
               bookingMap.get(bId).logs.push(log);
           } else {
-              // Standalone manual actions (adding/deleting items manually)
               groups.push({
                   id: `manual-${log.id}`,
                   title: log.action_type || 'Manual Adjustment',
@@ -107,7 +99,6 @@ const Inventory = () => {
               });
           }
       });
-      // Sort so the newest transactions appear at the top
       return groups.sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [logs]);
 
@@ -149,7 +140,6 @@ const Inventory = () => {
                     <FaHistory /> Grouped History Logs
                 </button>
             </div>
-            
             {activeTab === 'inventory' && (
                 <button onClick={() => { setEditingItem(null); setShowModal(true); }} className="bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-pink-700 transition shadow-sm font-bold text-sm shrink-0 ml-4">
                     <FaPlus /> ADD ITEM
@@ -160,11 +150,6 @@ const Inventory = () => {
         {/* INVENTORY LIST TAB */}
         {activeTab === 'inventory' && (
             <div className="overflow-x-auto">
-                <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 p-3 mx-4 mt-4 rounded-r-md">
-                    <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                        <strong>💡 Reminder:</strong> Name items exactly like "Glass", "Plate", and "Table napkin" so the system can auto-deduct them correctly.
-                    </p>
-                </div>
                 <table className="min-w-full text-sm mt-2">
                     <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
                     <tr>
@@ -203,7 +188,7 @@ const Inventory = () => {
             </div>
         )}
 
-        {/* 🔥 GROUPED HISTORY LOGS TAB 🔥 */}
+        {/* GROUPED HISTORY LOGS TAB */}
         {activeTab === 'history' && (
             <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
@@ -248,7 +233,6 @@ const Inventory = () => {
 
       </div>
 
-      {/* --- ADD / EDIT ITEM MODAL --- */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingItem ? "Edit Item" : "Add Inventory"}>
         <form onSubmit={handleSubmit} className="space-y-4 p-2 text-gray-800 dark:text-gray-200">
             <div>
@@ -275,30 +259,60 @@ const Inventory = () => {
         </form>
       </Modal>
 
-      {/* 🔥 NEW: VIEW TRANSACTION DETAILS MODAL 🔥 */}
+      {/* 🔥 FIX: SPLIT TRANSACTION DETAILS MODAL 🔥 */}
       {selectedHistory && (
           <Modal isOpen={!!selectedHistory} onClose={() => setSelectedHistory(null)} title={selectedHistory.title} size="max-w-2xl">
               <div className="p-2 md:p-4 text-gray-800 dark:text-gray-200">
                   <p className="text-sm text-gray-500 mb-4 font-medium border-b dark:border-gray-700 pb-2">
-                      Transaction Date: {formatDate(selectedHistory.date)}
+                      First Event Date: {formatDate(selectedHistory.date)}
                   </p>
                   
-                  <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
-                      {selectedHistory.logs.map((log) => {
-                          const isDeduction = log.quantity_change < 0;
-                          return (
-                              <div key={log.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border dark:border-gray-700">
-                                  <div>
-                                      <p className="font-bold text-gray-900 dark:text-white">{log.item_name}</p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">{log.action_type} • {formatDate(log.created_at)}</p>
-                                  </div>
-                                  <div className={`flex items-center gap-2 font-black text-lg ${isDeduction ? 'text-red-500' : 'text-green-500'}`}>
-                                      {isDeduction ? <FaArrowDown /> : <FaArrowUp />}
-                                      {Math.abs(log.quantity_change)}
-                                  </div>
+                  <div className="space-y-6 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+                      
+                      {/* SECTION 1: ITEMS DEDUCTED */}
+                      {selectedHistory.logs.filter(log => log.quantity_change < 0).length > 0 && (
+                          <div>
+                              <h4 className="text-sm font-bold text-red-600 dark:text-red-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                                  <FaArrowDown /> Items Allocated (Deducted)
+                              </h4>
+                              <div className="space-y-2">
+                                  {selectedHistory.logs.filter(log => log.quantity_change < 0).map((log) => (
+                                      <div key={log.id} className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800/50">
+                                          <div>
+                                              <p className="font-bold text-gray-900 dark:text-white">{log.item_name}</p>
+                                              <p className="text-xs text-gray-500 dark:text-gray-400">{log.action_type} • {formatDate(log.created_at)}</p>
+                                          </div>
+                                          <div className="flex items-center gap-2 font-black text-lg text-red-500">
+                                              <FaArrowDown /> {Math.abs(log.quantity_change)}
+                                          </div>
+                                      </div>
+                                  ))}
                               </div>
-                          );
-                      })}
+                          </div>
+                      )}
+
+                      {/* SECTION 2: ITEMS RETURNED */}
+                      {selectedHistory.logs.filter(log => log.quantity_change > 0).length > 0 && (
+                          <div>
+                              <h4 className="text-sm font-bold text-green-600 dark:text-green-400 mb-2 flex items-center gap-2 uppercase tracking-wider">
+                                  <FaArrowUp /> Items Reconciled (Returned)
+                              </h4>
+                              <div className="space-y-2">
+                                  {selectedHistory.logs.filter(log => log.quantity_change > 0).map((log) => (
+                                      <div key={log.id} className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800/50">
+                                          <div>
+                                              <p className="font-bold text-gray-900 dark:text-white">{log.item_name}</p>
+                                              <p className="text-xs text-gray-500 dark:text-gray-400">{log.action_type} • {formatDate(log.created_at)}</p>
+                                          </div>
+                                          <div className="flex items-center gap-2 font-black text-lg text-green-500">
+                                              <FaArrowUp /> {Math.abs(log.quantity_change)}
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                      )}
+                      
                   </div>
 
                   <div className="mt-6 flex justify-end">
