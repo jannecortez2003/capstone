@@ -1,23 +1,41 @@
 import React, { useState, useEffect } from "react";
-import { FaBox, FaPlus, FaExclamationTriangle } from "react-icons/fa";
+import { FaBox, FaPlus, FaExclamationTriangle, FaHistory, FaArrowDown, FaArrowUp } from "react-icons/fa";
 import Modal from '../../components/Modal';
 
 const Inventory = () => {
   const [items, setItems] = useState([]);
+  const [logs, setLogs] = useState([]); // NEW: State for inventory history
+  const [activeTab, setActiveTab] = useState('inventory'); // NEW: Tab state
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", quantity: "", unit: "" });
 
-  const fetchInventory = async () => {
+  const fetchInventoryData = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_inventory`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.inventory)) { setItems(data.inventory); } else { setItems([]); }
-    } catch (err) { console.error("Error fetching inventory:", err); } finally { setLoading(false); }
+      const apiUrl = import.meta.env.VITE_API_URL;
+      
+      // Fetch both inventory AND logs at the same time
+      const [invRes, logsRes] = await Promise.all([
+          fetch(`${apiUrl}/admin_fetch_inventory`),
+          fetch(`${apiUrl}/admin_fetch_inventory_logs`)
+      ]);
+
+      const invData = await invRes.json();
+      const logsData = await logsRes.json();
+
+      if (invData.success && Array.isArray(invData.inventory)) setItems(invData.inventory);
+      if (logsData.success && Array.isArray(logsData.logs)) setLogs(logsData.logs);
+
+    } catch (err) { 
+        console.error("Error fetching data:", err); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
-  useEffect(() => { fetchInventory(); }, []);
+  useEffect(() => { fetchInventoryData(); }, []);
 
   useEffect(() => {
     if (editingItem) setFormData({ name: editingItem.name, quantity: editingItem.quantity, unit: editingItem.unit });
@@ -32,7 +50,7 @@ const Inventory = () => {
       const data = await res.json();
       
       if (data.success) {
-          fetchInventory(); 
+          fetchInventoryData(); 
           setShowModal(false); 
           setEditingItem(null);
       } else {
@@ -45,8 +63,13 @@ const Inventory = () => {
     if (!window.confirm("Are you sure you want to DELETE this item?")) return;
     try {
         await fetch(`${import.meta.env.VITE_API_URL}/admin_delete_inventory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-        fetchInventory();
+        fetchInventoryData();
     } catch (err) { alert("Delete failed"); }
+  };
+
+  const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const totalItems = items?.length || 0;
@@ -55,8 +78,9 @@ const Inventory = () => {
   return (
     <div className="p-6 fade-in transition-colors duration-300">
       <h1 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white transition-colors duration-300">Inventory Management</h1>
-      <p className="text-gray-500 dark:text-gray-400 mb-8 transition-colors duration-300">Track your equipment and supplies.</p>
+      <p className="text-gray-500 dark:text-gray-400 mb-8 transition-colors duration-300">Track your equipment, supplies, and stock history.</p>
 
+      {/* STATS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-pink-300 transition-colors duration-300">
             <div className="bg-pink-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300"><FaBox className="text-pink-500 text-2xl" /></div>
@@ -75,56 +99,117 @@ const Inventory = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
-        <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center transition-colors duration-300">
-            <h2 className="font-bold text-gray-700 dark:text-white transition-colors duration-300">Inventory List</h2>
-            <button onClick={() => { setEditingItem(null); setShowModal(true); }} className="bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-pink-700 transition shadow-sm font-bold text-sm">
-                <FaPlus /> ADD ITEM
-            </button>
-        </div>
         
-        <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 p-4 m-4 rounded-r-md">
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                <strong>💡 Reminder:</strong> The Inventory system will automatically block and reject duplicate names to prevent stock tracking errors.
-            </p>
+        {/* TAB CONTROLS */}
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center overflow-x-auto">
+            <div className="flex space-x-2">
+                <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 flex items-center gap-2 ${activeTab === 'inventory' ? 'bg-pink-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'}`}>
+                    <FaBox /> Current Stock
+                </button>
+                <button onClick={() => setActiveTab('history')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 flex items-center gap-2 ${activeTab === 'history' ? 'bg-pink-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'}`}>
+                    <FaHistory /> History Logs
+                </button>
+            </div>
+            
+            {activeTab === 'inventory' && (
+                <button onClick={() => { setEditingItem(null); setShowModal(true); }} className="bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-pink-700 transition shadow-sm font-bold text-sm shrink-0 ml-4">
+                    <FaPlus /> ADD ITEM
+                </button>
+            )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
-              <tr>
-                <th className="p-4 text-left">Item Name</th>
-                <th className="p-4 text-left">Quantity</th>
-                <th className="p-4 text-left">Unit</th>
-                <th className="p-4 text-left">Status</th>
-                <th className="p-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
-                  <tr><td colSpan="5" className="p-6 text-center text-gray-500 dark:text-gray-400">Loading inventory...</td></tr>
-              ) : items.length === 0 ? (
-                  <tr><td colSpan="5" className="p-6 text-center text-gray-500 dark:text-gray-400">No items found.</td></tr>
-              ) : (
-                  items.map((item) => (
-                    <tr key={item.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
-                      <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">{item.name}</td>
-                      <td className="p-4 font-bold text-gray-800 dark:text-white transition-colors duration-300">{item.quantity}</td>
-                      <td className="p-4 text-gray-500 dark:text-gray-400 transition-colors duration-300">{item.unit}</td>
-                      <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${item.quantity < 20 ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400'}`}>
-                            {item.quantity < 20 ? 'Low Stock' : 'In Stock'}
-                        </span>
-                      </td>
-                      <td className="p-4 flex justify-center gap-2">
-                        <button onClick={() => { setEditingItem(item); setShowModal(true); }} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition">EDIT</button>
-                        <button onClick={() => handleDelete(item.id)} className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-3 py-1 rounded text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900 transition">DELETE</button>
-                      </td>
+        {/* INVENTORY LIST TAB */}
+        {activeTab === 'inventory' && (
+            <div className="overflow-x-auto">
+                <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 p-3 mx-4 mt-4 rounded-r-md">
+                    <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                        <strong>💡 Reminder:</strong> Name items exactly like "Glass", "Plate", and "Table napkin" so the system can auto-deduct them correctly.
+                    </p>
+                </div>
+                <table className="min-w-full text-sm mt-2">
+                    <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
+                    <tr>
+                        <th className="p-4 text-left">Item Name</th>
+                        <th className="p-4 text-left">Quantity</th>
+                        <th className="p-4 text-left">Unit</th>
+                        <th className="p-4 text-left">Status</th>
+                        <th className="p-4 text-center">Actions</th>
                     </tr>
-                  ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {loading ? (
+                        <tr><td colSpan="5" className="p-6 text-center text-gray-500 dark:text-gray-400">Loading inventory...</td></tr>
+                    ) : items.length === 0 ? (
+                        <tr><td colSpan="5" className="p-6 text-center text-gray-500 dark:text-gray-400">No items found.</td></tr>
+                    ) : (
+                        items.map((item) => (
+                            <tr key={item.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                            <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">{item.name}</td>
+                            <td className="p-4 font-bold text-gray-800 dark:text-white transition-colors duration-300">{item.quantity}</td>
+                            <td className="p-4 text-gray-500 dark:text-gray-400 transition-colors duration-300">{item.unit}</td>
+                            <td className="p-4">
+                                <span className={`px-2 py-1 rounded text-xs font-bold ${item.quantity < 20 ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400'}`}>
+                                    {item.quantity < 20 ? 'Low Stock' : 'In Stock'}
+                                </span>
+                            </td>
+                            <td className="p-4 flex justify-center gap-2">
+                                <button onClick={() => { setEditingItem(item); setShowModal(true); }} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition">EDIT</button>
+                                <button onClick={() => handleDelete(item.id)} className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-3 py-1 rounded text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900 transition">DELETE</button>
+                            </td>
+                            </tr>
+                        ))
+                    )}
+                    </tbody>
+                </table>
+            </div>
+        )}
+
+        {/* HISTORY LOGS TAB */}
+        {activeTab === 'history' && (
+            <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
+                    <tr>
+                        <th className="p-4 text-left">Date</th>
+                        <th className="p-4 text-left">Item Name</th>
+                        <th className="p-4 text-left">Action</th>
+                        <th className="p-4 text-left">Change</th>
+                        <th className="p-4 text-left">Remarks</th>
+                    </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {loading ? (
+                        <tr><td colSpan="5" className="p-6 text-center text-gray-500 dark:text-gray-400">Loading history...</td></tr>
+                    ) : logs.length === 0 ? (
+                        <tr><td colSpan="5" className="p-6 text-center text-gray-500 dark:text-gray-400">No history logs found yet.</td></tr>
+                    ) : (
+                        logs.map((log) => {
+                            const isDeduction = log.quantity_change < 0;
+                            return (
+                                <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                                    <td className="p-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">{formatDate(log.created_at)}</td>
+                                    <td className="p-4 font-bold text-gray-800 dark:text-white">{log.item_name}</td>
+                                    <td className="p-4">
+                                        <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs font-bold text-gray-600 dark:text-gray-300 border dark:border-gray-600">
+                                            {log.action_type}
+                                        </span>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className={`flex items-center gap-1 font-bold ${isDeduction ? 'text-red-500' : 'text-green-500'}`}>
+                                            {isDeduction ? <FaArrowDown /> : <FaArrowUp />}
+                                            {Math.abs(log.quantity_change)}
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-gray-600 dark:text-gray-400 text-xs italic">{log.remarks}</td>
+                                </tr>
+                            );
+                        })
+                    )}
+                    </tbody>
+                </table>
+            </div>
+        )}
+
       </div>
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingItem ? "Edit Item" : "Add Inventory"}>

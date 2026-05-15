@@ -171,6 +171,24 @@ app.get('/fetch_user_appointments', (req, res) => {
   });
 });
 
+app.get('/fetch_user_payments', (req, res) => {
+  const userId = req.query.user_id; 
+  if (!userId) return res.status(400).json({ success: false, message: "User ID is required." });
+
+  const sql = `
+    SELECT p.id, p.amount_paid, p.payment_type, p.transaction_date, p.remarks, a.event_type 
+    FROM payments p 
+    JOIN appointments a ON p.appointment_id = a.id 
+    WHERE a.user_id = ? 
+    ORDER BY p.transaction_date DESC
+  `;
+  
+  db.query(sql, [userId], (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: "Error fetching payments" });
+    res.json({ success: true, payments: results });
+  });
+});
+
 app.post('/book_event', (req, res) => {
   const { userId, eventType, packageType, preferredDate, guestCount, selectedDishes, notes } = req.body;
   if (!userId || !eventType || !packageType || !preferredDate || !guestCount || !selectedDishes) {
@@ -524,13 +542,30 @@ app.get('/admin_fetch_payment_history', (req, res) => {
   });
 });
 
-app.post('/admin_process_payment', (req, res) => {
+app.post('/admin_process_payment', async (req, res) => {
   const { appointmentId, amount, paymentType, remarks } = req.body;
-  db.query("INSERT INTO payments (appointment_id, amount_paid, payment_type, remarks) VALUES (?, ?, ?, ?)", [appointmentId, amount, paymentType || 'Additional', remarks || ''], async (err) => {
-      if (err) return res.status(500).json({ success: false, message: "Database error" });
+  
+  if (!appointmentId || !amount) {
+      return res.status(400).json({ success: false, message: "Appointment ID and Amount are required." });
+  }
+
+  try {
+      const pDb = db.promise();
+      
+      // FIX 1: We explicitly pass NOW() for transaction_date to prevent null timestamp errors
+      await pDb.query(
+          "INSERT INTO payments (appointment_id, amount_paid, payment_type, remarks, transaction_date) VALUES (?, ?, ?, ?, NOW())", 
+          [appointmentId, amount, paymentType || 'Cash', remarks || '']
+      );
+      
       await logSystemActivity('Payment', `Processed payment of ₱${amount} for Booking #${appointmentId}`);
-      res.json({ success: true });
-  });
+      
+      res.json({ success: true, message: "Payment recorded successfully" });
+  } catch (err) {
+      console.error("Payment Database Error:", err);
+      // FIX 2: Send the EXACT error message back to the frontend so we aren't guessing
+      res.status(500).json({ success: false, message: "Database error: " + err.message });
+  }
 });
 
 app.get('/admin_fetch_users', (req, res) => {
