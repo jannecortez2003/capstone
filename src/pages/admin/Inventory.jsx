@@ -1,22 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { FaBox, FaPlus, FaExclamationTriangle, FaHistory, FaArrowDown, FaArrowUp } from "react-icons/fa";
+import React, { useState, useEffect, useMemo } from "react";
+import { FaBox, FaPlus, FaExclamationTriangle, FaHistory, FaArrowDown, FaArrowUp, FaListAlt } from "react-icons/fa";
 import Modal from '../../components/Modal';
 
 const Inventory = () => {
   const [items, setItems] = useState([]);
-  const [logs, setLogs] = useState([]); // NEW: State for inventory history
-  const [activeTab, setActiveTab] = useState('inventory'); // NEW: Tab state
+  const [logs, setLogs] = useState([]); 
+  const [activeTab, setActiveTab] = useState('inventory'); 
   const [loading, setLoading] = useState(true);
+  
+  // Modals
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", quantity: "", unit: "" });
+  const [selectedHistory, setSelectedHistory] = useState(null); // NEW: For viewing booking log details
 
   const fetchInventoryData = async () => {
     setLoading(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
-      
-      // Fetch both inventory AND logs at the same time
       const [invRes, logsRes] = await Promise.all([
           fetch(`${apiUrl}/admin_fetch_inventory`),
           fetch(`${apiUrl}/admin_fetch_inventory_logs`)
@@ -72,6 +73,44 @@ const Inventory = () => {
       return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
+  // 🔥 NEW: Group logs by Booking ID automatically
+  const groupedHistory = useMemo(() => {
+      const groups = [];
+      const bookingMap = new Map();
+
+      logs.forEach(log => {
+          const bookingMatch = log.remarks?.match(/Booking #(\d+)/);
+          
+          if (bookingMatch) {
+              const bId = bookingMatch[1];
+              if (!bookingMap.has(bId)) {
+                  const newGroup = {
+                      id: `booking-${bId}`,
+                      title: `Event Booking #${bId}`,
+                      date: log.created_at, // Stores the date of the first related action (usually auto-deduction)
+                      isBooking: true,
+                      bookingId: bId,
+                      logs: []
+                  };
+                  bookingMap.set(bId, newGroup);
+                  groups.push(newGroup);
+              }
+              bookingMap.get(bId).logs.push(log);
+          } else {
+              // Standalone manual actions (adding/deleting items manually)
+              groups.push({
+                  id: `manual-${log.id}`,
+                  title: log.action_type || 'Manual Adjustment',
+                  date: log.created_at,
+                  isBooking: false,
+                  logs: [log]
+              });
+          }
+      });
+      // Sort so the newest transactions appear at the top
+      return groups.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [logs]);
+
   const totalItems = items?.length || 0;
   const lowStock = items?.filter(i => i.quantity < 20).length || 0;
 
@@ -107,7 +146,7 @@ const Inventory = () => {
                     <FaBox /> Current Stock
                 </button>
                 <button onClick={() => setActiveTab('history')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 flex items-center gap-2 ${activeTab === 'history' ? 'bg-pink-600 text-white shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'}`}>
-                    <FaHistory /> History Logs
+                    <FaHistory /> Grouped History Logs
                 </button>
             </div>
             
@@ -164,46 +203,43 @@ const Inventory = () => {
             </div>
         )}
 
-        {/* HISTORY LOGS TAB */}
+        {/* 🔥 GROUPED HISTORY LOGS TAB 🔥 */}
         {activeTab === 'history' && (
             <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                     <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
                     <tr>
                         <th className="p-4 text-left">Date</th>
-                        <th className="p-4 text-left">Item Name</th>
-                        <th className="p-4 text-left">Action</th>
-                        <th className="p-4 text-left">Change</th>
-                        <th className="p-4 text-left">Remarks</th>
+                        <th className="p-4 text-left">Transaction Details</th>
+                        <th className="p-4 text-left">Records Found</th>
+                        <th className="p-4 text-center">Actions</th>
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                     {loading ? (
-                        <tr><td colSpan="5" className="p-6 text-center text-gray-500 dark:text-gray-400">Loading history...</td></tr>
-                    ) : logs.length === 0 ? (
-                        <tr><td colSpan="5" className="p-6 text-center text-gray-500 dark:text-gray-400">No history logs found yet.</td></tr>
+                        <tr><td colSpan="4" className="p-6 text-center text-gray-500 dark:text-gray-400">Loading history...</td></tr>
+                    ) : groupedHistory.length === 0 ? (
+                        <tr><td colSpan="4" className="p-6 text-center text-gray-500 dark:text-gray-400">No history logs found yet.</td></tr>
                     ) : (
-                        logs.map((log) => {
-                            const isDeduction = log.quantity_change < 0;
-                            return (
-                                <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300">
-                                    <td className="p-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">{formatDate(log.created_at)}</td>
-                                    <td className="p-4 font-bold text-gray-800 dark:text-white">{log.item_name}</td>
-                                    <td className="p-4">
-                                        <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs font-bold text-gray-600 dark:text-gray-300 border dark:border-gray-600">
-                                            {log.action_type}
-                                        </span>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className={`flex items-center gap-1 font-bold ${isDeduction ? 'text-red-500' : 'text-green-500'}`}>
-                                            {isDeduction ? <FaArrowDown /> : <FaArrowUp />}
-                                            {Math.abs(log.quantity_change)}
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-gray-600 dark:text-gray-400 text-xs italic">{log.remarks}</td>
-                                </tr>
-                            );
-                        })
+                        groupedHistory.map((group) => (
+                            <tr key={group.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                                <td className="p-4 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">{formatDate(group.date)}</td>
+                                <td className="p-4 font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                    {group.isBooking ? <FaListAlt className="text-purple-500" /> : <FaHistory className="text-gray-500" />}
+                                    {group.title}
+                                </td>
+                                <td className="p-4 text-gray-600 dark:text-gray-400 text-xs">
+                                    <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border dark:border-gray-600 font-bold">
+                                        {group.logs.length} Item Updates
+                                    </span>
+                                </td>
+                                <td className="p-4 flex justify-center">
+                                    <button onClick={() => setSelectedHistory(group)} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition shadow-sm">
+                                        VIEW DETAILS
+                                    </button>
+                                </td>
+                            </tr>
+                        ))
                     )}
                     </tbody>
                 </table>
@@ -212,6 +248,7 @@ const Inventory = () => {
 
       </div>
 
+      {/* --- ADD / EDIT ITEM MODAL --- */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingItem ? "Edit Item" : "Add Inventory"}>
         <form onSubmit={handleSubmit} className="space-y-4 p-2 text-gray-800 dark:text-gray-200">
             <div>
@@ -237,6 +274,42 @@ const Inventory = () => {
             </div>
         </form>
       </Modal>
+
+      {/* 🔥 NEW: VIEW TRANSACTION DETAILS MODAL 🔥 */}
+      {selectedHistory && (
+          <Modal isOpen={!!selectedHistory} onClose={() => setSelectedHistory(null)} title={selectedHistory.title} size="max-w-2xl">
+              <div className="p-2 md:p-4 text-gray-800 dark:text-gray-200">
+                  <p className="text-sm text-gray-500 mb-4 font-medium border-b dark:border-gray-700 pb-2">
+                      Transaction Date: {formatDate(selectedHistory.date)}
+                  </p>
+                  
+                  <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
+                      {selectedHistory.logs.map((log) => {
+                          const isDeduction = log.quantity_change < 0;
+                          return (
+                              <div key={log.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border dark:border-gray-700">
+                                  <div>
+                                      <p className="font-bold text-gray-900 dark:text-white">{log.item_name}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">{log.action_type} • {formatDate(log.created_at)}</p>
+                                  </div>
+                                  <div className={`flex items-center gap-2 font-black text-lg ${isDeduction ? 'text-red-500' : 'text-green-500'}`}>
+                                      {isDeduction ? <FaArrowDown /> : <FaArrowUp />}
+                                      {Math.abs(log.quantity_change)}
+                                  </div>
+                              </div>
+                          );
+                      })}
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                      <button onClick={() => setSelectedHistory(null)} className="px-6 py-2 bg-gray-800 dark:bg-gray-700 text-white font-bold rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-sm">
+                          Close Viewer
+                      </button>
+                  </div>
+              </div>
+          </Modal>
+      )}
+
     </div>
   );
 };
