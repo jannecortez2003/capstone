@@ -40,7 +40,6 @@ const BookingRequests = () => {
 
     useEffect(() => { fetchBookings(); }, []);
 
-    // BULLETPROOF DATE FORMATTER
     const formatSafeDate = (dateVal) => {
         if (!dateVal) return "N/A";
         try {
@@ -75,7 +74,6 @@ const BookingRequests = () => {
                 setSuccessMessage(data.message);
                 setShowSuccessModal(true);
             } else {
-                // 🔥 FIX: Actually show the error if it fails
                 alert(`Status Update Failed: ${data.message}`);
             }
         } catch (err) { 
@@ -95,7 +93,7 @@ const BookingRequests = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     bookingId: reconcileBooking.id, 
-                    damagedItems: damagedItems || {} // Guarantee it is never undefined
+                    damagedItems: damagedItems || {} 
                 }),
             });
             const data = await res.json();
@@ -108,7 +106,6 @@ const BookingRequests = () => {
                 setSuccessMessage(data.message);
                 setShowSuccessModal(true);
             } else {
-                // 🔥 FIX: Actually show the error if it fails
                 alert(`Reconciliation Failed: ${data.message}`);
             }
         } catch (err) { 
@@ -118,11 +115,37 @@ const BookingRequests = () => {
         finally { setLoading(false); }
     };
 
+    // 🔥 NEW: Direct Delete Function 🔥
+    const handleDeleteBooking = async (id) => {
+        if (!window.confirm(`Are you sure you want to permanently delete Booking #${id}? This action cannot be undone.`)) return;
+        
+        setLoading(true);
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${apiUrl}/admin_delete_booking`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id }),
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                await fetchBookings();
+                setSuccessMessage(`Booking #${id} successfully deleted.`);
+                setShowSuccessModal(true);
+            } else {
+                alert(`Delete Failed: ${data.message}`);
+            }
+        } catch (err) {
+            alert("Network error. Could not reach the server.");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleDamagedInputChange = (itemName, value) => {
-        setDamagedItems(prev => ({
-            ...prev,
-            [itemName]: value
-        }));
+        setDamagedItems(prev => ({ ...prev, [itemName]: value }));
     };
 
     const getStatusBadgeClass = (status) => {
@@ -192,6 +215,8 @@ const BookingRequests = () => {
                     <table className="min-w-full text-sm">
                         <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
                             <tr>
+                                {/* 🔥 NEW: ID COLUMN 🔥 */}
+                                <th className="p-4 text-left w-20">ID</th>
                                 <th className="p-4 text-left">Customer</th>
                                 <th className="p-4 text-left">Event Date</th>
                                 <th className="p-4 text-left">Status</th>
@@ -201,6 +226,14 @@ const BookingRequests = () => {
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {filteredBookings.length > 0 ? filteredBookings.map((b) => (
                                 <tr key={b.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                                    
+                                    {/* 🔥 DISPLAY DB ID 🔥 */}
+                                    <td className="p-4">
+                                        <span className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 font-mono text-xs px-2 py-1 rounded border dark:border-gray-600 shadow-sm font-bold">
+                                            #{b.id}
+                                        </span>
+                                    </td>
+
                                     <td className="p-4">
                                         <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300">{b.customer_name}</div>
                                         <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">{b.customer_email}</div>
@@ -225,7 +258,7 @@ const BookingRequests = () => {
                                                 <button onClick={() => { setActionDetails({id: b.id, newStatus: 'Confirmed', customerName: b.customer_name}); setShowStatusModal(true); }} className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 px-3 py-1 rounded text-xs font-bold hover:bg-green-200 transition">
                                                     APPROVE
                                                 </button>
-                                                <button onClick={() => { setActionDetails({id: b.id, newStatus: 'Cancelled', customerName: b.customer_name}); setShowStatusModal(true); }} className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-3 py-1 rounded text-xs font-bold hover:bg-red-200 transition">
+                                                <button onClick={() => { setActionDetails({id: b.id, newStatus: 'Cancelled', customerName: b.customer_name}); setShowStatusModal(true); }} className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 px-3 py-1 rounded text-xs font-bold hover:bg-yellow-200 transition">
                                                     REJECT
                                                 </button>
                                             </>
@@ -242,10 +275,15 @@ const BookingRequests = () => {
                                                 COMPLETE & RECONCILE
                                             </button>
                                         )}
+
+                                        {/* 🔥 DELETE BUTTON 🔥 */}
+                                        <button onClick={() => handleDeleteBooking(b.id)} className="bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-3 py-1 rounded text-xs font-bold border border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60 transition">
+                                            DELETE
+                                        </button>
                                     </td>
                                 </tr>
                             )) : (
-                                <tr><td colSpan="4" className="p-10 text-center text-gray-500 dark:text-gray-400 italic">No {filter !== 'All' ? filter.toLowerCase() : ''} bookings found.</td></tr>
+                                <tr><td colSpan="5" className="p-10 text-center text-gray-500 dark:text-gray-400 italic">No {filter !== 'All' ? filter.toLowerCase() : ''} bookings found.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -254,7 +292,7 @@ const BookingRequests = () => {
 
             {/* --- ULTRA-COMPACT TIMELINE VIEW MODAL --- */}
             {selectedBooking && (
-                <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title="Booking Overview" size="max-w-xl">
+                <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title={`Booking Overview (ID: #${selectedBooking.id})`} size="max-w-xl">
                     <div className="px-1 py-1">
                         {/* Customer Header */}
                         <div className="mb-2 text-center">
@@ -270,11 +308,9 @@ const BookingRequests = () => {
                             
                             {/* Step 1: Event Details */}
                             <div className="relative pl-5 md:pl-6">
-                                {/* Smaller Dot */}
                                 <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-blue-500 border-[3px] border-white dark:border-gray-800"></span>
                                 <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">1. Event Specifics</h4>
                                 
-                                {/* Compact Grid */}
                                 <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-1">
                                     <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
                                         <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-0.5">Date</p>
@@ -329,7 +365,6 @@ const BookingRequests = () => {
 
                         </div>
 
-                        {/* Compact Button */}
                         <button onClick={() => setSelectedBooking(null)} className="w-full mt-3 bg-gray-800 dark:bg-gray-700 text-white font-bold py-2 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-sm text-xs">
                             Close Timeline
                         </button>
