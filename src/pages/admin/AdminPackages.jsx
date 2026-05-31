@@ -6,14 +6,14 @@ const AdminPackages = () => {
   const [packages, setPackages] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Using exact database column names for perfect matching
+  // State matches the backend perfectly
   const [formData, setFormData] = useState({ 
     id: null, 
     package_name: '', 
     description: '', 
     price: '', 
     pax_capacity: '',
-    dishes: '' 
+    dish_limit: '' 
   });
   
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -40,7 +40,7 @@ const AdminPackages = () => {
       const res = await axios.post(`${apiUrl}${endpoint}`, formData);
       if (res.data.success) {
         setIsModalOpen(false);
-        fetchPackages(); // Refresh table
+        fetchPackages();
       } else {
         alert("Failed to save package.");
       }
@@ -54,7 +54,7 @@ const AdminPackages = () => {
     if(window.confirm("Are you sure you want to delete this package?")) {
       try {
         await axios.post(`${apiUrl}/admin_delete_package`, { id });
-        fetchPackages(); // Refresh table
+        fetchPackages(); 
       } catch (err) { 
         alert("Error deleting package"); 
       }
@@ -69,10 +69,10 @@ const AdminPackages = () => {
         description: pkg.description, 
         price: pkg.price, 
         pax_capacity: pkg.pax_capacity,
-        dishes: pkg.dishes || '' // Load existing dishes
+        dish_limit: pkg.dish_limit || '' 
       });
     } else {
-      setFormData({ id: null, package_name: '', description: '', price: '', pax_capacity: '', dishes: '' });
+      setFormData({ id: null, package_name: '', description: '', price: '', pax_capacity: '', dish_limit: '' });
     }
     setIsModalOpen(true);
   };
@@ -80,7 +80,7 @@ const AdminPackages = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-pink-700 dark:text-pink-400">Package & Menu Management</h2>
+        <h2 className="text-2xl font-bold text-pink-700 dark:text-pink-400">Package Management</h2>
         <button 
           onClick={() => openModal()} 
           className="flex items-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-pink-700 transition"
@@ -95,7 +95,7 @@ const AdminPackages = () => {
             <thead>
               <tr className="bg-pink-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                 <th className="p-4 border-b dark:border-gray-600 font-bold">Package Name</th>
-                <th className="p-4 border-b dark:border-gray-600 font-bold">Included Dishes</th>
+                <th className="p-4 border-b dark:border-gray-600 font-bold">Dish Limit</th>
                 <th className="p-4 border-b dark:border-gray-600 font-bold">Price</th>
                 <th className="p-4 border-b dark:border-gray-600 font-bold">Capacity</th>
                 <th className="p-4 border-b dark:border-gray-600 font-bold text-center">Actions</th>
@@ -106,10 +106,10 @@ const AdminPackages = () => {
                 <tr key={pkg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                   <td className="p-4 border-b dark:border-gray-700 font-bold text-pink-600 dark:text-pink-400">
                     {pkg.package_name}
-                    <div className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1">{pkg.description}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1 max-w-xs truncate">{pkg.description}</div>
                   </td>
-                  <td className="p-4 border-b dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
-                    {pkg.dishes || <span className="text-gray-400 italic">No dishes specified</span>}
+                  <td className="p-4 border-b dark:border-gray-700 text-sm font-bold text-gray-800 dark:text-gray-300">
+                    {pkg.dish_limit} Menu Choices
                   </td>
                   <td className="p-4 border-b dark:border-gray-700 font-bold text-gray-800 dark:text-gray-200">₱{pkg.price}</td>
                   <td className="p-4 border-b dark:border-gray-700 text-gray-600 dark:text-gray-300">{pkg.pax_capacity} Pax</td>
@@ -124,7 +124,7 @@ const AdminPackages = () => {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="5" className="p-6 text-center text-gray-500">No packages found. Create one above!</td>
+                  <td colSpan="5" className="p-6 text-center text-gray-500 font-bold">No packages found. Create one above!</td>
                 </tr>
               )}
             </tbody>
@@ -134,12 +134,12 @@ const AdminPackages = () => {
 
       {/* Transparent Blurred Modal Background */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-all">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-all duration-300">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg border dark:border-gray-700 relative">
             
             <button 
               onClick={() => setIsModalOpen(false)} 
-              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-xl font-bold transition"
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-2xl font-bold transition leading-none"
             >
               &times;
             </button>
@@ -157,11 +157,11 @@ const AdminPackages = () => {
                   onChange={(e) => setFormData({...formData, package_name: e.target.value})} 
                   className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
                   required 
-                  placeholder="e.g., Premium Wedding Package"
+                  placeholder="e.g., Package 1"
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Price (₱)</label>
                   <input 
@@ -170,57 +170,56 @@ const AdminPackages = () => {
                     onChange={(e) => setFormData({...formData, price: e.target.value})} 
                     className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
                     required 
-                    placeholder="50000"
+                    placeholder="30000"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Max Pax Capacity</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Capacity</label>
                   <input 
                     type="number" 
                     value={formData.pax_capacity} 
                     onChange={(e) => setFormData({...formData, pax_capacity: e.target.value})} 
                     className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
                     required 
-                    placeholder="100"
+                    placeholder="50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Dish Limit</label>
+                  <input 
+                    type="number" 
+                    value={formData.dish_limit} 
+                    onChange={(e) => setFormData({...formData, dish_limit: e.target.value})} 
+                    className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
+                    required 
+                    placeholder="7"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Included Dishes</label>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Features / Inclusions</label>
                 <textarea 
-                  rows="2" 
-                  value={formData.dishes} 
-                  onChange={(e) => setFormData({...formData, dishes: e.target.value})} 
-                  className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
-                  required
-                  placeholder="e.g., Beef Caldereta, Pork Menudo, Chicken Cordon Bleu, Rice, Dessert"
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Short Description</label>
-                <textarea 
-                  rows="2" 
+                  rows="3" 
                   value={formData.description} 
                   onChange={(e) => setFormData({...formData, description: e.target.value})} 
                   className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
                   required
-                  placeholder="Perfect for standard events with complete setup..."
+                  placeholder="Standard Setup, Tables & Chairs, Basic Styling..."
                 ></textarea>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-3">
+              <div className="flex justify-end space-x-3 pt-3 border-t dark:border-gray-700 mt-4">
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)} 
-                  className="px-5 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                  className="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 shadow-md transition"
+                  className="px-5 py-2.5 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 shadow-md transition"
                 >
                   {formData.id ? 'Save Changes' : 'Create Package'}
                 </button>
