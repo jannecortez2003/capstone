@@ -6,7 +6,7 @@ const AdminPackages = () => {
   const [packages, setPackages] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // State matches the backend perfectly
+  // State matches the backend perfectly, including dish_limit
   const [formData, setFormData] = useState({ 
     id: null, 
     package_name: '', 
@@ -95,7 +95,7 @@ const AdminPackages = () => {
             <thead>
               <tr className="bg-pink-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                 <th className="p-4 border-b dark:border-gray-600 font-bold">Package Name</th>
-                <th className="p-4 border-b dark:border-gray-600 font-bold">Dish Limit</th>
+                <th className="p-4 border-b dark:border-gray-600 font-bold text-center">Dish Limit</th>
                 <th className="p-4 border-b dark:border-gray-600 font-bold">Price</th>
                 <th className="p-4 border-b dark:border-gray-600 font-bold">Capacity</th>
                 <th className="p-4 border-b dark:border-gray-600 font-bold text-center">Actions</th>
@@ -108,8 +108,8 @@ const AdminPackages = () => {
                     {pkg.package_name}
                     <div className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1 max-w-xs truncate">{pkg.description}</div>
                   </td>
-                  <td className="p-4 border-b dark:border-gray-700 text-sm font-bold text-gray-800 dark:text-gray-300">
-                    {pkg.dish_limit} Menu Choices
+                  <td className="p-4 border-b dark:border-gray-700 text-sm font-bold text-gray-800 dark:text-gray-300 text-center bg-gray-50 dark:bg-gray-700/30">
+                    {pkg.dish_limit} Dishes
                   </td>
                   <td className="p-4 border-b dark:border-gray-700 font-bold text-gray-800 dark:text-gray-200">₱{pkg.price}</td>
                   <td className="p-4 border-b dark:border-gray-700 text-gray-600 dark:text-gray-300">{pkg.pax_capacity} Pax</td>
@@ -132,7 +132,7 @@ const AdminPackages = () => {
         </div>
       </div>
 
-      {/* Transparent Blurred Modal Background */}
+      {/* Modern Transparent Blurred Modal Background */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-all duration-300">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg border dark:border-gray-700 relative">
@@ -185,20 +185,20 @@ const AdminPackages = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Dish Limit</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 text-pink-600">Dish Limit</label>
                   <input 
                     type="number" 
                     value={formData.dish_limit} 
                     onChange={(e) => setFormData({...formData, dish_limit: e.target.value})} 
-                    className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
+                    className="w-full border dark:border-gray-600 bg-pink-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
                     required 
-                    placeholder="7"
+                    placeholder="e.g., 7"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Features / Inclusions</label>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Features / Inclusions (comma separated)</label>
                 <textarea 
                   rows="3" 
                   value={formData.description} 
