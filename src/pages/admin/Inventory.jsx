@@ -177,8 +177,8 @@ const Inventory = () => {
                                 </span>
                             </td>
                             <td className="p-4 flex justify-center gap-2">
-                                <button onClick={() => { setEditingItem(item); setShowModal(true); }} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition">EDIT</button>
-                                <button onClick={() => handleDelete(item.id)} className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-3 py-1 rounded text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900 transition">DELETE</button>
+                                <button onClick={() => { setEditingItem(item); setShowModal(true); }} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-semibold text-sm rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm border border-blue-100 dark:border-blue-800">EDIT</button>
+                                <button onClick={() => handleDelete(item.id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-semibold text-sm rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shadow-sm border border-red-100 dark:border-red-800">DELETE</button>
                             </td>
                             </tr>
                         ))
