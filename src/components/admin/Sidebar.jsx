@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, FaBars, FaTimes, FaSignOutAlt, FaIdBadge, FaHistory } from 'react-icons/fa';
+import { 
+  FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, 
+  FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, 
+  FaBars, FaTimes, FaSignOutAlt, FaIdBadge, FaHistory, 
+  FaTags // <-- Added FaTags for the new Packages link
+} from 'react-icons/fa';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -17,6 +22,7 @@ const Sidebar = () => {
     { path: '/admin', icon: <FaHome />, label: 'Dashboard' },
     { path: '/admin/booking-requests', icon: <FaCalendarAlt />, label: 'Bookings' },
     { path: '/admin/inventory', icon: <FaBox />, label: 'Inventory' },
+    { path: '/admin/packages', icon: <FaTags />, label: 'Packages' }, // <-- NEW PACKAGE MANAGEMENT ROUTE
     { path: '/admin/menu-items', icon: <FaUtensils />, label: 'Menu Items' },
     { path: '/admin/customer-chat', icon: <FaComments />, label: 'Chat' },
     { path: '/admin/staff', icon: <FaUsers />, label: 'Staff' }, 

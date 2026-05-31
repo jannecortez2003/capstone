@@ -26,6 +26,7 @@ import VerifyForm from './components/VerifyForm';
 import AccountList from './pages/admin/AccountList';
 import ActivityLogs from './pages/admin/ActivityLogs';
 import ChatBot from './components/ChatBot';
+import AdminPackages from './pages/admin/AdminPackages';
 
 import Auth from './pages/Auth';
 import UserProfile from './pages/UserProfile';
@@ -189,6 +190,7 @@ function App() {
           <Route path="accounts" element={<AccountList />} />
           <Route path="payment-tracking" element={<PaymentTracking />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="packages" element={<AdminPackages />} />
           <Route path="verification" element={<VerificationRequests />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
         </Route>
