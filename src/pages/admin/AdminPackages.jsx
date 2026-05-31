@@ -1,21 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 
 const AdminPackages = () => {
   const [packages, setPackages] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ id: null, name: '', description: '', price: '', pax_capacity: '' });
+  
+  // Using exact database column names for perfect matching
+  const [formData, setFormData] = useState({ 
+    id: null, 
+    package_name: '', 
+    description: '', 
+    price: '', 
+    pax_capacity: '',
+    dishes: '' 
+  });
   
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const fetchPackages = async () => {
     try {
       const res = await axios.get(`${apiUrl}/fetch_packages`);
-      if (res.data.success) setPackages(res.data.packages);
-    } catch (err) { console.error("Error fetching packages", err); }
+      if (res.data.success) {
+        setPackages(res.data.packages);
+      }
+    } catch (err) { 
+      console.error("Error fetching packages", err); 
+    }
   };
 
-  useEffect(() => { fetchPackages(); }, []);
+  useEffect(() => { 
+    fetchPackages(); 
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,90 +40,190 @@ const AdminPackages = () => {
       const res = await axios.post(`${apiUrl}${endpoint}`, formData);
       if (res.data.success) {
         setIsModalOpen(false);
-        fetchPackages();
+        fetchPackages(); // Refresh table
+      } else {
+        alert("Failed to save package.");
       }
-    } catch (err) { alert("Error saving package"); }
+    } catch (err) { 
+      console.error(err);
+      alert("Error saving package. Please check your console."); 
+    }
   };
 
   const handleDelete = async (id) => {
     if(window.confirm("Are you sure you want to delete this package?")) {
       try {
         await axios.post(`${apiUrl}/admin_delete_package`, { id });
-        fetchPackages();
-      } catch (err) { alert("Error deleting package"); }
+        fetchPackages(); // Refresh table
+      } catch (err) { 
+        alert("Error deleting package"); 
+      }
     }
   };
 
   const openModal = (pkg = null) => {
     if (pkg) {
-      setFormData({ id: pkg.id, name: pkg.package_name, description: pkg.description, price: pkg.price, pax_capacity: pkg.pax_capacity });
+      setFormData({ 
+        id: pkg.id, 
+        package_name: pkg.package_name, 
+        description: pkg.description, 
+        price: pkg.price, 
+        pax_capacity: pkg.pax_capacity,
+        dishes: pkg.dishes || '' // Load existing dishes
+      });
     } else {
-      setFormData({ id: null, name: '', description: '', price: '', pax_capacity: '' });
+      setFormData({ id: null, package_name: '', description: '', price: '', pax_capacity: '', dishes: '' });
     }
     setIsModalOpen(true);
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-pink-700">Package Management</h2>
-        <button onClick={() => openModal()} className="bg-pink-600 text-white px-4 py-2 rounded shadow hover:bg-pink-700 transition">+ Add Package</button>
+        <h2 className="text-2xl font-bold text-pink-700 dark:text-pink-400">Package & Menu Management</h2>
+        <button 
+          onClick={() => openModal()} 
+          className="flex items-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-pink-700 transition"
+        >
+          <FaPlus /> Add New Package
+        </button>
       </div>
 
-      <div className="bg-white shadow rounded p-4 overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-pink-50 text-left text-gray-700">
-              <th className="p-3 border-b">Package Name</th>
-              <th className="p-3 border-b">Description</th>
-              <th className="p-3 border-b">Price</th>
-              <th className="p-3 border-b">Capacity</th>
-              <th className="p-3 border-b text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {packages.map(pkg => (
-              <tr key={pkg.id} className="hover:bg-gray-50 transition">
-                <td className="p-3 border-b font-bold text-pink-600">{pkg.package_name}</td>
-                <td className="p-3 border-b text-sm text-gray-600">{pkg.description}</td>
-                <td className="p-3 border-b font-bold text-gray-800">₱{pkg.price}</td>
-                <td className="p-3 border-b text-gray-600">{pkg.pax_capacity} Pax</td>
-                <td className="p-3 border-b text-center space-x-2">
-                  <button onClick={() => openModal(pkg)} className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition">Edit</button>
-                  <button onClick={() => handleDelete(pkg.id)} className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition">Delete</button>
-                </td>
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border dark:border-gray-700">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-pink-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <th className="p-4 border-b dark:border-gray-600 font-bold">Package Name</th>
+                <th className="p-4 border-b dark:border-gray-600 font-bold">Included Dishes</th>
+                <th className="p-4 border-b dark:border-gray-600 font-bold">Price</th>
+                <th className="p-4 border-b dark:border-gray-600 font-bold">Capacity</th>
+                <th className="p-4 border-b dark:border-gray-600 font-bold text-center">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {packages.length > 0 ? packages.map(pkg => (
+                <tr key={pkg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                  <td className="p-4 border-b dark:border-gray-700 font-bold text-pink-600 dark:text-pink-400">
+                    {pkg.package_name}
+                    <div className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1">{pkg.description}</div>
+                  </td>
+                  <td className="p-4 border-b dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
+                    {pkg.dishes || <span className="text-gray-400 italic">No dishes specified</span>}
+                  </td>
+                  <td className="p-4 border-b dark:border-gray-700 font-bold text-gray-800 dark:text-gray-200">₱{pkg.price}</td>
+                  <td className="p-4 border-b dark:border-gray-700 text-gray-600 dark:text-gray-300">{pkg.pax_capacity} Pax</td>
+                  <td className="p-4 border-b dark:border-gray-700 text-center space-x-3">
+                    <button onClick={() => openModal(pkg)} className="text-blue-500 hover:text-blue-700 transition" title="Edit">
+                      <FaEdit size={18} />
+                    </button>
+                    <button onClick={() => handleDelete(pkg.id)} className="text-red-500 hover:text-red-700 transition" title="Delete">
+                      <FaTrash size={18} />
+                    </button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="5" className="p-6 text-center text-gray-500">No packages found. Create one above!</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
+      {/* Transparent Blurred Modal Background */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4 text-gray-800">{formData.id ? 'Edit Package' : 'New Package'}</h3>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-all">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl w-full max-w-lg border dark:border-gray-700 relative">
+            
+            <button 
+              onClick={() => setIsModalOpen(false)} 
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-xl font-bold transition"
+            >
+              &times;
+            </button>
+
+            <h3 className="text-2xl font-bold mb-5 text-gray-800 dark:text-white">
+              {formData.id ? 'Edit Package' : 'Create New Package'}
+            </h3>
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Package Name</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full border p-2 rounded" required />
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Package Name</label>
+                <input 
+                  type="text" 
+                  value={formData.package_name} 
+                  onChange={(e) => setFormData({...formData, package_name: e.target.value})} 
+                  className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
+                  required 
+                  placeholder="e.g., Premium Wedding Package"
+                />
               </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Price (₱)</label>
-                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full border p-2 rounded" required />
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Price (₱)</label>
+                  <input 
+                    type="number" 
+                    value={formData.price} 
+                    onChange={(e) => setFormData({...formData, price: e.target.value})} 
+                    className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
+                    required 
+                    placeholder="50000"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Max Pax Capacity</label>
-                  <input type="number" value={formData.pax_capacity} onChange={(e) => setFormData({...formData, pax_capacity: e.target.value})} className="w-full border p-2 rounded" required />
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Max Pax Capacity</label>
+                  <input 
+                    type="number" 
+                    value={formData.pax_capacity} 
+                    onChange={(e) => setFormData({...formData, pax_capacity: e.target.value})} 
+                    className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
+                    required 
+                    placeholder="100"
+                  />
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
-                <textarea rows="3" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full border p-2 rounded" required></textarea>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Included Dishes</label>
+                <textarea 
+                  rows="2" 
+                  value={formData.dishes} 
+                  onChange={(e) => setFormData({...formData, dishes: e.target.value})} 
+                  className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
+                  required
+                  placeholder="e.g., Beef Caldereta, Pork Menudo, Chicken Cordon Bleu, Rice, Dessert"
+                ></textarea>
               </div>
-              <div className="flex justify-end space-x-2 mt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-pink-600 text-white rounded hover:bg-pink-700 transition">Save Package</button>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Short Description</label>
+                <textarea 
+                  rows="2" 
+                  value={formData.description} 
+                  onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                  className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-pink-500" 
+                  required
+                  placeholder="Perfect for standard events with complete setup..."
+                ></textarea>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="px-5 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 shadow-md transition"
+                >
+                  {formData.id ? 'Save Changes' : 'Create Package'}
+                </button>
               </div>
             </form>
           </div>
