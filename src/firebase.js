@@ -3,13 +3,15 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"; 
 import { getFirestore } from "firebase/firestore"; 
+import { getDatabase } from "firebase/database"; // NEW IMPORT
 
-// Your web app's real Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCnj3wZDNuP6I9ijyoZj99QuZvj3LR8nJg",
   authDomain: "mommy-rosal-catering.firebaseapp.com",
-  // CRITICAL FIX: Required for presence status to work without crashing
+  
+  // ---> PASTE YOUR COPIED REALTIME DATABASE URL HERE: <---
   databaseURL: "https://mommy-rosal-catering-default-rtdb.firebaseio.com",
+  
   projectId: "mommy-rosal-catering",
   storageBucket: "mommy-rosal-catering.firebasestorage.app",
   messagingSenderId: "1088700671157",
@@ -17,15 +19,14 @@ const firebaseConfig = {
   measurementId: "G-1RJD12RTFY"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-
-// Initialize Auth and Firestore database
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Create default admin account if it doesn't exist
+// Explicitly initialize RTDB with our app
+const rtdb = getDatabase(app); 
+
 const createDefaultAdmin = async () => {
   try {
     const adminEmail = "admin@mommyrosal.com";
@@ -44,5 +45,5 @@ const createDefaultAdmin = async () => {
 
 createDefaultAdmin();
 
-export { auth, db };
+export { auth, db, rtdb }; 
 export default app;

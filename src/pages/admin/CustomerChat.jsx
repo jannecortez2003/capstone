@@ -1,23 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-  doc,
-  setDoc
-} from "firebase/firestore";
-import { db } from "../../firebase";
-
-import {
-  getDatabase,
-  ref,
-  set,
-  onDisconnect,
-  onValue
-} from "firebase/database";
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { db, rtdb } from "../../firebase"; 
+import { ref, set, onDisconnect, onValue } from "firebase/database";
 
 const CustomerChat = () => {
   const [conversations, setConversations] = useState([]);
@@ -29,27 +13,22 @@ const CustomerChat = () => {
 
   // SET ADMIN ONLINE STATUS PROPERLY
   useEffect(() => {
-    try {
-      const rtdb = getDatabase();
-      const userId = "admin";
-      const statusRef = ref(rtdb, `/status/${userId}`);
-      const connectedRef = ref(rtdb, ".info/connected");
+    const userId = "admin";
+    const statusRef = ref(rtdb, `/status/${userId}`);
+    const connectedRef = ref(rtdb, ".info/connected");
 
-      const unsubscribe = onValue(connectedRef, (snap) => {
-        if (snap.val() === true) {
-          onDisconnect(statusRef).set({ state: "offline", lastChanged: Date.now() }).then(() => {
-            set(statusRef, { state: "online", lastChanged: Date.now() });
-          });
-        }
-      });
+    const unsubscribe = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        onDisconnect(statusRef).set({ state: "offline", lastChanged: Date.now() }).then(() => {
+          set(statusRef, { state: "online", lastChanged: Date.now() }).catch(err => console.error("Admin RTDB Write Error:", err));
+        });
+      }
+    });
 
-      return () => {
-        unsubscribe();
-        set(statusRef, { state: "offline", lastChanged: Date.now() });
-      };
-    } catch (err) {
-      console.warn("RTDB missing. Admin presence disabled.");
-    }
+    return () => {
+      unsubscribe();
+      set(statusRef, { state: "offline", lastChanged: Date.now() }).catch(() => {});
+    };
   }, []);
 
   // LOAD CONVERSATIONS
@@ -74,27 +53,21 @@ const CustomerChat = () => {
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedMessages = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      
-      // FAST RESPONSE SORTING
       fetchedMessages.sort((a, b) => {
         const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : Date.now();
         const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : Date.now();
         return timeA - timeB;
       });
-
       setMessages(fetchedMessages);
     });
     return () => unsubscribe();
   }, [activeChatId]);
 
-  // SCROLL TO BOTTOM
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const activeChatDetails = conversations.find(
-    (c) => c.id === activeChatId
-  );
+  const activeChatDetails = conversations.find((c) => c.id === activeChatId);
 
   // LISTEN TO CUSTOMER STATUS
   useEffect(() => {
@@ -102,20 +75,17 @@ const CustomerChat = () => {
       setUserStatus("offline");
       return;
     }
-    try {
-      const rtdb = getDatabase();
-      const statusRef = ref(rtdb, `/status/${activeChatDetails.userId}`);
-      const unsubscribe = onValue(statusRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setUserStatus(snapshot.val().state);
-        } else {
-          setUserStatus("offline");
-        }
-      });
-      return () => unsubscribe();
-    } catch(err) {
-      setUserStatus("offline");
-    }
+    const statusRef = ref(rtdb, `/status/${activeChatDetails.userId}`);
+    const unsubscribe = onValue(statusRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setUserStatus(snapshot.val().state);
+      } else {
+        setUserStatus("offline");
+      }
+    }, (error) => {
+        console.error("Customer Status Read Error:", error);
+    });
+    return () => unsubscribe();
   }, [activeChatDetails?.userId]); 
 
   // SEND MESSAGE
@@ -123,28 +93,21 @@ const CustomerChat = () => {
     e.preventDefault();
     if (!adminReply.trim() || !activeChatId) return;
     const textToSend = adminReply;
-    setAdminReply(""); // Instantly clear input
+    setAdminReply(""); 
 
     try {
-      await addDoc(
-        collection(db, `chats/${activeChatId}/messages`),
-        {
+      await addDoc(collection(db, `chats/${activeChatId}/messages`), {
           text: textToSend,
           sender: "admin",
           createdAt: serverTimestamp()
-        }
-      );
+      });
       
-      await setDoc(
-        doc(db, "chats", activeChatId),
-        {
+      await setDoc(doc(db, "chats", activeChatId), {
           lastMessage: `Admin: ${textToSend}`,
           updatedAt: serverTimestamp()
-        },
-        { merge: true }
+        }, { merge: true }
       );
 
-      // Trigger MySQL Notification for the Customer
       if (activeChatDetails?.userId) {
           fetch(`${import.meta.env.VITE_API_URL}/notify_chat_message`, {
               method: 'POST',
@@ -170,12 +133,7 @@ const CustomerChat = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm flex flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-300">
-        {/* SIDEBAR */}
-        <div
-          className={`${
-            activeChatId ? "hidden md:block" : "block"
-          } w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-800/50 transition-colors duration-300`}
-        >
+        <div className={`${activeChatId ? "hidden md:block" : "block"} w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-800/50 transition-colors duration-300`}>
           <input
             className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl px-4 py-2 w-full mb-4 focus:ring-2 focus:ring-pink-500 outline-none transition-colors duration-300 placeholder-gray-400"
             placeholder="Search conversations..."
@@ -208,20 +166,11 @@ const CustomerChat = () => {
           </div>
         </div>
 
-        {/* CHAT */}
-        <div
-          className={`${
-            activeChatId ? "flex" : "hidden md:flex"
-          } flex-1 flex-col bg-white dark:bg-gray-900 transition-colors duration-300`}
-        >
+        <div className={`${activeChatId ? "flex" : "hidden md:flex"} flex-1 flex-col bg-white dark:bg-gray-900 transition-colors duration-300`}>
           {activeChatId ? (
             <>
-              {/* HEADER */}
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 bg-white dark:bg-gray-800 z-10 transition-colors duration-300">
-                <button
-                  onClick={() => setActiveChatId(null)}
-                  className="md:hidden text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 text-xl font-bold pr-2"
-                >
+                <button onClick={() => setActiveChatId(null)} className="md:hidden text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 text-xl font-bold pr-2">
                    &#8592;
                 </button>
                 <div>
@@ -229,13 +178,7 @@ const CustomerChat = () => {
                     {activeChatDetails?.customerName || "Guest"}
                   </div>
                   <div className="text-xs flex items-center gap-1.5 mt-0.5 font-medium">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        userStatus === "online"
-                          ? "bg-green-500 shadow-[0_0_5px_#22c55e]"
-                          : "bg-gray-400 dark:bg-gray-600"
-                      }`}
-                    ></span>
+                    <span className={`w-2 h-2 rounded-full ${userStatus === "online" ? "bg-green-500 shadow-[0_0_5px_#22c55e]" : "bg-gray-400 dark:bg-gray-600"}`}></span>
                     <span className={userStatus === "online" ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}>
                         {userStatus === "online" ? "Online" : "Offline"}
                     </span>
@@ -243,24 +186,14 @@ const CustomerChat = () => {
                 </div>
               </div>
 
-              {/* MESSAGES */}
               <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50 dark:bg-gray-900/50 transition-colors duration-300">
                 {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${
-                      msg.sender === "admin"
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] md:max-w-md p-3.5 rounded-2xl shadow-sm text-sm transition-colors duration-300 ${
+                  <div key={msg.id} className={`flex ${msg.sender === "admin" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] md:max-w-md p-3.5 rounded-2xl shadow-sm text-sm transition-colors duration-300 ${
                         msg.sender === "admin"
                           ? "bg-pink-600 text-white rounded-br-sm"
                           : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-sm"
-                      }`}
-                    >
+                      }`}>
                       {msg.text}
                     </div>
                   </div>
@@ -268,11 +201,7 @@ const CustomerChat = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* INPUT */}
-              <form
-                onSubmit={handleSendReply}
-                className="p-3 md:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2 transition-colors duration-300"
-              >
+              <form onSubmit={handleSendReply} className="p-3 md:p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2 transition-colors duration-300">
                 <input
                   value={adminReply}
                   onChange={(e) => setAdminReply(e.target.value)}
