@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { db, rtdb } from "../../firebase"; 
-import { ref, set, onDisconnect, onValue } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 
 const CustomerChat = () => {
   const [conversations, setConversations] = useState([]);
@@ -10,26 +10,6 @@ const CustomerChat = () => {
   const [adminReply, setAdminReply] = useState("");
   const [userStatus, setUserStatus] = useState("offline");
   const messagesEndRef = useRef(null);
-
-  // SET ADMIN ONLINE STATUS PROPERLY
-  useEffect(() => {
-    const userId = "admin";
-    const statusRef = ref(rtdb, `/status/${userId}`);
-    const connectedRef = ref(rtdb, ".info/connected");
-
-    const unsubscribe = onValue(connectedRef, (snap) => {
-      if (snap.val() === true) {
-        onDisconnect(statusRef).set({ state: "offline", lastChanged: Date.now() }).then(() => {
-          set(statusRef, { state: "online", lastChanged: Date.now() }).catch(err => console.error("Admin RTDB Write Error:", err));
-        });
-      }
-    });
-
-    return () => {
-      unsubscribe();
-      set(statusRef, { state: "offline", lastChanged: Date.now() }).catch(() => {});
-    };
-  }, []);
 
   // LOAD CONVERSATIONS
   useEffect(() => {
@@ -75,17 +55,21 @@ const CustomerChat = () => {
       setUserStatus("offline");
       return;
     }
-    const statusRef = ref(rtdb, `/status/${activeChatDetails.userId}`);
-    const unsubscribe = onValue(statusRef, (snapshot) => {
-      if (snapshot.exists()) {
-        setUserStatus(snapshot.val().state);
-      } else {
-        setUserStatus("offline");
-      }
-    }, (error) => {
-        console.error("Customer Status Read Error:", error);
-    });
-    return () => unsubscribe();
+    try {
+      const statusRef = ref(rtdb, `/status/${activeChatDetails.userId}`);
+      const unsubscribe = onValue(statusRef, (snapshot) => {
+        if (snapshot.exists()) {
+          setUserStatus(snapshot.val().state);
+        } else {
+          setUserStatus("offline");
+        }
+      }, (error) => {
+          console.error("Customer Status Read Error:", error);
+      });
+      return () => unsubscribe();
+    } catch(err) {
+      setUserStatus("offline");
+    }
   }, [activeChatDetails?.userId]); 
 
   // SEND MESSAGE
