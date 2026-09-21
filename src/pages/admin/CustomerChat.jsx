@@ -5,12 +5,12 @@ import {
   orderBy,
   onSnapshot,
   addDoc,
+  serverTimestamp,
   doc,
   setDoc
 } from "firebase/firestore";
 import { db } from "../../firebase";
 
-// Realtime DB (for presence)
 import {
   getDatabase,
   ref,
@@ -27,25 +27,29 @@ const CustomerChat = () => {
   const [userStatus, setUserStatus] = useState("offline");
   const messagesEndRef = useRef(null);
 
-  // --- FIX: SET ADMIN ONLINE STATUS PROPERLY ---
+  // SET ADMIN ONLINE STATUS PROPERLY
   useEffect(() => {
-    const rtdb = getDatabase();
-    const userId = "admin";
-    const statusRef = ref(rtdb, `/status/${userId}`);
-    const connectedRef = ref(rtdb, ".info/connected");
+    try {
+      const rtdb = getDatabase();
+      const userId = "admin";
+      const statusRef = ref(rtdb, `/status/${userId}`);
+      const connectedRef = ref(rtdb, ".info/connected");
 
-    const unsubscribe = onValue(connectedRef, (snap) => {
-      if (snap.val() === true) {
-        onDisconnect(statusRef).set({ state: "offline", lastChanged: Date.now() }).then(() => {
-          set(statusRef, { state: "online", lastChanged: Date.now() });
-        });
-      }
-    });
+      const unsubscribe = onValue(connectedRef, (snap) => {
+        if (snap.val() === true) {
+          onDisconnect(statusRef).set({ state: "offline", lastChanged: Date.now() }).then(() => {
+            set(statusRef, { state: "online", lastChanged: Date.now() });
+          });
+        }
+      });
 
-    return () => {
-      unsubscribe();
-      set(statusRef, { state: "offline", lastChanged: Date.now() });
-    };
+      return () => {
+        unsubscribe();
+        set(statusRef, { state: "offline", lastChanged: Date.now() });
+      };
+    } catch (err) {
+      console.warn("RTDB missing. Admin presence disabled.");
+    }
   }, []);
 
   // LOAD CONVERSATIONS
@@ -69,7 +73,16 @@ const CustomerChat = () => {
       orderBy("createdAt", "asc")
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMessages(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      const fetchedMessages = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      
+      // FAST RESPONSE SORTING
+      fetchedMessages.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : Date.now();
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : Date.now();
+        return timeA - timeB;
+      });
+
+      setMessages(fetchedMessages);
     });
     return () => unsubscribe();
   }, [activeChatId]);
@@ -83,22 +96,26 @@ const CustomerChat = () => {
     (c) => c.id === activeChatId
   );
 
-  // --- FIX: LISTEN TO CUSTOMER STATUS PREVENTING RE-RENDERS ---
+  // LISTEN TO CUSTOMER STATUS
   useEffect(() => {
     if (!activeChatDetails?.userId) {
       setUserStatus("offline");
       return;
     }
-    const rtdb = getDatabase();
-    const statusRef = ref(rtdb, `/status/${activeChatDetails.userId}`);
-    const unsubscribe = onValue(statusRef, (snapshot) => {
-      if (snapshot.exists()) {
-        setUserStatus(snapshot.val().state);
-      } else {
-        setUserStatus("offline");
-      }
-    });
-    return () => unsubscribe();
+    try {
+      const rtdb = getDatabase();
+      const statusRef = ref(rtdb, `/status/${activeChatDetails.userId}`);
+      const unsubscribe = onValue(statusRef, (snapshot) => {
+        if (snapshot.exists()) {
+          setUserStatus(snapshot.val().state);
+        } else {
+          setUserStatus("offline");
+        }
+      });
+      return () => unsubscribe();
+    } catch(err) {
+      setUserStatus("offline");
+    }
   }, [activeChatDetails?.userId]); 
 
   // SEND MESSAGE
@@ -106,17 +123,15 @@ const CustomerChat = () => {
     e.preventDefault();
     if (!adminReply.trim() || !activeChatId) return;
     const textToSend = adminReply;
-    setAdminReply(""); // Clear input immediately for instant UI response
+    setAdminReply(""); // Instantly clear input
 
     try {
-      const timestamp = Date.now(); // Fix: Instant sorting in local cache
-
       await addDoc(
         collection(db, `chats/${activeChatId}/messages`),
         {
           text: textToSend,
           sender: "admin",
-          createdAt: timestamp
+          createdAt: serverTimestamp()
         }
       );
       
@@ -124,12 +139,12 @@ const CustomerChat = () => {
         doc(db, "chats", activeChatId),
         {
           lastMessage: `Admin: ${textToSend}`,
-          updatedAt: timestamp
+          updatedAt: serverTimestamp()
         },
         { merge: true }
       );
 
-      // Trigger MySQL Notification for the Customer (Fire and forget, no await to prevent lag)
+      // Trigger MySQL Notification for the Customer
       if (activeChatDetails?.userId) {
           fetch(`${import.meta.env.VITE_API_URL}/notify_chat_message`, {
               method: 'POST',
