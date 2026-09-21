@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { FaUser, FaEnvelope, FaPhone, FaCalendarCheck, FaMoneyBillWave, FaHistory, FaClock, FaCheckCircle, FaMoneyCheckAlt } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaCalendarCheck, FaMoneyBillWave, FaHistory, FaClock, FaCheckCircle, FaMoneyCheckAlt, FaChevronRight } from "react-icons/fa";
+import Modal from '../components/Modal';
 
 const UserProfile = () => {
   const [user, setUser] = useState(null);
@@ -10,6 +11,10 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState("overview"); 
   const [loading, setLoading] = useState(true);
   const [shouldRedirect, setShouldRedirect] = useState(false); 
+  
+  // Modal State for Booking Details
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -22,7 +27,7 @@ const UserProfile = () => {
     const fetchData = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
-
+        
         // 1. Fetch Bookings
         const resBookings = await fetch(`${apiUrl}/fetch_user_appointments?user_id=${storedUser.id}`);
         const dataBookings = await resBookings.json();
@@ -33,25 +38,22 @@ const UserProfile = () => {
 
         if (dataBookings.success) {
             setBookings(dataBookings.appointments);
-            // Calculate booking stats
             pendingCount = dataBookings.appointments.filter(b => b.status === 'Pending').length;
             confirmedCount = dataBookings.appointments.filter(b => b.status === 'Confirmed').length;
             completedCount = dataBookings.appointments.filter(b => b.status === 'Completed').length;
         }
 
-        // 2. Fetch Payments using the new route
+        // 2. Fetch Payments
         const resTrans = await fetch(`${apiUrl}/fetch_user_payments?user_id=${storedUser.id}`);
         const dataTrans = await resTrans.json();
         
         let totalSpent = 0;
-
         if (dataTrans.success) {
             setTransactions(dataTrans.payments);
-            // Calculate total spent
             totalSpent = dataTrans.payments.reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
         }
 
-        // Update all stats at once
+        // Update stats
         setStats({
             total_bookings: dataBookings.appointments?.length || 0,
             pending: pendingCount,
@@ -108,7 +110,7 @@ const UserProfile = () => {
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 text-sm transition-colors duration-300">Total Spent</span>
-                    <span className="font-bold text-green-600 dark:text-green-400 transition-colors duration-300">₱{stats.total_spent?.toLocaleString() || '0'}</span>
+                    <span className="font-bold text-green-600 dark:text-green-400 transition-colors duration-300">₱ {stats.total_spent?.toLocaleString() || '0'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 text-sm transition-colors duration-300">Events Booked</span>
@@ -166,18 +168,24 @@ const UserProfile = () => {
                         <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                             <h3 className="font-bold text-gray-700 dark:text-gray-300 transition-colors duration-300">My Appointments</h3>
                         </div>
+
                         {bookings.length === 0 ? (
                             <div className="p-8 text-center text-gray-500 dark:text-gray-400 transition-colors duration-300">You haven't booked any events yet.</div>
                         ) : (
-                            <div className="divide-y dark:divide-gray-700">
+                            <div className="divide-y dark:divide-gray-700 p-2">
                                 {bookings.map((booking) => (
-                                    <div key={booking.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                                    <div 
+                                        key={booking.id} 
+                                        onClick={() => { setSelectedBooking(booking); setShowBookingModal(true); }}
+                                        className="p-4 hover:bg-pink-50 dark:hover:bg-gray-700 transition flex flex-col sm:flex-row justify-between sm:items-center gap-4 cursor-pointer border border-transparent hover:border-pink-200 dark:hover:border-gray-600 rounded-lg m-2"
+                                    >
                                         <div>
                                             <h4 className="font-bold text-gray-800 dark:text-white text-lg transition-colors duration-300">{booking.event_type}</h4>
                                             <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">{new Date(booking.preferred_date).toLocaleDateString()} • {booking.package_type}</p>
+                                            
                                             <div className="mt-2 flex gap-2">
                                                 <span className="text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition-colors duration-300">Guests: {booking.guest_count}</span>
-                                                <span className="text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition-colors duration-300">Total: ₱{parseFloat(booking.total_cost || 0).toLocaleString()}</span>
+                                                <span className="text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition-colors duration-300">Total: ₱ {parseFloat(booking.total_cost || 0).toLocaleString()}</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
@@ -189,6 +197,7 @@ const UserProfile = () => {
                                             }`}>
                                                 {booking.status}
                                             </span>
+                                            <FaChevronRight className="text-gray-400 dark:text-gray-500" />
                                         </div>
                                     </div>
                                 ))}
@@ -204,6 +213,7 @@ const UserProfile = () => {
                     <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center transition-colors duration-300">
                         <h3 className="font-bold text-gray-700 dark:text-gray-300 transition-colors duration-300">Payment History</h3>
                     </div>
+
                     {transactions.length === 0 ? (
                         <div className="p-10 text-center flex flex-col items-center">
                             <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-full mb-3 text-gray-400 dark:text-gray-500 transition-colors duration-300">
@@ -238,7 +248,7 @@ const UserProfile = () => {
                                                 </span>
                                             </td>
                                             <td className="p-4 text-right font-bold text-green-600 dark:text-green-400 transition-colors duration-300">
-                                                + ₱{parseFloat(t.amount_paid).toLocaleString()}
+                                                + ₱ {parseFloat(t.amount_paid).toLocaleString()}
                                             </td>
                                             <td className="p-4 text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
                                                 {t.remarks || '-'}
@@ -253,6 +263,83 @@ const UserProfile = () => {
             )}
         </div>
       </div>
+
+      {/* NEW EVENT DETAILS MODAL */}
+      <Modal isOpen={showBookingModal} onClose={() => setShowBookingModal(false)} title="Event Details" size="max-w-2xl">
+          {selectedBooking && (
+              <div className="text-gray-800 dark:text-gray-200 space-y-5 px-1">
+                  <div className="bg-pink-50 dark:bg-gray-700/50 p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center border dark:border-gray-700 gap-4">
+                      <div>
+                          <h4 className="font-bold text-pink-600 dark:text-pink-400 text-2xl">{selectedBooking.event_type}</h4>
+                          <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">
+                              <span className="font-semibold">{new Date(selectedBooking.preferred_date).toLocaleDateString()}</span> • {selectedBooking.guest_count} Guests
+                          </p>
+                      </div>
+                      <div>
+                          <span className={`px-4 py-1.5 rounded-full text-sm font-bold shadow-sm ${
+                              selectedBooking.status === 'Confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' :
+                              selectedBooking.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' :
+                              selectedBooking.status === 'Cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' :
+                              'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400'
+                          }`}>
+                              Status: {selectedBooking.status}
+                          </span>
+                      </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {/* Package Inclusions */}
+                      <div className="bg-gray-50 dark:bg-gray-900 p-5 rounded-xl border dark:border-gray-700 shadow-sm">
+                          <h4 className="font-black border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 text-sm uppercase tracking-wider text-gray-500">Package Selected</h4>
+                          <p className="text-base font-bold text-pink-600 dark:text-pink-400 mb-3">{selectedBooking.package_type}</p>
+                          {selectedBooking.inclusions ? (
+                              <ul className="space-y-2">
+                                  {selectedBooking.inclusions.split(',').map((inc, i) => (
+                                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                          <FaCheckCircle className="text-pink-500 shrink-0 mt-1" />
+                                          <span className="leading-tight">{inc.trim()}</span>
+                                      </li>
+                                  ))}
+                              </ul>
+                          ) : (
+                              <p className="text-sm text-gray-500 italic">Standard inclusions apply.</p>
+                          )}
+                      </div>
+
+                      {/* Dishes Selected */}
+                      <div className="bg-gray-50 dark:bg-gray-900 p-5 rounded-xl border dark:border-gray-700 shadow-sm">
+                          <h4 className="font-black border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 text-sm uppercase tracking-wider text-gray-500">Menu Chosen</h4>
+                          {selectedBooking.selected_dishes ? (
+                              <ul className="space-y-2">
+                                  {selectedBooking.selected_dishes.split(';').map((dish, i) => {
+                                      if(!dish.trim()) return null;
+                                      return (
+                                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                              <FaCheckCircle className="text-pink-500 shrink-0 mt-1" />
+                                              <span className="leading-tight">{dish.trim()}</span>
+                                          </li>
+                                      )
+                                  })}
+                              </ul>
+                          ) : (
+                              <p className="text-sm text-gray-500 italic bg-gray-100 dark:bg-gray-800 p-3 rounded text-center mt-4">No dishes were selected.</p>
+                          )}
+                      </div>
+                  </div>
+                  
+                  {/* Total Cost */}
+                  <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-5 rounded-xl font-bold border dark:border-gray-700 shadow-inner">
+                      <span className="text-gray-700 dark:text-gray-300 uppercase tracking-wider text-sm">Total Event Cost</span>
+                      <span className="text-green-600 dark:text-green-400 text-2xl">₱ {parseFloat(selectedBooking.total_cost || 0).toLocaleString()}</span>
+                  </div>
+                  
+                  <button onClick={() => setShowBookingModal(false)} className="w-full bg-gray-800 dark:bg-gray-700 text-white font-bold py-3.5 rounded-xl hover:bg-gray-900 dark:hover:bg-gray-600 transition shadow-md mt-4">
+                      Close Details
+                  </button>
+              </div>
+          )}
+      </Modal>
+
     </div>
   );
 };
