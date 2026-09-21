@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Modal, { SuccessModal } from './components/Modal';
-
 import EventFormModal from './components/EventFormModal';
 import DishSelectionModal from './components/DishSelectionModal';
 import Services from './components/Services';
@@ -27,7 +26,6 @@ import AccountList from './pages/admin/AccountList';
 import ActivityLogs from './pages/admin/ActivityLogs';
 import ChatBot from './components/ChatBot';
 import AdminPackages from './pages/admin/AdminPackages';
-
 import Auth from './pages/Auth';
 import UserProfile from './pages/UserProfile';
 import './App.css';
@@ -35,7 +33,6 @@ import './App.css';
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeForm, setActiveForm] = useState(null);
   const [user, setUser] = useState(null);
@@ -50,7 +47,6 @@ function App() {
 
   // --- PERSISTENT LOGIN FIX ---
   useEffect(() => {
-    // Check local storage on initial load
     const storedUser = localStorage.getItem('user') || localStorage.getItem('adminUser');
     const storedLoginState = localStorage.getItem('isLoggedIn');
     
@@ -59,28 +55,22 @@ function App() {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setIsLoggedIn(true);
-
-        // Security check: If a normal user tries to access /admin directly, kick them out
         if (location.pathname.startsWith('/admin') && parsedUser.role !== 'admin' && parsedUser.username !== 'admin') {
             navigate('/', { replace: true });
         }
-
       } catch (e) {
         console.error("Failed to parse stored user data:", e);
-        // Clear corrupted data
         localStorage.removeItem('user');
         localStorage.removeItem('adminUser');
         localStorage.removeItem('isLoggedIn');
       }
     } else {
-        // If not logged in but trying to access protected routes, send to auth
         if (location.pathname.startsWith('/admin') || location.pathname === '/profile') {
             navigate('/auth', { replace: true });
         }
     }
   }, [navigate, location.pathname]);
 
-  // Handle form activation
   useEffect(() => {
     if (activeForm === 'login' || activeForm === 'signup') {
       navigate('/auth');
@@ -91,8 +81,6 @@ function App() {
   const handleAuthLogin = (userData) => {
     setUser(userData);
     setIsLoggedIn(true);
-    
-    // Save to local storage for persistence
     localStorage.setItem("isLoggedIn", "true");
     if (userData.username === 'admin' || userData.role === 'admin') {
         localStorage.setItem("adminUser", JSON.stringify(userData));
@@ -147,7 +135,6 @@ function App() {
     setShowEventFormModal(true);
   };
 
-  // Only show the customer Navbar if we are NOT on an admin route
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
@@ -155,19 +142,15 @@ function App() {
       {!isAdminRoute && (
         <Navbar setActiveForm={setActiveForm} isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} onShowVerifyModal={handleShowVerifyModal} />
       )}
-
-      {/* Show Chatbot only for logged-in regular users */}
       {!isAdminRoute && isLoggedIn && user && user.role !== 'admin' && user.username !== 'admin' && <ChatBot user={user} />}
-
+      
       <Routes>
         <Route path="/auth" element={<Auth onLogin={handleAuthLogin} />} />
         
-        {/* Protected Profile Route */}
         <Route path="/profile" element={
             isLoggedIn ? <UserProfile /> : <Navigate to="/auth" replace />
         } />
         
-        {/* Main Landing Page */}
         <Route path="/" element={
           <>
             <Hero handleHeroBooking={handleHeroBooking} />
@@ -179,7 +162,6 @@ function App() {
           </>
         } />
 
-        {/* Protected Admin Routes */}
         <Route path="/admin/*" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="booking-requests" element={<BookingRequests />} />
@@ -194,12 +176,9 @@ function App() {
           <Route path="verification" element={<VerificationRequests />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
         </Route>
-
-        {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Verification Modal */}
       {showVerifyModal && user && (
         <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/50">
           <div className="bg-pink-500 rounded-lg shadow-lg w-full max-w-lg p-6 relative">
@@ -209,7 +188,6 @@ function App() {
         </div>
       )}
 
-      {/* Dish Selection Modal */}
       <DishSelectionModal 
         isOpen={showDishModal} 
         onClose={() => setShowDishModal(false)} 
@@ -217,21 +195,19 @@ function App() {
         onConfirm={handleDishSelectionConfirm} 
       />
 
-      {/* Event Form Modal */}
       <EventFormModal 
         isOpen={showEventFormModal} 
         onClose={() => setShowEventFormModal(false)} 
         userId={user?.id} 
         preSelectedPackage={selectedPackageForBooking?.title}
+        packageCapacity={selectedPackageForBooking?.guestCount} 
         preSelectedDishes={finalSelectedDishes}
         preSelectedEventType={preSelectedEventType} 
         onBookingSuccess={handleBookingSuccess} 
       />
       
-      {/* Success Modal */}
       <SuccessModal isOpen={showBookingSuccessModal} onClose={() => setShowBookingSuccessModal(false)} title="Booking Confirmed!" message={bookingSuccessMessage} />
     </>
   );
 }
-
 export default App;

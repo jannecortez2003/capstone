@@ -7,11 +7,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  // NEW: Tab Filter State
   const [filter, setFilter] = useState('All');
-
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-  
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -21,7 +19,7 @@ const Dashboard = () => {
       localStorage.setItem('theme', 'light');
     }
   }, [theme]);
-  
+
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
@@ -40,35 +38,29 @@ const Dashboard = () => {
       });
   }, []);
 
-  // 🔥 BULLETPROOF DATE FORMATTER 🔥
-  const formatSafeDate = (dateVal) => {
-    if (!dateVal) return "N/A";
-    
+  const formatSafeDateRange = (start, end) => {
+    if (!start) return "N/A";
     try {
-        let date = new Date(dateVal);
+        let sDate = new Date(start);
+        if (isNaN(sDate.getTime())) sDate = new Date(`${start}T00:00:00`);
+        const sStr = sDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
         
-        // If invalid, try forcing a valid string format by splitting and appending a timestamp
-        if (isNaN(date.getTime())) {
-            date = new Date(`${dateVal}T00:00:00`);
+        if (end && end !== start) {
+            let eDate = new Date(end);
+            if (isNaN(eDate.getTime())) eDate = new Date(`${end}T00:00:00`);
+            const eStr = eDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            return `${sStr} - ${eStr}`;
         }
-        
-        // If STILL invalid, fallback gracefully
-        if (isNaN(date.getTime())) return "N/A"; 
-        
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric'
-        });
-    } catch(e) {
-        return "N/A";
-    }
+        return sStr;
+    } catch(e) { return "N/A"; }
   };
 
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
-  // 🔥 Filter the events based on the selected tab 🔥
   const filteredEvents = upcomingEvents.filter(event => {
     if (filter === 'All') return true;
     return event.status === filter;
@@ -93,10 +85,15 @@ const Dashboard = () => {
       const d = String(day).padStart(2, '0');
       const dateStr = `${year}-${m}-${d}`;
       
-      // Events show on calendar if they are pending or confirmed
-      const hasEvent = upcomingEvents.some(e => 
-          e.preferred_date && e.preferred_date.startsWith(dateStr) && (e.status === 'Confirmed' || e.status === 'Pending')
-      );
+      const hasEvent = upcomingEvents.some(e => {
+        if (e.status !== 'Confirmed' && e.status !== 'Pending') return false;
+        if (!e.preferred_date) return false;
+        
+        const start = e.preferred_date.split('T')[0];
+        const end = e.end_date ? e.end_date.split('T')[0] : start;
+        return dateStr >= start && dateStr <= end;
+      });
+
       const isToday = todayStr === dateStr;
 
       days.push(
@@ -134,7 +131,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
@@ -146,7 +142,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-yellow-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
@@ -158,7 +153,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-blue-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
@@ -175,7 +169,6 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300 h-fit">
           
-          {/* TABS HEADER */}
           <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Event Overview</h2>
             
@@ -216,8 +209,7 @@ const Dashboard = () => {
                   filteredEvents.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                       <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">
-                        {/* 🔥 SAFE DATE USED HERE 🔥 */}
-                        {formatSafeDate(event.preferred_date)}
+                        {formatSafeDateRange(event.preferred_date, event.end_date)}
                       </td>
                       <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">{event.event_type}</td>
                       <td className="p-4">
@@ -264,6 +256,6 @@ const Dashboard = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Dashboard;

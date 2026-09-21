@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
-const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelectedDishes, onBookingSuccess, preSelectedEventType }) => {
-  const [formData, setFormData] = useState({ eventType: '', preferredDate: '', guestCount: '', notes: '' });
+const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCapacity, preSelectedDishes, onBookingSuccess, preSelectedEventType }) => {
+  const [formData, setFormData] = useState({ eventType: '', preferredDate: '', duration: 1, guestCount: '', notes: '' });
   const [bookedDates, setBookedDates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Custom Calendar State
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
@@ -15,7 +14,10 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
       setFormData(prev => ({
         ...prev,
         eventType: preSelectedEventType || 'Wedding',
-        preferredDate: '', guestCount: '', notes: ''
+        preferredDate: '', 
+        duration: 1,
+        guestCount: packageCapacity || '', 
+        notes: ''
       }));
       setError(null);
       setCurrentMonth(new Date());
@@ -24,53 +26,94 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            const dates = data.bookedDates.map(d => {
-              const dateObj = new Date(d);
-              const y = dateObj.getFullYear();
-              const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-              const day = String(dateObj.getDate()).padStart(2, '0');
-              return `${y}-${m}-${day}`;
-            });
-            setBookedDates(dates);
+            setBookedDates(data.bookedDates);
           }
         })
         .catch(err => console.error("Failed to load booked dates", err));
     }
-  }, [isOpen, preSelectedEventType]);
+  }, [isOpen, preSelectedEventType, packageCapacity]);
 
   if (!isOpen) return null;
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleDateClick = (dateStr) => {
+    let cur = new Date(dateStr);
+    let isValid = true;
+    for(let i=0; i<formData.duration; i++) {
+        let checkStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+        if (bookedDates.includes(checkStr)) {
+            isValid = false;
+            break;
+        }
+        cur.setDate(cur.getDate() + 1);
+    }
+    
+    if (!isValid) {
+        setError(`Cannot select ${dateStr} for ${formData.duration} days because it overlaps with an existing booking.`);
+        return;
+    }
+    
+    setFormData({ ...formData, preferredDate: dateStr });
+    setError(null);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let newData = { ...formData, [name]: value };
+    
+    if (name === 'duration' && newData.preferredDate) {
+        let cur = new Date(newData.preferredDate);
+        let isValid = true;
+        for(let i=0; i<newData.duration; i++) {
+            let checkStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+            if (bookedDates.includes(checkStr)) {
+                isValid = false;
+                break;
+            }
+            cur.setDate(cur.getDate() + 1);
+        }
+        if (!isValid) {
+            setError(`Extending to ${value} days overlaps with an existing booking. Please choose another start date.`);
+            newData.preferredDate = ''; 
+        } else {
+            setError(null);
+        }
+    }
+    setFormData(newData);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.preferredDate) {
-        setError("❌ Please select an available date from the calendar.");
+        setError("Please select an available date from the calendar.");
         return;
     }
     
     setLoading(true); setError(null);
     try {
+      const payload = { 
+        userId, 
+        packageType: preSelectedPackage, 
+        selectedDishes: preSelectedDishes.join('; '), 
+        ...formData 
+      };
+
       const res = await fetch(`${import.meta.env.VITE_API_URL}/book_event`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, packageType: preSelectedPackage, selectedDishes: preSelectedDishes.join(', '), ...formData }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (data.success) { 
-        onBookingSuccess("Your event has been successfully booked! Please wait for admin confirmation."); 
-      } else { 
-        setError(data.message || "Booking failed."); 
-      }
-    } catch (err) { 
-      setError("Network error. Please try again."); 
-    } finally { 
-      setLoading(false); 
-    }
-  };
 
-  // --- CUSTOM CALENDAR LOGIC ---
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      if (data.success) {
+         onBookingSuccess("Your event has been successfully booked! Please wait for admin confirmation.");
+       } else {
+         setError(data.message || "Booking failed.");
+       }
+    } catch (err) {
+       setError("Network error. Please try again.");
+     } finally {
+       setLoading(false);
+     }
+  };
 
   const handlePrevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
@@ -81,6 +124,23 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDay = new Date(year, month, 1).getDay();
 
+    // 3 Days advance locking logic
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const minDate = new Date(today);
+    minDate.setDate(minDate.getDate() + 3);
+    const minDateStr = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}`;
+
+    // Highlight selected range
+    let selectedDates = [];
+    if (formData.preferredDate) {
+        let cur = new Date(formData.preferredDate);
+        for(let i=0; i<formData.duration; i++) {
+            selectedDates.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`);
+            cur.setDate(cur.getDate() + 1);
+        }
+    }
+
     const days = [];
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="p-2"></div>);
@@ -89,9 +149,9 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       
-      const isPast = dateStr < todayStr;
+      const isPast = dateStr < minDateStr;
       const isBooked = bookedDates.includes(dateStr);
-      const isSelected = formData.preferredDate === dateStr;
+      const isSelected = selectedDates.includes(dateStr);
       const isDisabled = isPast || isBooked;
 
       days.push(
@@ -99,11 +159,8 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
           key={day}
           type="button"
           disabled={isDisabled}
-          onClick={() => {
-              setFormData({ ...formData, preferredDate: dateStr });
-              setError(null);
-          }}
-          title={isBooked ? "Fully Booked" : isPast ? "Past Date" : "Available"}
+          onClick={() => handleDateClick(dateStr)}
+          title={isBooked ? "Fully Booked" : isPast ? "3 Days Advance Required" : "Available"}
           className={`p-2 text-sm rounded-full mx-auto w-9 h-9 flex items-center justify-center transition-all duration-200
             ${isSelected ? 'bg-pink-600 text-white font-bold shadow-md scale-110' : ''}
             ${!isSelected && !isDisabled ? 'hover:bg-pink-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200' : ''}
@@ -138,7 +195,7 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
             <form id="bookingForm" onSubmit={handleSubmit} className="space-y-5">
               
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Select Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Select Start Date <span className="text-red-500">*</span></label>
                 <div className="border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl p-4 shadow-inner transition-colors duration-300">
                   <div className="flex justify-between items-center mb-4">
                     <button type="button" onClick={handlePrevMonth} className="text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 transition p-1"><FaChevronLeft /></button>
@@ -158,11 +215,21 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
                 <div className="flex justify-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-pink-600"></span> Selected</div>
                   <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-200 dark:bg-red-900/40 border border-red-400"></span> Booked</div>
-                  <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600"></span> Past</div>
+                  <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600"></span> Blocked (3-day advance)</div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Duration</label>
+                    <select name="duration" value={formData.duration} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500 transition-colors" required>
+                      <option value={1}>1 Day</option>
+                      <option value={2}>2 Days</option>
+                      <option value={3}>3 Days</option>
+                      <option value={4}>4 Days</option>
+                      <option value={5}>5 Days</option>
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Event Type</label>
                     <select name="eventType" value={formData.eventType} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500 transition-colors" required>
@@ -176,7 +243,13 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Total Guests</label>
-                    <input type="number" name="guestCount" placeholder="e.g. 100" value={formData.guestCount} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500 transition-colors" required />
+                    <input 
+                        type="number" 
+                        name="guestCount" 
+                        value={formData.guestCount} 
+                        readOnly
+                        className="w-full border dark:border-gray-600 bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg p-2.5 outline-none cursor-not-allowed font-bold" 
+                    />
                   </div>
               </div>
 
@@ -184,6 +257,7 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Additional Notes</label>
                 <textarea name="notes" rows="2" placeholder="Theme, color motif, special requests..." value={formData.notes} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500 transition-colors"></textarea>
               </div>
+
             </form>
         </div>
 
@@ -193,6 +267,7 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, preSelect
             {loading ? "Processing..." : "Confirm Booking"}
           </button>
         </div>
+
       </div>
     </div>
   );

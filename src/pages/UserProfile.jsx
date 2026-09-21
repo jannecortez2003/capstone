@@ -12,9 +12,26 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [shouldRedirect, setShouldRedirect] = useState(false); 
   
-  // Modal State for Booking Details
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+
+  // Multi-day formatter
+  const formatSafeDateRange = (start, end) => {
+    if (!start) return "N/A";
+    try {
+        let sDate = new Date(start);
+        if (isNaN(sDate.getTime())) sDate = new Date(`${start}T00:00:00`);
+        const sStr = sDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        
+        if (end && end !== start) {
+            let eDate = new Date(end);
+            if (isNaN(eDate.getTime())) eDate = new Date(`${end}T00:00:00`);
+            const eStr = eDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            return `${sStr} - ${eStr}`;
+        }
+        return sStr;
+    } catch(e) { return "N/A"; }
+  };
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -27,8 +44,6 @@ const UserProfile = () => {
     const fetchData = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
-        
-        // 1. Fetch Bookings
         const resBookings = await fetch(`${apiUrl}/fetch_user_appointments?user_id=${storedUser.id}`);
         const dataBookings = await resBookings.json();
         
@@ -43,7 +58,6 @@ const UserProfile = () => {
             completedCount = dataBookings.appointments.filter(b => b.status === 'Completed').length;
         }
 
-        // 2. Fetch Payments
         const resTrans = await fetch(`${apiUrl}/fetch_user_payments?user_id=${storedUser.id}`);
         const dataTrans = await resTrans.json();
         
@@ -53,7 +67,6 @@ const UserProfile = () => {
             totalSpent = dataTrans.payments.reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
         }
 
-        // Update stats
         setStats({
             total_bookings: dataBookings.appointments?.length || 0,
             pending: pendingCount,
@@ -79,7 +92,6 @@ const UserProfile = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-24 pb-12 px-4 sm:px-6 transition-colors duration-300">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
         
-        {/* === LEFT SIDEBAR: USER INFO === */}
         <div className="md:col-span-1 space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 text-center border-t-4 border-pink-500 transition-colors duration-300">
             <div className="w-24 h-24 bg-pink-100 dark:bg-gray-700 rounded-full mx-auto flex items-center justify-center text-pink-500 text-4xl mb-4 transition-colors duration-300">
@@ -120,7 +132,6 @@ const UserProfile = () => {
           </div>
         </div>
 
-        {/* === RIGHT SIDE: MAIN CONTENT === */}
         <div className="md:col-span-3">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6 flex overflow-hidden transition-colors duration-300">
                 <button 
@@ -137,7 +148,6 @@ const UserProfile = () => {
                 </button>
             </div>
 
-            {/* TAB 1: BOOKINGS OVERVIEW */}
             {activeTab === 'overview' && (
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -181,7 +191,9 @@ const UserProfile = () => {
                                     >
                                         <div>
                                             <h4 className="font-bold text-gray-800 dark:text-white text-lg transition-colors duration-300">{booking.event_type}</h4>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">{new Date(booking.preferred_date).toLocaleDateString()} • {booking.package_type}</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
+                                                {formatSafeDateRange(booking.preferred_date, booking.end_date)} • {booking.package_type}
+                                            </p>
                                             
                                             <div className="mt-2 flex gap-2">
                                                 <span className="text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition-colors duration-300">Guests: {booking.guest_count}</span>
@@ -207,7 +219,6 @@ const UserProfile = () => {
                 </div>
             )}
 
-            {/* TAB 2: TRANSACTIONS */}
             {activeTab === 'transactions' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
                     <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center transition-colors duration-300">
@@ -264,7 +275,7 @@ const UserProfile = () => {
         </div>
       </div>
 
-      {/* NEW EVENT DETAILS MODAL */}
+      {/* EVENT DETAILS MODAL */}
       <Modal isOpen={showBookingModal} onClose={() => setShowBookingModal(false)} title="Event Details" size="max-w-2xl">
           {selectedBooking && (
               <div className="text-gray-800 dark:text-gray-200 space-y-5 px-1">
@@ -272,7 +283,7 @@ const UserProfile = () => {
                       <div>
                           <h4 className="font-bold text-pink-600 dark:text-pink-400 text-2xl">{selectedBooking.event_type}</h4>
                           <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">
-                              <span className="font-semibold">{new Date(selectedBooking.preferred_date).toLocaleDateString()}</span> • {selectedBooking.guest_count} Guests
+                              <span className="font-semibold">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</span> • {selectedBooking.guest_count} Guests
                           </p>
                       </div>
                       <div>
@@ -288,7 +299,6 @@ const UserProfile = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      {/* Package Inclusions */}
                       <div className="bg-gray-50 dark:bg-gray-900 p-5 rounded-xl border dark:border-gray-700 shadow-sm">
                           <h4 className="font-black border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 text-sm uppercase tracking-wider text-gray-500">Package Selected</h4>
                           <p className="text-base font-bold text-pink-600 dark:text-pink-400 mb-3">{selectedBooking.package_type}</p>
@@ -306,7 +316,6 @@ const UserProfile = () => {
                           )}
                       </div>
 
-                      {/* Dishes Selected */}
                       <div className="bg-gray-50 dark:bg-gray-900 p-5 rounded-xl border dark:border-gray-700 shadow-sm">
                           <h4 className="font-black border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 text-sm uppercase tracking-wider text-gray-500">Menu Chosen</h4>
                           {selectedBooking.selected_dishes ? (
@@ -327,7 +336,6 @@ const UserProfile = () => {
                       </div>
                   </div>
                   
-                  {/* Total Cost */}
                   <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-5 rounded-xl font-bold border dark:border-gray-700 shadow-inner">
                       <span className="text-gray-700 dark:text-gray-300 uppercase tracking-wider text-sm">Total Event Cost</span>
                       <span className="text-green-600 dark:text-green-400 text-2xl">₱ {parseFloat(selectedBooking.total_cost || 0).toLocaleString()}</span>
