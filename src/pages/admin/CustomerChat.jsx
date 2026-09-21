@@ -5,13 +5,12 @@ import {
   orderBy,
   onSnapshot,
   addDoc,
-  serverTimestamp,
   doc,
   setDoc
 } from "firebase/firestore";
 import { db } from "../../firebase";
 
-// 🔥 Realtime DB (for presence)
+// Realtime DB (for presence)
 import {
   getDatabase,
   ref,
@@ -26,28 +25,30 @@ const CustomerChat = () => {
   const [messages, setMessages] = useState([]);
   const [adminReply, setAdminReply] = useState("");
   const [userStatus, setUserStatus] = useState("offline");
-
   const messagesEndRef = useRef(null);
 
-  // 🔥 SET ADMIN ONLINE STATUS
+  // --- FIX: SET ADMIN ONLINE STATUS PROPERLY ---
   useEffect(() => {
     const rtdb = getDatabase();
-    const userId = "admin"; // change if dynamic auth
-
+    const userId = "admin";
     const statusRef = ref(rtdb, `/status/${userId}`);
+    const connectedRef = ref(rtdb, ".info/connected");
 
-    set(statusRef, {
-      state: "online",
-      lastChanged: Date.now()
+    const unsubscribe = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        onDisconnect(statusRef).set({ state: "offline", lastChanged: Date.now() }).then(() => {
+          set(statusRef, { state: "online", lastChanged: Date.now() });
+        });
+      }
     });
 
-    onDisconnect(statusRef).set({
-      state: "offline",
-      lastChanged: Date.now()
-    });
+    return () => {
+      unsubscribe();
+      set(statusRef, { state: "offline", lastChanged: Date.now() });
+    };
   }, []);
 
-  // 🔥 LOAD CONVERSATIONS
+  // LOAD CONVERSATIONS
   useEffect(() => {
     const q = query(collection(db, "chats"), orderBy("updatedAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -57,27 +58,23 @@ const CustomerChat = () => {
       }));
       setConversations(chats);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // 🔥 LOAD MESSAGES
+  // LOAD MESSAGES
   useEffect(() => {
     if (!activeChatId) return;
-
     const q = query(
       collection(db, `chats/${activeChatId}/messages`),
       orderBy("createdAt", "asc")
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setMessages(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
-
     return () => unsubscribe();
   }, [activeChatId]);
 
-  // 🔥 SCROLL TO BOTTOM
+  // SCROLL TO BOTTOM
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -86,13 +83,14 @@ const CustomerChat = () => {
     (c) => c.id === activeChatId
   );
 
-  // 🔥 LISTEN TO CUSTOMER STATUS
+  // --- FIX: LISTEN TO CUSTOMER STATUS PREVENTING RE-RENDERS ---
   useEffect(() => {
-    if (!activeChatDetails?.userId) return;
-
+    if (!activeChatDetails?.userId) {
+      setUserStatus("offline");
+      return;
+    }
     const rtdb = getDatabase();
     const statusRef = ref(rtdb, `/status/${activeChatDetails.userId}`);
-
     const unsubscribe = onValue(statusRef, (snapshot) => {
       if (snapshot.exists()) {
         setUserStatus(snapshot.val().state);
@@ -100,51 +98,51 @@ const CustomerChat = () => {
         setUserStatus("offline");
       }
     });
-
     return () => unsubscribe();
-  }, [activeChatDetails]);
+  }, [activeChatDetails?.userId]); 
 
-  // 🔥 SEND MESSAGE
+  // SEND MESSAGE
   const handleSendReply = async (e) => {
     e.preventDefault();
     if (!adminReply.trim() || !activeChatId) return;
-
     const textToSend = adminReply;
-    setAdminReply("");
+    setAdminReply(""); // Clear input immediately for instant UI response
 
     try {
+      const timestamp = Date.now(); // Fix: Instant sorting in local cache
+
       await addDoc(
         collection(db, `chats/${activeChatId}/messages`),
         {
           text: textToSend,
           sender: "admin",
-          createdAt: serverTimestamp()
+          createdAt: timestamp
         }
       );
-
+      
       await setDoc(
         doc(db, "chats", activeChatId),
         {
           lastMessage: `Admin: ${textToSend}`,
-          updatedAt: serverTimestamp()
+          updatedAt: timestamp
         },
         { merge: true }
       );
 
-      // --- NEW: Trigger MySQL Notification for the Customer ---
+      // Trigger MySQL Notification for the Customer (Fire and forget, no await to prevent lag)
       if (activeChatDetails?.userId) {
-          await fetch(`${import.meta.env.VITE_API_URL}/notify_chat_message`, {
+          fetch(`${import.meta.env.VITE_API_URL}/notify_chat_message`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: activeChatDetails.userId })
-          });
+          }).catch(err => console.error("Notification trigger failed:", err));
       }
 
     } catch (error) {
       console.error("Error sending reply:", error);
     }
   };
-  
+
   return (
     <div className="p-2 md:p-6 h-[100vh] flex flex-col transition-colors duration-300">
       <div className="mb-4 md:mb-6">
@@ -157,8 +155,7 @@ const CustomerChat = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm flex flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-300">
-
-        {/* 📱 SIDEBAR */}
+        {/* SIDEBAR */}
         <div
           className={`${
             activeChatId ? "hidden md:block" : "block"
@@ -168,7 +165,7 @@ const CustomerChat = () => {
             className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl px-4 py-2 w-full mb-4 focus:ring-2 focus:ring-pink-500 outline-none transition-colors duration-300 placeholder-gray-400"
             placeholder="Search conversations..."
           />
-
+          
           <div className="space-y-2">
             {conversations.map((c) => (
               <div
@@ -196,7 +193,7 @@ const CustomerChat = () => {
           </div>
         </div>
 
-        {/* 💬 CHAT */}
+        {/* CHAT */}
         <div
           className={`${
             activeChatId ? "flex" : "hidden md:flex"
@@ -206,21 +203,16 @@ const CustomerChat = () => {
             <>
               {/* HEADER */}
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 bg-white dark:bg-gray-800 z-10 transition-colors duration-300">
-
-                {/* 🔙 BACK BUTTON */}
                 <button
                   onClick={() => setActiveChatId(null)}
                   className="md:hidden text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 text-xl font-bold pr-2"
                 >
-                  ←
+                   &#8592;
                 </button>
-
                 <div>
                   <div className="font-bold text-lg text-gray-800 dark:text-white">
                     {activeChatDetails?.customerName || "Guest"}
                   </div>
-
-                  {/* 🟢 ONLINE STATUS */}
                   <div className="text-xs flex items-center gap-1.5 mt-0.5 font-medium">
                     <span
                       className={`w-2 h-2 rounded-full ${

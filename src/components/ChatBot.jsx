@@ -6,7 +6,6 @@ import {
   orderBy,
   onSnapshot,
   addDoc,
-  serverTimestamp,
   doc,
   setDoc,
   getDoc
@@ -25,40 +24,42 @@ const ChatBot = ({ user }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [adminStatus, setAdminStatus] = useState("offline");
-
   const messagesEndRef = useRef(null);
-  
+
   const userId = user?.id ? user.id.toString() : "guest_" + Math.floor(Math.random() * 10000);
   const userName = user?.fullName || user?.username || "Guest";
 
+  // --- FIX: FIREBASE PRESENCE SYSTEM ---
   useEffect(() => {
-    if (!isOpen) return;
-
     const rtdb = getDatabase();
     const statusRef = ref(rtdb, `/status/${userId}`);
+    const connectedRef = ref(rtdb, ".info/connected");
+    
+    if (!isOpen) {
+      set(statusRef, { state: "offline", lastChanged: Date.now() });
+      return;
+    }
 
-    set(statusRef, {
-      state: "online",
-      lastChanged: Date.now()
-    });
-
-    onDisconnect(statusRef).set({
-      state: "offline",
-      lastChanged: Date.now()
+    const unsubscribe = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        // When connected, setup onDisconnect
+        onDisconnect(statusRef).set({ state: "offline", lastChanged: Date.now() }).then(() => {
+          // Then set online
+          set(statusRef, { state: "online", lastChanged: Date.now() });
+        });
+      }
     });
 
     return () => {
-      set(statusRef, {
-        state: "offline",
-        lastChanged: Date.now()
-      });
+      unsubscribe();
+      set(statusRef, { state: "offline", lastChanged: Date.now() });
     };
   }, [isOpen, userId]);
 
+  // LISTEN TO ADMIN STATUS
   useEffect(() => {
     const rtdb = getDatabase();
     const adminStatusRef = ref(rtdb, `/status/admin`);
-
     const unsubscribe = onValue(adminStatusRef, (snapshot) => {
       if (snapshot.exists()) {
         setAdminStatus(snapshot.val().state);
@@ -66,15 +67,14 @@ const ChatBot = ({ user }) => {
         setAdminStatus("offline");
       }
     });
-
     return () => unsubscribe();
   }, []);
 
+  // LOAD CHAT MESSAGES
   useEffect(() => {
     if (!isOpen) return;
 
     const chatDocRef = doc(db, "chats", userId);
-
     const initChat = async () => {
       const chatSnap = await getDoc(chatDocRef);
       if (!chatSnap.exists()) {
@@ -82,7 +82,8 @@ const ChatBot = ({ user }) => {
           userId: userId,
           customerName: userName,
           lastMessage: "",
-          updatedAt: serverTimestamp()
+          // Use Date.now() for instant UI updates
+          updatedAt: Date.now()
         });
       }
     };
@@ -92,14 +93,13 @@ const ChatBot = ({ user }) => {
       collection(db, `chats/${userId}/messages`),
       orderBy("createdAt", "asc")
     );
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setMessages(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
-
     return () => unsubscribe();
   }, [isOpen, userId, userName]);
 
+  // SCROLL TO BOTTOM
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -110,25 +110,27 @@ const ChatBot = ({ user }) => {
     return () => window.removeEventListener('open-chat', handleOpenChat);
   }, []);
 
+  // SEND MESSAGE
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-
     const textToSend = input;
-    setInput("");
+    setInput(""); // Clear input instantly for fast response feel
 
     try {
+      const timestamp = Date.now(); // Instant sorting in local cache
+      
       await addDoc(collection(db, `chats/${userId}/messages`), {
         text: textToSend,
         sender: "user",
-        createdAt: serverTimestamp()
+        createdAt: timestamp
       });
-
+      
       await setDoc(
         doc(db, "chats", userId),
         {
           lastMessage: `You: ${textToSend}`,
-          updatedAt: serverTimestamp()
+          updatedAt: timestamp
         },
         { merge: true }
       );
