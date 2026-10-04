@@ -27,7 +27,6 @@ const Auth = ({ onLogin }) => {
     if (modal.callback) modal.callback();
   };
 
-  // --- GOOGLE API LOGIN ---
   const handleGoogleAuth = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -125,11 +124,10 @@ const Auth = ({ onLogin }) => {
         <FaArrowLeft /> Back to Home
       </button>
 
-      {/* BLACK LINE FIX: Solid background added to the container */}
       <div className="relative w-full max-w-3xl h-[580px] md:h-[550px] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/20 dark:border-gray-700">
         
-        {/* Left Side: Sign Up (BLACK LINE FIX: changed w-1/2 to w-[50.5%] to perfectly overlap the gap) */}
-        <div className={`absolute top-0 left-0 h-full w-full md:w-[50.5%] transition-transform duration-700 ease-in-out z-10 ${isSignUp ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
+        {/* Left Side: Sign Up (Overlap fix: w-[51%]) */}
+        <div className={`absolute top-0 left-0 h-full w-full md:w-[51%] transition-transform duration-700 ease-in-out z-10 ${isSignUp ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
           <form onSubmit={handleRegister} className="bg-pink-600 h-full flex flex-col items-center justify-center px-8 py-4 text-center text-white">
             <h1 className="font-bold text-3xl mb-1">Create Account</h1>
             <span className="text-xs mb-4 text-pink-100">Join Mommy Rosal's Catering</span>
@@ -160,8 +158,8 @@ const Auth = ({ onLogin }) => {
           </form>
         </div>
 
-        {/* Right Side: Login (BLACK LINE FIX: changed w-1/2 to w-[50.5%]) */}
-        <div className={`absolute top-0 right-0 h-full w-full md:w-[50.5%] transition-transform duration-700 ease-in-out z-10 ${!isSignUp ? 'translate-x-0' : 'translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
+        {/* Right Side: Login (Overlap fix: w-[51%]) */}
+        <div className={`absolute top-0 right-0 h-full w-full md:w-[51%] transition-transform duration-700 ease-in-out z-10 ${!isSignUp ? 'translate-x-0' : 'translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
           <form onSubmit={handleLogin} className="bg-white dark:bg-gray-900 h-full flex flex-col items-center justify-center p-8 text-center text-gray-800 dark:text-gray-100 transition-colors duration-300">
             <h1 className="font-bold text-3xl mb-1 text-pink-600 dark:text-pink-400">Sign In</h1>
             <span className="text-sm mb-6 text-gray-500 dark:text-gray-400">Welcome back! Please login to your account.</span>
@@ -190,8 +188,8 @@ const Auth = ({ onLogin }) => {
           </form>
         </div>
 
-        {/* Sliding Overlay for Desktop (BLACK LINE FIX: w-[50.5%]) */}
-        <div className={`hidden md:flex absolute top-0 left-0 h-full w-[50.5%] bg-pink-600/30 backdrop-blur-sm transition-transform duration-700 ease-in-out z-20 items-center justify-center text-white ${isSignUp ? 'translate-x-full' : 'translate-x-0'}`}>
+        {/* Sliding Overlay for Desktop (Kept at w-1/2 for perfect animation math) */}
+        <div className={`hidden md:flex absolute top-0 left-0 h-full w-1/2 bg-pink-600/30 backdrop-blur-sm transition-transform duration-700 ease-in-out z-20 items-center justify-center text-white ${isSignUp ? 'translate-x-full' : 'translate-x-0'}`}>
             <div className="text-center p-8 bg-black/50 rounded-3xl backdrop-blur-md shadow-2xl mx-4 border border-white/10">
                 <h2 className="text-2xl font-bold mb-3">{isSignUp ? "Welcome Back!" : "Hello, Friend!"}</h2>
                 <p className="mb-6 text-sm text-gray-200">{isSignUp ? "To keep connected with us please login with your personal info" : "Enter your details and start your journey with Mommy Rosal's"}</p>
