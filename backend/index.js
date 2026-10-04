@@ -117,7 +117,8 @@ app.post('/register', async (req, res) => {
       if (err) return res.status(500).json({ success: false, message: "Registration failed" });
       
       transporter.sendMail({
-          from: process.env.EMAIL_USER,
+          // This line adds the custom sender name
+          from: '"Mommy Rosal Catering" <' + process.env.EMAIL_USER + '>',
           to: email,
           subject: 'Your Verification Code - Mommy Rosal Catering',
           html: `
