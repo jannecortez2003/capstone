@@ -1,55 +1,53 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-
-// NEW IMPORTS FOR FORCED OFFLINE
 import { rtdb } from '../../firebase';
 import { ref, set } from 'firebase/database';
-
-import {
-   FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments,
-   FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck,
-   FaBars, FaTimes, FaSignOutAlt, FaIdBadge, FaHistory,
-   FaTags
+import { 
+  FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, 
+  FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, 
+  FaBars, FaTimes, FaSignOutAlt, FaIdBadge, FaHistory, 
+  FaTags
 } from 'react-icons/fa';
 
 const Sidebar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
+  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  const userRole = adminUser.role || 'admin';
+
   const handleLogout = async () => {
-    // 1. Force the database to show "Offline" instantly
     try {
       const statusRef = ref(rtdb, `/status/admin`);
       await set(statusRef, { state: "offline", lastChanged: Date.now() });
     } catch (err) {
       console.error("Failed to update status before logout:", err);
     }
-
-    // 2. Clear storage and redirect
     localStorage.removeItem('user');
     localStorage.removeItem('adminUser');
     localStorage.removeItem('isLoggedIn');
     window.location.href = '/'; 
   };
 
-  const navItems = [
-    { path: '/admin', icon: <FaHome />, label: 'Dashboard' },
-    { path: '/admin/booking-requests', icon: <FaCalendarAlt />, label: 'Bookings' },
-    { path: '/admin/inventory', icon: <FaBox />, label: 'Inventory' },
-    { path: '/admin/packages', icon: <FaTags />, label: 'Packages' },
-    { path: '/admin/menu-items', icon: <FaUtensils />, label: 'Menu Items' },
-    { path: '/admin/customer-chat', icon: <FaComments />, label: 'Chat' },
-    { path: '/admin/staff', icon: <FaUsers />, label: 'Staff' }, 
-    { path: '/admin/payment-tracking', icon: <FaMoneyBillWave />, label: 'Payments' },
-    { path: '/admin/reports', icon: <FaChartBar />, label: 'Reports' },
-    { path: '/admin/verification', icon: <FaUserCheck />, label: 'Verification' },
-    { path: '/admin/accounts', icon: <FaIdBadge />, label: 'Accounts' },
-    { path: '/admin/activity-logs', icon: <FaHistory />, label: 'Activity Logs' },
+  const allNavItems = [
+    { path: '/admin', icon: <FaHome />, label: 'Dashboard', roles: ['admin', 'manager', 'staff'] },
+    { path: '/admin/booking-requests', icon: <FaCalendarAlt />, label: 'Bookings', roles: ['admin', 'manager', 'staff'] },
+    { path: '/admin/inventory', icon: <FaBox />, label: 'Inventory', roles: ['admin', 'manager', 'staff'] },
+    { path: '/admin/packages', icon: <FaTags />, label: 'Packages', roles: ['admin', 'manager'] },
+    { path: '/admin/menu-items', icon: <FaUtensils />, label: 'Menu Items', roles: ['admin', 'manager'] },
+    { path: '/admin/customer-chat', icon: <FaComments />, label: 'Chat', roles: ['admin', 'manager', 'staff'] },
+    { path: '/admin/staff', icon: <FaUsers />, label: 'Staff', roles: ['admin', 'manager', 'staff'] },
+    { path: '/admin/payment-tracking', icon: <FaMoneyBillWave />, label: 'Payments', roles: ['admin', 'manager'] },
+    { path: '/admin/reports', icon: <FaChartBar />, label: 'Reports', roles: ['admin', 'manager'] },
+    { path: '/admin/verification', icon: <FaUserCheck />, label: 'Verification', roles: ['admin', 'manager', 'staff'] },
+    { path: '/admin/accounts', icon: <FaIdBadge />, label: 'Accounts', roles: ['admin', 'manager'] },
+    { path: '/admin/activity-logs', icon: <FaHistory />, label: 'Activity Logs', roles: ['admin'] },
   ];
+
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
 
   return (
     <>
-      {/* MOBILE VIEW */}
       <div className="md:hidden fixed top-0 left-0 w-full bg-pink-600 dark:bg-gray-900 text-white z-50 shadow-md transition-colors duration-300 border-b dark:border-gray-800">
         <div className="flex justify-between items-center p-4">
           <h1 className="font-bold text-xl tracking-wider">ADMIN PANEL</h1>
@@ -83,10 +81,9 @@ const Sidebar = () => {
         )}
       </div>
 
-      {/* DESKTOP VIEW */}
       <div className="hidden md:flex flex-col w-64 bg-pink-600 dark:bg-gray-900 h-screen fixed top-0 left-0 text-white shadow-xl z-40 transition-colors duration-300 border-r dark:border-gray-800">
-        <div className="p-6 text-center font-bold text-2xl border-b border-pink-500 dark:border-gray-800 tracking-widest mt-4 transition-colors duration-300 text-white">
-          ADMIN
+        <div className="p-6 text-center font-bold text-2xl border-b border-pink-500 dark:border-gray-800 tracking-widest mt-4 transition-colors duration-300 text-white uppercase">
+          {userRole}
         </div>
         
         <div className="flex-1 overflow-y-auto py-4">
@@ -105,7 +102,6 @@ const Sidebar = () => {
             </Link>
           ))}
         </div>
-
         <div className="border-t border-pink-500 dark:border-gray-800 bg-pink-700 dark:bg-gray-900 transition-colors duration-300">
           <button onClick={handleLogout} className="w-full flex items-center gap-4 px-6 py-5 hover:bg-pink-800 dark:hover:bg-gray-800 text-white dark:text-gray-300 font-bold transition">
             <span className="text-xl"><FaSignOutAlt /></span>

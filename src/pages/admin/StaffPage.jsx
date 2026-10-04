@@ -3,6 +3,9 @@ import { FaUserTie, FaPlus, FaPhone, FaEnvelope } from "react-icons/fa";
 import Modal from '../../components/Modal';
 
 const StaffPage = () => {
+  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  const userRole = adminUser.role || 'admin';
+
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -47,9 +50,11 @@ const StaffPage = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
         <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center transition-colors duration-300">
           <h2 className="font-bold text-gray-700 dark:text-white transition-colors duration-300">Active Staff ({staff.length})</h2>
-          <button onClick={() => { setEditingStaff(null); setShowModal(true); }} className="bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-pink-700 transition shadow-sm font-bold text-sm">
-            <FaPlus /> ADD STAFF
-          </button>
+          {userRole === 'admin' && (
+            <button onClick={() => { setEditingStaff(null); setShowModal(true); }} className="bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-pink-700 transition shadow-sm font-bold text-sm">
+              <FaPlus /> ADD STAFF
+            </button>
+          )}
         </div>
         
         <div className="overflow-x-auto">
@@ -59,7 +64,7 @@ const StaffPage = () => {
                 <th className="p-4 text-left">Staff Member</th>
                 <th className="p-4 text-left">Role</th>
                 <th className="p-4 text-left">Contact Info</th>
-                <th className="p-4 text-center">Actions</th>
+                {userRole === 'admin' && <th className="p-4 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -76,10 +81,12 @@ const StaffPage = () => {
                     <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1 transition-colors duration-300"><FaPhone className="text-gray-400 dark:text-gray-500" /> {member.phone}</div>
                     <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1 mt-1 transition-colors duration-300"><FaEnvelope className="text-gray-400 dark:text-gray-500" /> {member.email}</div>
                   </td>
-                  <td className="p-4 flex justify-center gap-2">
-                    <button onClick={() => { setEditingStaff(member); setShowModal(true); }} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-semibold text-sm rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm border border-blue-100 dark:border-blue-800">EDIT</button>
-                    <button onClick={() => handleDelete(member.id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-semibold text-sm rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shadow-sm border border-red-100 dark:border-red-800">REMOVE</button>
-                  </td>
+                  {userRole === 'admin' && (
+                      <td className="p-4 flex justify-center gap-2">
+                        <button onClick={() => { setEditingStaff(member); setShowModal(true); }} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-semibold text-sm rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm border border-blue-100 dark:border-blue-800">EDIT</button>
+                        <button onClick={() => handleDelete(member.id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-semibold text-sm rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shadow-sm border border-red-100 dark:border-red-800">REMOVE</button>
+                      </td>
+                  )}
                 </tr>
               ))}
               {staff.length === 0 && (
@@ -125,5 +132,6 @@ const StaffPage = () => {
       </Modal>
     </div>
   );
-};
+}
+
 export default StaffPage;

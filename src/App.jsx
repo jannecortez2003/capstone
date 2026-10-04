@@ -45,7 +45,6 @@ function App() {
   const [bookingSuccessMessage, setBookingSuccessMessage] = useState('');
   const [preSelectedEventType, setPreSelectedEventType] = useState("");
 
-  // --- PERSISTENT LOGIN FIX ---
   useEffect(() => {
     const storedUser = localStorage.getItem('user') || localStorage.getItem('adminUser');
     const storedLoginState = localStorage.getItem('isLoggedIn');
@@ -55,8 +54,12 @@ function App() {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setIsLoggedIn(true);
-        if (location.pathname.startsWith('/admin') && parsedUser.role !== 'admin' && parsedUser.username !== 'admin') {
-            navigate('/', { replace: true });
+
+        if (location.pathname.startsWith('/admin')) {
+            const isAdminType = ['admin', 'manager', 'staff'].includes(parsedUser.role) || parsedUser.username === 'admin';
+            if (!isAdminType) {
+                navigate('/', { replace: true });
+            }
         }
       } catch (e) {
         console.error("Failed to parse stored user data:", e);
@@ -82,7 +85,8 @@ function App() {
     setUser(userData);
     setIsLoggedIn(true);
     localStorage.setItem("isLoggedIn", "true");
-    if (userData.username === 'admin' || userData.role === 'admin') {
+    
+    if (['admin', 'manager', 'staff'].includes(userData.role) || userData.username === 'admin') {
         localStorage.setItem("adminUser", JSON.stringify(userData));
         navigate('/admin');
     } else {
@@ -121,7 +125,7 @@ function App() {
   const handlePackageSelection = (pkg) => {
     if (!isLoggedIn) {
       navigate('/auth');
-    } else if (!user?.verified && user?.role !== 'admin' && user?.username !== 'admin') {
+    } else if (!user?.verified && !['admin', 'manager', 'staff'].includes(user?.role) && user?.username !== 'admin') {
       setShowVerifyModal(true);
     } else {
       setSelectedPackageForBooking(pkg);
@@ -142,7 +146,7 @@ function App() {
       {!isAdminRoute && (
         <Navbar setActiveForm={setActiveForm} isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} onShowVerifyModal={handleShowVerifyModal} />
       )}
-      {!isAdminRoute && isLoggedIn && user && user.role !== 'admin' && user.username !== 'admin' && <ChatBot user={user} />}
+      {!isAdminRoute && isLoggedIn && user && !['admin', 'manager', 'staff'].includes(user.role) && user.username !== 'admin' && <ChatBot user={user} />}
       
       <Routes>
         <Route path="/auth" element={<Auth onLogin={handleAuthLogin} />} />
@@ -176,6 +180,7 @@ function App() {
           <Route path="verification" element={<VerificationRequests />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
         </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
@@ -210,4 +215,5 @@ function App() {
     </>
   );
 }
+
 export default App;

@@ -3,6 +3,9 @@ import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen } from "react-icons/
 import Modal, { SuccessModal } from '../../components/Modal';
 
 const BookingRequests = () => {
+    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+    const userRole = adminUser.role || 'admin';
+
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -10,7 +13,7 @@ const BookingRequests = () => {
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [actionDetails, setActionDetails] = useState(null);
-
+    
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -40,7 +43,6 @@ const BookingRequests = () => {
 
     useEffect(() => { fetchBookings(); }, []);
 
-    // Formats dates to handle multi-day safely
     const formatSafeDateRange = (start, end) => {
         if (!start) return "N/A";
         try {
@@ -78,8 +80,8 @@ const BookingRequests = () => {
             } else {
                 alert(`Status Update Failed: ${data.message}`);
             }
-        } catch (err) {
-             alert("Network error. Could not reach the server.");
+        } catch (err) { 
+            alert("Network error. Could not reach the server.");
         }
         finally { setLoading(false); }
     };
@@ -109,8 +111,8 @@ const BookingRequests = () => {
             } else {
                 alert(`Reconciliation Failed: ${data.message}`);
             }
-        } catch (err) {
-             alert("Network error. Could not reach the server.");
+        } catch (err) { 
+            alert("Network error. Could not reach the server.");
         }
         finally { setLoading(false); }
     };
@@ -243,12 +245,13 @@ const BookingRequests = () => {
                                             {b.status}
                                         </span>
                                     </td>
+
                                     <td className="p-4 flex flex-wrap justify-center gap-2">
                                         <button onClick={() => setSelectedBooking(b)} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition">
                                             VIEW
                                         </button>
                                         
-                                        {b.status === 'Pending' && (
+                                        {userRole !== 'staff' && b.status === 'Pending' && (
                                             <>
                                                 <button onClick={() => { setActionDetails({id: b.id, newStatus: 'Confirmed', customerName: b.customer_name}); setShowStatusModal(true); }} className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 px-3 py-1 rounded text-xs font-bold hover:bg-green-200 transition">
                                                     APPROVE
@@ -258,7 +261,8 @@ const BookingRequests = () => {
                                                 </button>
                                             </>
                                         )}
-                                        {b.status === 'Confirmed' && (
+
+                                        {userRole !== 'staff' && b.status === 'Confirmed' && (
                                             <button 
                                                 onClick={() => {
                                                     setReconcileBooking(b);
@@ -270,9 +274,12 @@ const BookingRequests = () => {
                                                 COMPLETE & RECONCILE
                                             </button>
                                         )}
-                                        <button onClick={() => handleDeleteBooking(b.id)} className="bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-3 py-1 rounded text-xs font-bold border border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60 transition">
-                                            DELETE
-                                        </button>
+
+                                        {userRole === 'admin' && (
+                                            <button onClick={() => handleDeleteBooking(b.id)} className="bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-3 py-1 rounded text-xs font-bold border border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/60 transition">
+                                                DELETE
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             )) : (
@@ -293,6 +300,7 @@ const BookingRequests = () => {
                                 Status: {selectedBooking.status}
                             </span>
                         </div>
+
                         <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-3 space-y-3 pb-1">
                             
                             <div className="relative pl-5 md:pl-6">
@@ -321,8 +329,8 @@ const BookingRequests = () => {
                                 <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
                                     <p className="font-bold text-pink-600 dark:text-pink-400 mb-1.5 text-xs leading-tight">{selectedBooking.package_type}</p>
                                     <div className="flex flex-wrap gap-1">
-                                        {selectedBooking.selected_dishes ? 
-                                             selectedBooking.selected_dishes.split('; ').map((dish, i) => (
+                                        {selectedBooking.selected_dishes ?
+                                              selectedBooking.selected_dishes.split('; ').map((dish, i) => (
                                                 <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium dark:text-gray-300 shadow-sm leading-tight">{dish}</span>
                                             ))
                                         : <span className="text-gray-400 italic text-[10px]">No dishes selected.</span>}
@@ -428,6 +436,6 @@ const BookingRequests = () => {
             <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} message={successMessage} />
         </div>
     );
-}
+};
 
 export default BookingRequests;

@@ -3,11 +3,14 @@ import { FaBox, FaPlus, FaExclamationTriangle, FaHistory, FaArrowDown, FaArrowUp
 import Modal from '../../components/Modal';
 
 const Inventory = () => {
+  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  const userRole = adminUser.role || 'admin';
+
   const [items, setItems] = useState([]);
   const [logs, setLogs] = useState([]); 
   const [activeTab, setActiveTab] = useState('inventory'); 
   const [loading, setLoading] = useState(true);
-  
+
   // Modals
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -22,13 +25,11 @@ const Inventory = () => {
           fetch(`${apiUrl}/admin_fetch_inventory`),
           fetch(`${apiUrl}/admin_fetch_inventory_logs`)
       ]);
-
       const invData = await invRes.json();
       const logsData = await logsRes.json();
 
       if (invData.success && Array.isArray(invData.inventory)) setItems(invData.inventory);
       if (logsData.success && Array.isArray(logsData.logs)) setLogs(logsData.logs);
-
     } catch (err) { console.error("Error fetching data:", err); } 
     finally { setLoading(false); }
   };
@@ -99,6 +100,7 @@ const Inventory = () => {
               });
           }
       });
+
       return groups.sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [logs]);
 
@@ -129,7 +131,7 @@ const Inventory = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
-        
+         
         {/* TAB CONTROLS */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center overflow-x-auto">
             <div className="flex space-x-2">
@@ -140,7 +142,7 @@ const Inventory = () => {
                     <FaHistory /> Grouped History Logs
                 </button>
             </div>
-            {activeTab === 'inventory' && (
+            {activeTab === 'inventory' && userRole !== 'staff' && (
                 <button onClick={() => { setEditingItem(null); setShowModal(true); }} className="bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-pink-700 transition shadow-sm font-bold text-sm shrink-0 ml-4">
                     <FaPlus /> ADD ITEM
                 </button>
@@ -178,7 +180,9 @@ const Inventory = () => {
                             </td>
                             <td className="p-4 flex justify-center gap-2">
                                 <button onClick={() => { setEditingItem(item); setShowModal(true); }} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-semibold text-sm rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm border border-blue-100 dark:border-blue-800">EDIT</button>
-                                <button onClick={() => handleDelete(item.id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-semibold text-sm rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shadow-sm border border-red-100 dark:border-red-800">DELETE</button>
+                                {userRole === 'admin' && (
+                                    <button onClick={() => handleDelete(item.id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-semibold text-sm rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shadow-sm border border-red-100 dark:border-red-800">DELETE</button>
+                                )}
                             </td>
                             </tr>
                         ))
@@ -230,26 +234,25 @@ const Inventory = () => {
                 </table>
             </div>
         )}
-
       </div>
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingItem ? "Edit Item" : "Add Inventory"}>
         <form onSubmit={handleSubmit} className="space-y-4 p-2 text-gray-800 dark:text-gray-200">
             <div>
                 <label className="block text-sm font-medium mb-1">Item Name</label>
-                <input type="text" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" 
-                     value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                <input type="text" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors"
+                      value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required disabled={userRole === 'staff'} />
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium mb-1">Quantity</label>
-                    <input type="number" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors" 
-                         value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} required />
+                    <input type="number" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors"
+                          value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} required />
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1">Unit</label>
-                    <input type="text" placeholder="pcs, packs" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors placeholder-gray-400" 
-                         value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} required />
+                    <input type="text" placeholder="pcs, packs" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 rounded p-2 focus:ring-2 focus:ring-pink-500 outline-none transition-colors placeholder-gray-400"
+                          value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} required disabled={userRole === 'staff'} />
                 </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
@@ -259,7 +262,7 @@ const Inventory = () => {
         </form>
       </Modal>
 
-      {/* 🔥 FIX: SPLIT TRANSACTION DETAILS MODAL 🔥 */}
+      {/*   FIX: SPLIT TRANSACTION DETAILS MODAL   */}
       {selectedHistory && (
           <Modal isOpen={!!selectedHistory} onClose={() => setSelectedHistory(null)} title={selectedHistory.title} size="max-w-2xl">
               <div className="p-2 md:p-4 text-gray-800 dark:text-gray-200">
@@ -312,7 +315,7 @@ const Inventory = () => {
                               </div>
                           </div>
                       )}
-                      
+                  
                   </div>
 
                   <div className="mt-6 flex justify-end">
@@ -323,9 +326,8 @@ const Inventory = () => {
               </div>
           </Modal>
       )}
-
     </div>
   );
-};
+}
 
 export default Inventory;
