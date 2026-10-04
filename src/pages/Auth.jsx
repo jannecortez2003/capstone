@@ -35,8 +35,10 @@ const Auth = ({ onLogin }) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
 
-      // Logic for Admin detection
-      if (loginEmail === "admin" || loginEmail.includes("admin")) {
+      // Logic for Admin detection (Now includes manager and staff)
+      const isAdminAccount = loginEmail.includes("admin") || loginEmail.includes("manager") || loginEmail.includes("staff");
+
+      if (isAdminAccount) {
          const res = await fetch(`${apiUrl}/adminlogin`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
