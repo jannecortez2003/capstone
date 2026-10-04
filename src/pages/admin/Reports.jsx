@@ -32,48 +32,11 @@ const Reports = () => {
     }
   };
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Mommy Rosal Catering - Administrative Report", 14, 15);
-    
-    doc.setFontSize(11);
-    doc.text(`Total Revenue: P${reportData.summary.revenue}`, 14, 25);
-    doc.text(`Total Bookings: ${reportData.summary.total_bookings}`, 14, 32);
-
-    doc.autoTable({
-      startY: 40,
-      head: [['Package Type', 'Booking Count']],
-      body: reportData.packages.map(p => [p.package_type, p.count]),
-    });
-
-    doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 10,
-      head: [['Low Stock Item', 'Remaining Quantity']],
-      body: reportData.lowStock.map(i => [i.name, `${i.quantity} ${i.unit}`]),
-    });
-
-    doc.save("Mommy_Rosal_Report.pdf");
-  };
-
-  const exportExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const summarySheet = XLSX.utils.json_to_sheet([reportData.summary]);
-    XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
-
-    const pkgSheet = XLSX.utils.json_to_sheet(reportData.packages);
-    XLSX.utils.book_append_sheet(wb, pkgSheet, "Packages");
-
-    const stockSheet = XLSX.utils.json_to_sheet(reportData.lowStock);
-    XLSX.utils.book_append_sheet(wb, stockSheet, "Low Stock");
-
-    XLSX.writeFile(wb, "Mommy_Rosal_Report.xlsx");
-  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-pink-700">Administrative Reports</h2>
+        <h2 className="text-2xl font-bold text-pink-700">Reports</h2>
         <div className="space-x-3">
           <button onClick={exportPDF} className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600 transition">Download PDF</button>
           <button onClick={exportExcel} className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition">Download Excel</button>
