@@ -149,7 +149,18 @@ function App() {
       {!isAdminRoute && isLoggedIn && user && !['admin', 'manager', 'staff'].includes(user.role) && user.username !== 'admin' && <ChatBot user={user} />}
       
       <Routes>
-        <Route path="/auth" element={<Auth onLogin={handleAuthLogin} />} />
+        <Route path="/auth" element={
+          <>
+            {/* Landing page components render underneath the Auth modal */}
+            <Hero handleHeroBooking={handleHeroBooking} />
+            <Services />
+            <Packages handlePackageSelection={handlePackageSelection} />
+            <Events handleEventSelection={handleEventSelection} />
+            <Contact />
+            <Footer />
+            <Auth onLogin={handleAuthLogin} />
+          </>
+        } />
         
         <Route path="/profile" element={
             isLoggedIn ? <UserProfile /> : <Navigate to="/auth" replace />
@@ -185,7 +196,7 @@ function App() {
       </Routes>
 
       {showVerifyModal && user && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/50">
+        <div className="fixed inset-0 flex items-center justify-center z-[70] backdrop-blur-sm bg-black/50">
           <div className="bg-pink-500 rounded-lg shadow-lg w-full max-w-lg p-6 relative">
             <button className="absolute top-5.5 right-6 bg-white p-2 text-gray-600 hover:text-red-600 border-pink-400 border-2 rounded-full" onClick={() => setShowVerifyModal(false)}> X </button>
             <VerifyForm user={user} onClose={() => setShowVerifyModal(false)} onSuccess={() => setShowVerifyModal(false)} />

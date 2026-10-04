@@ -106,15 +106,12 @@ const Auth = ({ onLogin }) => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-cover bg-center transition-colors duration-300" style={{ backgroundImage: "url('/src/assets/pic1.jpg')" }}>
+    <div className="fixed inset-0 flex items-center justify-center z-[60] bg-black/60 backdrop-blur-sm transition-colors duration-300">
       
-      {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-black/60 dark:bg-black/80 transition-colors duration-300"></div>
-
       {/* Back Button */}
       <button 
         onClick={() => navigate('/')}
-        className="absolute top-6 left-6 flex items-center gap-2 text-white font-bold hover:text-pink-400 transition z-50"
+        className="absolute top-6 left-6 flex items-center gap-2 text-white font-bold hover:text-pink-400 transition z-[70]"
       >
         <FaArrowLeft /> Back to Home
       </button>
@@ -193,7 +190,7 @@ const Auth = ({ onLogin }) => {
 
       {/* Custom Modal with Dark Mode */}
       {modal.isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm transition-colors duration-300">
+        <div className="fixed inset-0 flex items-center justify-center z-[70] bg-black/60 backdrop-blur-sm transition-colors duration-300">
           <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transform transition-all border dark:border-gray-700 mx-4">
             <h2 className={`text-2xl font-bold mb-4 ${modal.isError ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'}`}>{modal.title}</h2>
             <p className="text-gray-700 dark:text-gray-300 mb-6">{modal.message}</p>
