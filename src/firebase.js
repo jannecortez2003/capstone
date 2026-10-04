@@ -24,22 +24,6 @@ const rtdb = getDatabase(app);
 // Initialize the Google Provider
 const googleProvider = new GoogleAuthProvider();
 
-const createDefaultAdmin = async () => {
-  try {
-    const adminEmail = "admin@mommyrosal.com";
-    const adminPassword = "Admin@123";
-    await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
-    console.log("Default admin account created successfully");
-  } catch (error) {
-    if (error.code === 'auth/email-already-in-use') {
-      console.log("Admin account already exists");
-    } else {
-      console.error("Error creating admin account:", error);
-    }
-  }
-};
-createDefaultAdmin();
-
 // Export googleProvider so Auth.jsx can use it
 export { auth, db, rtdb, googleProvider }; 
 export default app;
