@@ -28,6 +28,7 @@ import ChatBot from './components/ChatBot';
 import AdminPackages from './pages/admin/AdminPackages';
 import Auth from './pages/Auth';
 import UserProfile from './pages/UserProfile';
+import VerifyEmail from './pages/VerifyEmail';
 import './App.css';
 
 function App() {
@@ -161,6 +162,8 @@ function App() {
             <Auth onLogin={handleAuthLogin} />
           </>
         } />
+        
+        <Route path="/verify-email" element={<VerifyEmail />} />
         
         <Route path="/profile" element={
             isLoggedIn ? <UserProfile /> : <Navigate to="/auth" replace />
