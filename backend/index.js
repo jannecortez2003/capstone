@@ -113,25 +113,31 @@ app.post('/register', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     db.query("INSERT INTO users (username, email, password, is_verified, email_verified, email_verification_token) VALUES (?, ?, ?, 0, 0, ?)", 
-    [name, email, hashedPassword, otp], (err, result) => {
+    [name, email, hashedPassword, otp], async (err, result) => {
       if (err) return res.status(500).json({ success: false, message: "Registration failed" });
       
-      transporter.sendMail({
-          // This line adds the custom sender name
-          from: '"Mommy Rosal Catering" <' + process.env.EMAIL_USER + '>',
-          to: email,
-          subject: 'Your Verification Code - Mommy Rosal Catering',
-          html: `
-            <div style="font-family: sans-serif; text-align: center; padding: 20px;">
-                <h2>Welcome to Mommy Rosal's!</h2>
-                <p>Your email verification code is:</p>
-                <h1 style="color: #db2777; letter-spacing: 5px;">${otp}</h1>
-                <p>Please enter this code in the app to activate your account.</p>
-            </div>
-          `
-      }).catch(console.error);
-
-      res.json({ success: true, message: "OTP sent to your email. Please verify." });
+      try {
+          // WE AWAIT THE EMAIL SENDING TO CATCH ERRORS
+          await transporter.sendMail({
+              from: '"Mommy Rosal Catering" <' + process.env.EMAIL_USER + '>',
+              to: email,
+              subject: 'Your Verification Code - Mommy Rosal Catering',
+              html: `
+                <div style="font-family: sans-serif; text-align: center; padding: 20px;">
+                    <h2>Welcome to Mommy Rosal's!</h2>
+                    <p>Your email verification code is:</p>
+                    <h1 style="color: #db2777; letter-spacing: 5px;">${otp}</h1>
+                    <p>Please enter this code in the app to activate your account.</p>
+                </div>
+              `
+          });
+          res.json({ success: true, message: "OTP sent to your email. Please verify." });
+      } catch (mailError) {
+          console.error("EMAIL SENDING ERROR:", mailError);
+          // Delete the temporary user so they can try signing up again
+          db.query("DELETE FROM users WHERE id = ?", [result.insertId]);
+          res.status(500).json({ success: false, message: "Failed to send OTP Email. Check your backend console." });
+      }
     });
   });
 });
