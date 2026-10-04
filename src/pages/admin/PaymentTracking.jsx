@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { FaMoneyBillWave, FaPlus, FaFileInvoiceDollar, FaHistory, FaWallet, FaCheckCircle, FaTimes } from 'react-icons/fa';
+import { FaMoneyBillWave, FaPlus, FaFileInvoiceDollar, FaHistory, FaWallet, FaCheckCircle, FaTimes, FaImage } from 'react-icons/fa';
 
 const PaymentTracking = () => {
     const [payments, setPayments] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('balances'); // 'balances' or 'transactions'
-    
+    const [activeTab, setActiveTab] = useState('balances');
+
     // Modals State
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [historyModalBooking, setHistoryModalBooking] = useState(null); // Holds booking data to view history
-    
+    const [historyModalBooking, setHistoryModalBooking] = useState(null); 
+
     // Form State
     const [formData, setFormData] = useState({
         appointmentId: '',
@@ -18,6 +18,7 @@ const PaymentTracking = () => {
         paymentType: 'Cash',
         remarks: ''
     });
+    const [receiptImage, setReceiptImage] = useState(null);
 
     const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -29,7 +30,6 @@ const PaymentTracking = () => {
             ]);
             const payData = await payRes.json();
             const bookData = await bookRes.json();
-
             if (payData.success) setPayments(payData.payments);
             if (bookData.success) setBookings(bookData.bookings);
         } catch (error) {
@@ -45,19 +45,31 @@ const PaymentTracking = () => {
 
     const handleAddPayment = async (e) => {
         e.preventDefault();
+        
+        // Convert to FormData to support the receipt image file
+        const data = new FormData();
+        data.append('appointmentId', formData.appointmentId);
+        data.append('amount', formData.amount);
+        data.append('paymentType', formData.paymentType);
+        data.append('remarks', formData.remarks);
+        if (receiptImage) {
+            data.append('receiptImage', receiptImage);
+        }
+
         try {
             const res = await fetch(`${apiUrl}/admin_process_payment`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: data 
             });
-            const data = await res.json();
-            if (data.success) {
+            const resultData = await res.json();
+            
+            if (resultData.success) {
                 setIsPaymentModalOpen(false);
                 setFormData({ appointmentId: '', amount: '', paymentType: 'Cash', remarks: '' });
-                fetchData(); // Refresh table
+                setReceiptImage(null);
+                fetchData(); 
             } else {
-                alert(data.message || 'Failed to process payment');
+                alert(resultData.message || 'Failed to process payment');
             }
         } catch (error) {
             alert('Server error processing payment');
@@ -66,15 +78,14 @@ const PaymentTracking = () => {
 
     const openPaymentModal = (bookingId = '') => {
         setFormData({ ...formData, appointmentId: bookingId });
+        setReceiptImage(null);
         setIsPaymentModalOpen(true);
     };
 
-    // Filtered Data
     const confirmedBookings = bookings.filter(b => b.status === 'Confirmed' || b.status === 'Completed');
     const totalCollected = payments.reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
     const totalOutstanding = confirmedBookings.reduce((sum, b) => sum + parseFloat(b.balance), 0);
 
-    // Get specific payments for the history modal
     const getBookingPayments = (bookingId) => {
         return payments.filter(p => p.appointment_id === bookingId);
     };
@@ -107,7 +118,6 @@ const PaymentTracking = () => {
                         <div className="text-3xl font-black text-gray-800 dark:text-white">₱{totalCollected.toLocaleString()}</div>
                     </div>
                 </div>
-
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-5 border-l-4 border-yellow-500 transition-colors duration-300">
                     <div className="bg-yellow-100 dark:bg-gray-700 p-4 rounded-full">
                         <FaWallet className="text-yellow-600 text-3xl" />
@@ -213,7 +223,7 @@ const PaymentTracking = () => {
                                     <th className="p-4">Date</th>
                                     <th className="p-4">Client</th>
                                     <th className="p-4">Method</th>
-                                    <th className="p-4">Remarks</th>
+                                    <th className="p-4">Receipt</th>
                                     <th className="p-4 text-right">Amount</th>
                                 </tr>
                             </thead>
@@ -229,9 +239,17 @@ const PaymentTracking = () => {
                                                 {payment.payment_type}
                                             </span>
                                         </td>
-                                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400">{payment.remarks || '-'}</td>
+                                        <td className="p-4 text-sm">
+                                            {payment.receipt_url ? (
+                                                <a href={`${import.meta.env.VITE_API_URL}/${payment.receipt_url}`} target="_blank" rel="noreferrer" className="text-pink-600 hover:underline flex items-center gap-1 font-bold">
+                                                    <FaImage /> View
+                                                </a>
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
+                                        </td>
                                         <td className="p-4 text-right font-black text-green-600 dark:text-green-400">
-                                            + ₱{parseFloat(payment.amount_paid).toLocaleString()}
+                                            +₱{parseFloat(payment.amount_paid).toLocaleString()}
                                         </td>
                                     </tr>
                                 ))}
@@ -256,8 +274,7 @@ const PaymentTracking = () => {
                             </h2>
                             <button onClick={() => setIsPaymentModalOpen(false)} className="text-gray-400 hover:text-red-500 text-2xl transition">&times;</button>
                         </div>
-
-                        <form onSubmit={handleAddPayment} className="space-y-4">
+                        <form onSubmit={handleAddPayment} className="space-y-4" encType="multipart/form-data">
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Select Client / Booking</label>
                                 <select 
@@ -298,7 +315,15 @@ const PaymentTracking = () => {
                                     </select>
                                 </div>
                             </div>
-
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Attach Receipt (Optional)</label>
+                                <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={e => setReceiptImage(e.target.files[0])}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none transition-colors"
+                                />
+                            </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Remarks (Optional)</label>
                                 <input 
@@ -308,7 +333,6 @@ const PaymentTracking = () => {
                                     onChange={e => setFormData({...formData, remarks: e.target.value})}
                                 />
                             </div>
-
                             <button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition-colors mt-4">
                                 Confirm Payment
                             </button>
@@ -349,6 +373,11 @@ const PaymentTracking = () => {
                                                     <p className="font-bold text-gray-800 dark:text-white">₱{parseFloat(txn.amount_paid).toLocaleString()}</p>
                                                     <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(txn.transaction_date).toLocaleDateString()} • {txn.payment_type}</p>
                                                     {txn.remarks && <p className="text-xs text-gray-400 italic mt-0.5">"{txn.remarks}"</p>}
+                                                    {txn.receipt_url && (
+                                                        <a href={`${import.meta.env.VITE_API_URL}/${txn.receipt_url}`} target="_blank" rel="noreferrer" className="text-pink-500 text-xs hover:underline mt-1 block font-bold flex items-center gap-1">
+                                                            <FaImage /> View Receipt
+                                                        </a>
+                                                    )}
                                                 </div>
                                             </div>
                                             <FaCheckCircle className="text-green-500 text-xl" />
@@ -373,7 +402,7 @@ const PaymentTracking = () => {
                             <div className="flex justify-between text-lg font-black">
                                 <span className="text-gray-800 dark:text-white">Remaining Balance:</span>
                                 <span className={historyModalBooking.balance > 0 ? "text-red-500" : "text-green-500"}>
-                                    ₱{parseFloat(historyModalBooking.balance).toLocaleString()}
+                                     ₱{parseFloat(historyModalBooking.balance).toLocaleString()}
                                 </span>
                             </div>
                         </div>
@@ -381,7 +410,6 @@ const PaymentTracking = () => {
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

@@ -72,7 +72,7 @@ const Reports = () => {
     <div className="p-6 max-w-7xl mx-auto transition-colors duration-300">
       {/* Title */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Report</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Reports</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
           Real-time summary of event logistics, guest volume, and inventory health.
         </p>
@@ -128,7 +128,7 @@ const Reports = () => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-xs uppercase font-bold text-gray-500 dark:text-gray-400">Completed Deliveries</p>
+              <p className="text-xs uppercase font-bold text-gray-500 dark:text-gray-400">Completed Event</p>
               <h3 className="text-3xl font-black text-blue-600 dark:text-blue-400 mt-1">
                 {reportData.summary.completed_events}
               </h3>
@@ -199,7 +199,7 @@ const Reports = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <h2 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-            <FaClock className="text-gray-500" /> Recent Catering Event Logistics
+            <FaClock className="text-gray-500" /> Recent Event Logistics
           </h2>
         </div>
         <div className="overflow-x-auto">
