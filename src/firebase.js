@@ -1,17 +1,13 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"; 
+import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider } from "firebase/auth"; 
 import { getFirestore } from "firebase/firestore"; 
-import { getDatabase } from "firebase/database"; // NEW IMPORT
+import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCnj3wZDNuP6I9ijyoZj99QuZvj3LR8nJg",
   authDomain: "mommy-rosal-catering.firebaseapp.com",
-  
-  // ---> PASTE YOUR COPIED REALTIME DATABASE URL HERE: <---
   databaseURL: "https://mommy-rosal-catering-default-rtdb.firebaseio.com",
-  
   projectId: "mommy-rosal-catering",
   storageBucket: "mommy-rosal-catering.firebasestorage.app",
   messagingSenderId: "1088700671157",
@@ -23,15 +19,15 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
 
-// Explicitly initialize RTDB with our app
-const rtdb = getDatabase(app); 
+// Initialize the Google Provider
+const googleProvider = new GoogleAuthProvider();
 
 const createDefaultAdmin = async () => {
   try {
     const adminEmail = "admin@mommyrosal.com";
     const adminPassword = "Admin@123";
-    
     await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
     console.log("Default admin account created successfully");
   } catch (error) {
@@ -42,8 +38,8 @@ const createDefaultAdmin = async () => {
     }
   }
 };
-
 createDefaultAdmin();
 
-export { auth, db, rtdb }; 
+// Export googleProvider so Auth.jsx can use it
+export { auth, db, rtdb, googleProvider }; 
 export default app;
