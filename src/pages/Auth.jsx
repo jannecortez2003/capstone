@@ -17,6 +17,11 @@ const Auth = ({ onLogin }) => {
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
 
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", isError: false, callback: null });
+  
+  // New OTP States
+  const [showOtp, setShowOtp] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
 
   const showModal = (title, message, isError, callback = null) => {
     setModal({ isOpen: true, title, message, isError, callback });
@@ -83,7 +88,13 @@ const Auth = ({ onLogin }) => {
       if (data.success) {
         onLogin(data.user);
       } else {
-        showModal("Login Failed", data.message || "Invalid credentials.", true);
+        // Automatically pop the OTP box if they try logging in but are unverified
+        if (data.message.includes("verify your email address")) {
+            setOtpEmail(loginEmail);
+            setShowOtp(true);
+        } else {
+            showModal("Login Failed", data.message || "Invalid credentials.", true);
+        }
       }
     } catch (error) {
       showModal("Error", "Failed to connect to the server.", true);
@@ -106,12 +117,35 @@ const Auth = ({ onLogin }) => {
       const data = await res.json();
 
       if (data.success) {
-        showModal("Account Created", "You can now sign in with your credentials.", false, () => {
-          setIsSignUp(false); 
+        // Trigger OTP Modal on Successful Registration
+        setOtpEmail(regEmail);
+        setShowOtp(true);
+      } else {
+        showModal("Registration Failed", data.message, true);
+      }
+    } catch (error) {
+      showModal("Error", "Failed to connect to the server.", true);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail, otp: otpCode }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowOtp(false);
+        setOtpCode("");
+        showModal("Account Verified", "Your email is verified. You can now sign in.", false, () => {
+          setIsSignUp(false);
           setRegName(""); setRegEmail(""); setRegPassword(""); setRegConfirmPassword("");
         });
       } else {
-        showModal("Registration Failed", data.message, true);
+        showModal("Verification Failed", data.message, true);
       }
     } catch (error) {
       showModal("Error", "Failed to connect to the server.", true);
@@ -126,8 +160,8 @@ const Auth = ({ onLogin }) => {
 
       <div className="relative w-full max-w-3xl h-[580px] md:h-[550px] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/20 dark:border-gray-700">
         
-        {/* Left Side: Sign Up (Overlap fix: w-[51%]) */}
-        <div className={`absolute top-0 left-0 h-full w-full md:w-[51%] transition-transform duration-700 ease-in-out z-10 ${isSignUp ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
+        {/* Left Side: Sign Up */}
+        <div className={`absolute top-0 left-0 h-full w-full md:w-[50.5%] transition-transform duration-700 ease-in-out z-10 ${isSignUp ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
           <form onSubmit={handleRegister} className="bg-pink-600 h-full flex flex-col items-center justify-center px-8 py-4 text-center text-white">
             <h1 className="font-bold text-3xl mb-1">Create Account</h1>
             <span className="text-xs mb-4 text-pink-100">Join Mommy Rosal's Catering</span>
@@ -158,8 +192,8 @@ const Auth = ({ onLogin }) => {
           </form>
         </div>
 
-        {/* Right Side: Login (Overlap fix: w-[51%]) */}
-        <div className={`absolute top-0 right-0 h-full w-full md:w-[51%] transition-transform duration-700 ease-in-out z-10 ${!isSignUp ? 'translate-x-0' : 'translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
+        {/* Right Side: Login */}
+        <div className={`absolute top-0 right-0 h-full w-full md:w-[50.5%] transition-transform duration-700 ease-in-out z-10 ${!isSignUp ? 'translate-x-0' : 'translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
           <form onSubmit={handleLogin} className="bg-white dark:bg-gray-900 h-full flex flex-col items-center justify-center p-8 text-center text-gray-800 dark:text-gray-100 transition-colors duration-300">
             <h1 className="font-bold text-3xl mb-1 text-pink-600 dark:text-pink-400">Sign In</h1>
             <span className="text-sm mb-6 text-gray-500 dark:text-gray-400">Welcome back! Please login to your account.</span>
@@ -188,8 +222,8 @@ const Auth = ({ onLogin }) => {
           </form>
         </div>
 
-        {/* Sliding Overlay for Desktop (Kept at w-1/2 for perfect animation math) */}
-        <div className={`hidden md:flex absolute top-0 left-0 h-full w-1/2 bg-pink-600/30 backdrop-blur-sm transition-transform duration-700 ease-in-out z-20 items-center justify-center text-white ${isSignUp ? 'translate-x-full' : 'translate-x-0'}`}>
+        {/* Sliding Overlay for Desktop */}
+        <div className={`hidden md:flex absolute top-0 left-0 h-full w-[50.5%] bg-pink-600/30 backdrop-blur-sm transition-transform duration-700 ease-in-out z-20 items-center justify-center text-white ${isSignUp ? 'translate-x-full' : 'translate-x-0'}`}>
             <div className="text-center p-8 bg-black/50 rounded-3xl backdrop-blur-md shadow-2xl mx-4 border border-white/10">
                 <h2 className="text-2xl font-bold mb-3">{isSignUp ? "Welcome Back!" : "Hello, Friend!"}</h2>
                 <p className="mb-6 text-sm text-gray-200">{isSignUp ? "To keep connected with us please login with your personal info" : "Enter your details and start your journey with Mommy Rosal's"}</p>
@@ -201,9 +235,38 @@ const Auth = ({ onLogin }) => {
 
       </div>
 
+      {/* NEW: OTP ENTRY MODAL */}
+      {showOtp && (
+        <div className="fixed inset-0 flex items-center justify-center z-[80] bg-black/60 backdrop-blur-sm transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border dark:border-gray-700 mx-4">
+            <h2 className="text-2xl font-bold mb-2 text-pink-600 dark:text-pink-400">Verify Email</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">We've sent a 6-digit code to <strong>{otpEmail}</strong>. Please enter it below.</p>
+            
+            <form onSubmit={handleVerifyOtp}>
+                <input 
+                    type="text" 
+                    maxLength="6"
+                    placeholder="000000"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    className="w-full text-center tracking-[0.5em] font-bold text-2xl p-3 border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none focus:border-pink-500 mb-6 text-gray-800 dark:text-white"
+                    required
+                />
+                <button type="submit" className="w-full bg-pink-600 text-white font-bold py-3 rounded-full hover:bg-pink-700 transition shadow-md">
+                    Verify Code
+                </button>
+                <button type="button" onClick={() => setShowOtp(false)} className="w-full mt-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold py-3 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition shadow-sm">
+                    Cancel
+                </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Status Modal */}
       {modal.isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-[70] bg-black/60 backdrop-blur-sm transition-colors duration-300">
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center transform transition-all border dark:border-gray-700 mx-4">
+        <div className="fixed inset-0 flex items-center justify-center z-[90] bg-black/60 backdrop-blur-sm transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border dark:border-gray-700 mx-4">
             <h2 className={`text-2xl font-bold mb-4 ${modal.isError ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'}`}>{modal.title}</h2>
             <p className="text-gray-700 dark:text-gray-300 mb-6">{modal.message}</p>
             <button onClick={closeModal} className={`px-6 py-2 rounded-full text-white font-bold transition shadow-md w-full ${modal.isError ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}>
