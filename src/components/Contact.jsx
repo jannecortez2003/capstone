@@ -1,9 +1,16 @@
-import React, { useState } from "react";
-import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaInstagram } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaInstagram, FaLock } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const Contact = () => {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState({ loading: false, message: "", isError: false });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check if the user is logged in without needing props from App.jsx
+  useEffect(() => {
+    setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -84,34 +91,51 @@ const Contact = () => {
               </div>
             </div>
           </div>
-          {/* Contact Form */}
+          
+          {/* Contact Form Container */}
           <div className="bg-pink-50 dark:bg-gray-800 rounded-2xl p-8 transition-colors duration-300">
             <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 transition-colors duration-300">Send a Message</h3>
             
-            {status.message && (
-              <div className={`p-4 mb-6 rounded-lg text-sm font-bold ${status.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                {status.message}
+            {isLoggedIn ? (
+              <>
+                {status.message && (
+                  <div className={`p-4 mb-6 rounded-lg text-sm font-bold ${status.isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                    {status.message}
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300">Full Name</label>
+                    <input type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="John Doe" className="w-full px-4 py-3 rounded-lg border border-pink-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-pink-400 transition-colors duration-300" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300">Email Address</label>
+                    <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="john@example.com" className="w-full px-4 py-3 rounded-lg border border-pink-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-pink-400 transition-colors duration-300" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300">Message</label>
+                    <textarea rows="4" name="message" value={formData.message} onChange={handleChange} required placeholder="How can we help you?" className="w-full px-4 py-3 rounded-lg border border-pink-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-pink-400 transition-colors duration-300"></textarea>
+                  </div>
+                  <button type="submit" disabled={status.loading} className="w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700 transition shadow-md disabled:opacity-70">
+                    {status.loading ? "Sending..." : "Send Message"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <div className="bg-gray-200 dark:bg-gray-700 p-4 rounded-full mb-4 transition-colors duration-300">
+                  <FaLock className="text-3xl text-gray-500 dark:text-gray-400" />
+                </div>
+                <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-2 transition-colors duration-300">Login Required</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 transition-colors duration-300">Please sign in to your account to send us a direct message.</p>
+                <Link to="/auth" className="bg-pink-600 text-white font-bold py-2.5 px-8 rounded-full hover:bg-pink-700 transition shadow-md">
+                  Sign In / Sign Up
+                </Link>
               </div>
             )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300">Full Name</label>
-                <input type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="John Doe" className="w-full px-4 py-3 rounded-lg border border-pink-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-pink-400 transition-colors duration-300" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300">Email Address</label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="john@example.com" className="w-full px-4 py-3 rounded-lg border border-pink-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-pink-400 transition-colors duration-300" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-300">Message</label>
-                <textarea rows="4" name="message" value={formData.message} onChange={handleChange} required placeholder="How can we help you?" className="w-full px-4 py-3 rounded-lg border border-pink-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-pink-400 transition-colors duration-300"></textarea>
-              </div>
-              <button type="submit" disabled={status.loading} className="w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700 transition shadow-md disabled:opacity-70">
-                {status.loading ? "Sending..." : "Send Message"}
-              </button>
-            </form>
           </div>
+
         </div>
       </div>
     </section>
