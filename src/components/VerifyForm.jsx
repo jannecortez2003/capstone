@@ -44,10 +44,10 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
       setMessage({ type: "error", text: err });
       return;
     }
+
     setLoading(true);
     setMessage(null);
 
-    // FIXED: Added phone and email back to the payload to satisfy the database!
     const formData = new FormData();
     formData.append("userId", user?.id);
     formData.append("idType", form.idType);
@@ -55,9 +55,9 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
     formData.append("lastName", form.lastName);
     formData.append("firstName", form.firstName);
     formData.append("address", form.address);
-    formData.append("phone", form.phone); // MUST BE HERE
-    formData.append("email", form.email); // MUST BE HERE
-    formData.append("idImage", idImage); 
+    formData.append("phone", form.phone); 
+    formData.append("email", form.email); 
+    formData.append("idImage", idImage);
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/verify`, {
@@ -79,6 +79,7 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
         setLoading(false);
         if (onClose) onClose();
       }, 1500);
+
     } catch (error) {
       setLoading(false);
       setMessage({ type: "error", text: error.message || "Failed to connect to server" });
@@ -86,26 +87,25 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-xl shadow-md border-t-4 border-pink-500">
-      <h3 className="text-2xl font-bold mb-4 text-pink-600 border-b border-pink-100 pb-2">Account Verification</h3>
+    <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-t-4 border-pink-500 transition-colors duration-300">
+      <h3 className="text-2xl font-bold mb-4 text-pink-600 dark:text-pink-400 border-b border-pink-100 dark:border-gray-700 pb-2 transition-colors duration-300">Account Verification</h3>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Type of ID</label>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">Type of ID</label>
             <select
               name="idType"
               value={form.idType}
               onChange={handleChange}
-              className="w-full rounded-lg px-3 py-2 bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-pink-400 outline-none"
+              className="w-full rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-400 outline-none transition-colors duration-300"
             >
               {idOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </div>
-
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Upload ID Image</label>
-            <label className="block w-full text-center rounded-lg px-3 py-2 bg-pink-50 text-pink-600 border border-pink-200 border-dashed cursor-pointer hover:bg-pink-100 transition">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">Upload ID Image</label>
+            <label className="block w-full text-center rounded-lg px-3 py-2 bg-pink-50 dark:bg-gray-700 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-gray-600 border-dashed cursor-pointer hover:bg-pink-100 dark:hover:bg-gray-600 transition-colors duration-300">
               <span className="truncate block text-sm">{idImage ? idImage.name : "Click to select file"}</span>
               <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
             </label>
@@ -113,28 +113,28 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
         </div>
 
         <div>
-          <label className="text-xs font-bold text-gray-500 uppercase block mb-1">ID Number</label>
-          <input name="idNumber" value={form.idNumber} onChange={handleChange} placeholder="Enter your ID number" className="w-full rounded-lg px-3 py-2 bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-pink-400 outline-none" />
+          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">ID Number</label>
+          <input name="idNumber" value={form.idNumber} onChange={handleChange} placeholder="Enter your ID number" className="w-full rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-400 outline-none transition-colors duration-300" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">First Name</label>
-            <input name="firstName" value={form.firstName} onChange={handleChange} className="w-full rounded-lg px-3 py-2 bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-pink-400 outline-none" />
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">First Name</label>
+            <input name="firstName" value={form.firstName} onChange={handleChange} className="w-full rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-400 outline-none transition-colors duration-300" />
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Last Name</label>
-            <input name="lastName" value={form.lastName} onChange={handleChange} className="w-full rounded-lg px-3 py-2 bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-pink-400 outline-none" />
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">Last Name</label>
+            <input name="lastName" value={form.lastName} onChange={handleChange} className="w-full rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-400 outline-none transition-colors duration-300" />
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Full Home Address</label>
-          <input name="address" value={form.address} onChange={handleChange} placeholder="Street, Barangay, City" className="w-full rounded-lg px-3 py-2 bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-pink-400 outline-none" />
+          <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">Full Home Address</label>
+          <input name="address" value={form.address} onChange={handleChange} placeholder="Street, Barangay, City" className="w-full rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-400 outline-none transition-colors duration-300" />
         </div>
 
         {message && (
-          <div className={`p-3 rounded-lg text-sm font-bold text-center ${message.type === "error" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
+          <div className={`p-3 rounded-lg text-sm font-bold text-center transition-colors duration-300 ${message.type === "error" ? "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400" : "bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400"}`}>
             {message.text}
           </div>
         )}
@@ -143,7 +143,7 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
           <button type="submit" disabled={loading} className="flex-1 bg-pink-600 text-white font-bold rounded-full py-3 hover:bg-pink-700 transition shadow-md disabled:opacity-50">
             {loading ? "Processing..." : "Submit for Approval"}
           </button>
-          <button type="button" onClick={onClose} className="px-6 py-3 text-gray-500 font-bold hover:text-gray-700">
+          <button type="button" onClick={onClose} className="px-6 py-3 text-gray-500 dark:text-gray-400 font-bold hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-300">
             Cancel
           </button>
         </div>
