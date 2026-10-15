@@ -7,21 +7,26 @@ import { signInWithPopup } from 'firebase/auth';
 const Auth = ({ onLogin }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
-
+  
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
-
   const [modal, setModal] = useState({ isOpen: false, title: "", message: "", isError: false, callback: null });
   
-  // New OTP States
+  // OTP States
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpEmail, setOtpEmail] = useState("");
+
+  // Forgot Password States
+  const [showForgotPwd, setShowForgotPwd] = useState(false);
+  const [fpStep, setFpStep] = useState(1); // 1 = Enter Email, 2 = Enter OTP & New Password
+  const [fpEmail, setFpEmail] = useState("");
+  const [fpOtp, setFpOtp] = useState("");
+  const [fpNewPassword, setFpNewPassword] = useState("");
 
   const showModal = (title, message, isError, callback = null) => {
     setModal({ isOpen: true, title, message, isError, callback });
@@ -36,25 +41,25 @@ const Auth = ({ onLogin }) => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      
+             
       const res = await fetch(`${import.meta.env.VITE_API_URL}/google-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          email: user.email, 
-          name: user.displayName || 'Google User', 
-          googleId: user.uid 
-        })
+           email: user.email, 
+           name: user.displayName || 'Google User', 
+           googleId: user.uid 
+         })
       });
       const data = await res.json();
-      
+             
       if (data.success) {
         onLogin(data.user);
       } else {
         showModal("Google Login Failed", data.message, true);
       }
     } catch (error) {
-      if (error.code !== 'auth/popup-closed-by-user') {
+      if (error.code !== 'auth/popup-closed-by-user') { 
          showModal("Authentication Error", error.message, true);
       }
     }
@@ -65,8 +70,8 @@ const Auth = ({ onLogin }) => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
       const isAdminAccount = loginEmail.includes("admin") || loginEmail.includes("manager") || loginEmail.includes("staff");
-
-      if (isAdminAccount) {
+      
+      if (isAdminAccount) { 
          const res = await fetch(`${apiUrl}/adminlogin`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -77,14 +82,13 @@ const Auth = ({ onLogin }) => {
          else showModal("Login Failed", data.message, true);
          return;
       }
-
+      
       const res = await fetch(`${apiUrl}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
       const data = await res.json();
-
       if (data.success) {
         onLogin(data.user);
       } else {
@@ -115,7 +119,6 @@ const Auth = ({ onLogin }) => {
         body: JSON.stringify({ name: regName, email: regEmail, password: regPassword }),
       });
       const data = await res.json();
-
       if (data.success) {
         // Trigger OTP Modal on Successful Registration
         setOtpEmail(regEmail);
@@ -152,24 +155,62 @@ const Auth = ({ onLogin }) => {
     }
   };
 
+  // Forgot Password API Handlers
+  const handleRequestPasswordReset = async (e) => {
+      e.preventDefault();
+      try {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/forgot-password`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: fpEmail })
+          });
+          const data = await res.json();
+          if (data.success) {
+              setFpStep(2); // Move to OTP and new password step
+          } else {
+              showModal("Error", data.message, true);
+          }
+      } catch (error) {
+          showModal("Error", "Failed to connect to the server.", true);
+      }
+  };
+
+  const handleResetPassword = async (e) => {
+      e.preventDefault();
+      try {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/reset-password`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: fpEmail, otp: fpOtp, newPassword: fpNewPassword })
+          });
+          const data = await res.json();
+          if (data.success) {
+              setShowForgotPwd(false);
+              setFpStep(1);
+              setFpEmail(""); setFpOtp(""); setFpNewPassword("");
+              showModal("Success", data.message, false);
+          } else {
+              showModal("Error", data.message, true);
+          }
+      } catch (error) {
+          showModal("Error", "Failed to connect to the server.", true);
+      }
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[60] bg-black/60 backdrop-blur-sm transition-colors duration-300">
       <button onClick={() => navigate('/')} className="absolute top-6 left-6 flex items-center gap-2 text-white font-bold hover:text-pink-400 transition z-[70]">
         <FaArrowLeft /> Back to Home
       </button>
-
       <div className="relative w-full max-w-3xl h-[580px] md:h-[550px] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/20 dark:border-gray-700">
-        
+         
         {/* Left Side: Sign Up */}
         <div className={`absolute top-0 left-0 h-full w-full md:w-[50.5%] transition-transform duration-700 ease-in-out z-10 ${isSignUp ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:opacity-0 md:z-0'}`}>
           <form onSubmit={handleRegister} className="bg-pink-600 h-full flex flex-col items-center justify-center px-8 py-4 text-center text-white">
             <h1 className="font-bold text-3xl mb-1">Create Account</h1>
             <span className="text-xs mb-4 text-pink-100">Join Mommy Rosal's Catering</span>
-            
+             
             <button type="button" onClick={handleGoogleAuth} className="w-full flex items-center justify-center gap-2 bg-white text-gray-700 font-bold py-2 rounded-full hover:bg-gray-100 transition shadow-md mb-4 text-sm">
               <FaGoogle className="text-red-500" /> Sign up with Google
             </button>
-
             <div className="w-full bg-black/20 rounded-lg flex items-center mb-2 px-3 py-1.5">
               <FaUser className="text-pink-200 m-2 text-sm" />
               <input type="text" placeholder="Full Name" className="bg-transparent outline-none text-white placeholder-pink-200 w-full text-sm" value={regName} onChange={(e) => setRegName(e.target.value)} required />
@@ -186,7 +227,6 @@ const Auth = ({ onLogin }) => {
               <FaLock className="text-pink-200 m-2 text-sm" />
               <input type="password" placeholder="Confirm Password" className="bg-transparent outline-none text-white placeholder-pink-200 w-full text-sm" value={regConfirmPassword} onChange={(e) => setRegConfirmPassword(e.target.value)} required />
             </div>
-
             <button type="submit" className="bg-white text-pink-600 font-bold py-2.5 px-10 rounded-full hover:bg-gray-100 transition shadow-lg w-full md:w-auto">SIGN UP</button>
             <p className="mt-4 text-sm md:hidden">Already have an account? <span onClick={() => setIsSignUp(false)} className="underline cursor-pointer font-bold hover:text-pink-200">Sign In</span></p>
           </form>
@@ -197,11 +237,11 @@ const Auth = ({ onLogin }) => {
           <form onSubmit={handleLogin} className="bg-white dark:bg-gray-900 h-full flex flex-col items-center justify-center p-8 text-center text-gray-800 dark:text-gray-100 transition-colors duration-300">
             <h1 className="font-bold text-3xl mb-1 text-pink-600 dark:text-pink-400">Sign In</h1>
             <span className="text-sm mb-6 text-gray-500 dark:text-gray-400">Welcome back! Please login to your account.</span>
-            
+             
             <button type="button" onClick={handleGoogleAuth} className="w-full flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-700 font-bold py-2.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition shadow-sm mb-6">
               <FaGoogle className="text-red-500" /> Sign in with Google
             </button>
-
+            
             <div className="w-full flex items-center gap-2 mb-4">
                <hr className="flex-1 border-gray-200 dark:border-gray-700" />
                <span className="text-xs text-gray-400 uppercase font-bold">Or</span>
@@ -212,9 +252,15 @@ const Auth = ({ onLogin }) => {
               <FaEnvelope className="text-pink-500 m-2" />
               <input type="text" placeholder="Email or Username" className="bg-transparent outline-none text-gray-800 dark:text-white placeholder-gray-400 w-full text-sm" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
             </div>
-            <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center mb-6 px-3 py-2 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+            
+            <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center mb-1 px-3 py-2 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
               <FaLock className="text-pink-500 m-2" />
               <input type="password" placeholder="Password" className="bg-transparent outline-none text-gray-800 dark:text-white placeholder-gray-400 w-full text-sm" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+            </div>
+
+            {/* FORGOT PASSWORD LINK */}
+            <div className="w-full flex justify-end mb-6">
+              <span onClick={() => setShowForgotPwd(true)} className="text-xs text-pink-600 dark:text-pink-400 cursor-pointer font-semibold hover:underline">Forgot Password?</span>
             </div>
 
             <button type="submit" className="bg-pink-600 text-white font-bold py-2.5 px-10 rounded-full hover:bg-pink-700 transition shadow-lg w-full md:w-auto">SIGN IN</button>
@@ -232,16 +278,15 @@ const Auth = ({ onLogin }) => {
                 </button>
             </div>
         </div>
-
       </div>
 
-      {/* NEW: OTP ENTRY MODAL */}
+      {/* OTP ENTRY MODAL */}
       {showOtp && (
         <div className="fixed inset-0 flex items-center justify-center z-[80] bg-black/60 backdrop-blur-sm transition-colors duration-300">
           <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border dark:border-gray-700 mx-4">
             <h2 className="text-2xl font-bold mb-2 text-pink-600 dark:text-pink-400">Verify Email</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">We've sent a 6-digit code to <strong>{otpEmail}</strong>. Please enter it below.</p>
-            
+             
             <form onSubmit={handleVerifyOtp}>
                 <input 
                     type="text" 
@@ -259,6 +304,34 @@ const Auth = ({ onLogin }) => {
                     Cancel
                 </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* FORGOT PASSWORD MODAL */}
+      {showForgotPwd && (
+        <div className="fixed inset-0 flex items-center justify-center z-[80] bg-black/60 backdrop-blur-sm transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border dark:border-gray-700 mx-4">
+            <h2 className="text-2xl font-bold mb-2 text-pink-600 dark:text-pink-400">Reset Password</h2>
+            
+            {fpStep === 1 ? (
+              <form onSubmit={handleRequestPasswordReset}>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Enter your email address to receive a 6-digit reset code.</p>
+                <input type="email" placeholder="Email Address" value={fpEmail} onChange={(e) => setFpEmail(e.target.value)} className="w-full p-3 border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none focus:border-pink-500 mb-6 text-gray-800 dark:text-white" required />
+                <button type="submit" className="w-full bg-pink-600 text-white font-bold py-3 rounded-full hover:bg-pink-700 transition shadow-md">Send Code</button>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPassword}>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Enter the 6-digit code sent to <strong>{fpEmail}</strong> and your new password.</p>
+                <input type="text" maxLength="6" placeholder="6-Digit Code" value={fpOtp} onChange={(e) => setFpOtp(e.target.value)} className="w-full text-center tracking-[0.5em] font-bold text-2xl p-3 border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none focus:border-pink-500 mb-4 text-gray-800 dark:text-white" required />
+                <input type="password" placeholder="New Password" value={fpNewPassword} onChange={(e) => setFpNewPassword(e.target.value)} className="w-full p-3 border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none focus:border-pink-500 mb-6 text-gray-800 dark:text-white" required />
+                <button type="submit" className="w-full bg-pink-600 text-white font-bold py-3 rounded-full hover:bg-pink-700 transition shadow-md">Reset Password</button>
+              </form>
+            )}
+
+            <button type="button" onClick={() => { setShowForgotPwd(false); setFpStep(1); setFpEmail(''); setFpOtp(''); setFpNewPassword(''); }} className="w-full mt-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold py-3 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition shadow-sm">
+                Cancel
+            </button>
           </div>
         </div>
       )}
