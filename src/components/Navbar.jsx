@@ -3,17 +3,18 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaCheckCircle, FaSun, FaMoon } from 'react-icons/fa';
 import NotificationBell from './NotificationBell';
 
-// Helper component for professional animated desktop links
+// Helper component for animated desktop links
 const NavLink = ({ title, onClick, href }) => {
+  const Component = href ? 'a' : 'button';
   return (
-    <a 
+    <Component 
       href={href} 
       onClick={onClick} 
       className="relative text-gray-700 dark:text-gray-200 font-semibold group px-1 py-2 cursor-pointer transition-colors duration-300 hover:text-pink-600 dark:hover:text-pink-400"
     >
       {title}
       <span className="absolute inset-x-0 bottom-0 h-[2px] bg-pink-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ease-out"></span>
-    </a>
+    </Component>
   );
 };
 
@@ -47,9 +48,44 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleNavigation = (path) => {
+  // === SCROLL HANDLING LOGIC ===
+  // If we navigated to a hash path from another page, scroll to it once we are on '/'
+  useEffect(() => {
+    if (location.pathname === '/' && location.hash) {
+      setTimeout(() => {
+        const id = location.hash.replace('#', '');
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [location]);
+
+  // Handle Home specifically to scroll to top
+  const handleHomeClick = (e) => {
+    e.preventDefault();
     setIsOpen(false);
-    navigate(path);
+    if (location.pathname !== '/') {
+      navigate('/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Handle Hash links (Services, Packages, Contact)
+  const handleHashClick = (e, hashId) => {
+    e.preventDefault();
+    setIsOpen(false);
+    if (location.pathname !== '/') {
+      navigate(`/${hashId}`);
+    } else {
+      const element = document.getElementById(hashId.replace('#', ''));
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   };
 
   const handleAction = (action) => {
@@ -68,7 +104,7 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
           <div className="flex justify-between items-center h-14">
             
             {/* Logo */}
-            <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => handleNavigation('/')}>
+            <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={handleHomeClick}>
               <h1 className="text-2xl font-black bg-gradient-to-r from-pink-600 to-rose-400 bg-clip-text text-transparent tracking-tight">
                 Mommy Rosal's
               </h1>
@@ -79,10 +115,10 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
             {/* ========================================== */}
             <div className="hidden md:flex items-center space-x-8">
               <div className="flex space-x-6 mr-4">
-                <NavLink onClick={() => handleNavigation('/')} title="Home" />
-                <NavLink href="/#services" title="Services" />
-                <NavLink href="/#packages" title="Packages" />
-                <NavLink href="/#contact" title="Contact" />
+                <NavLink onClick={handleHomeClick} title="Home" />
+                <NavLink onClick={(e) => handleHashClick(e, '#services')} href="/#services" title="Services" />
+                <NavLink onClick={(e) => handleHashClick(e, '#packages')} href="/#packages" title="Packages" />
+                <NavLink onClick={(e) => handleHashClick(e, '#contact')} href="/#contact" title="Contact" />
               </div>
 
               {/* Desktop Dark Mode Toggle */}
@@ -110,7 +146,7 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
                   )}
                   
                   <button 
-                    onClick={() => handleNavigation('/profile')}
+                    onClick={() => { setIsOpen(false); navigate('/profile'); }}
                     className="flex items-center gap-2 text-gray-700 dark:text-gray-200 font-semibold hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
                   >
                     <FaUserCircle className="text-xl" /> Profile
@@ -171,10 +207,10 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
 
         {/* Drawer Links */}
         <div className="flex-1 overflow-y-auto py-4 px-4 space-y-2">
-          <button onClick={() => handleNavigation('/')} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Home</button>
-          <a href="/#services" onClick={() => setIsOpen(false)} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Services</a>
-          <a href="/#packages" onClick={() => setIsOpen(false)} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Packages</a>
-          <a href="/#contact" onClick={() => setIsOpen(false)} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Contact</a>
+          <button onClick={handleHomeClick} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Home</button>
+          <a href="/#services" onClick={(e) => handleHashClick(e, '#services')} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Services</a>
+          <a href="/#packages" onClick={(e) => handleHashClick(e, '#packages')} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Packages</a>
+          <a href="/#contact" onClick={(e) => handleHashClick(e, '#contact')} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Contact</a>
         </div>
 
         {/* Drawer Footer / Actions */}
@@ -197,7 +233,7 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
                 </button>
               )}
               <button 
-                onClick={() => handleNavigation('/profile')}
+                onClick={() => { setIsOpen(false); navigate('/profile'); }}
                 className="flex justify-center items-center gap-2 w-full bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 px-4 py-3 rounded-xl font-bold hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors"
               >
                 <FaUserCircle className="text-xl" /> My Profile
