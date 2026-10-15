@@ -6,7 +6,7 @@ const Contact = ({ isLoggedIn, user }) => {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState({ loading: false, message: "", isError: false });
 
-  // Auto-fill the name and email if the user is logged in
+  // Listens to App.jsx. Auto-fills when logged in, clears data when logged out.
   useEffect(() => {
     if (isLoggedIn && user) {
       setFormData((prev) => ({
@@ -14,6 +14,8 @@ const Contact = ({ isLoggedIn, user }) => {
         name: user.fullName || user.username || "",
         email: user.email || "",
       }));
+    } else {
+      setFormData({ name: "", email: "", message: "" });
     }
   }, [isLoggedIn, user]);
 

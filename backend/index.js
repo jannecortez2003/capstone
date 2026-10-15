@@ -339,10 +339,10 @@ app.post('/contact-message', async (req, res) => {
                 "api-key": process.env.BREVO_API_KEY
             },
             body: JSON.stringify({
-                // CRITICAL FIX: The sender MUST be your verified business email in Brevo
+                // THE FIX: The sender MUST be your verified business email in Brevo.
                 sender: { name: "Website Contact Form", email: process.env.EMAIL_USER },
                 to: [{ email: process.env.EMAIL_USER }],
-                // The customer's email goes here so you can easily hit "Reply" in your inbox
+                // The customer's email goes here so you can easily hit "Reply" in your inbox.
                 replyTo: { email: email, name: name }, 
                 subject: `New Website Inquiry from ${name}`,
                 htmlContent: `
@@ -360,7 +360,6 @@ app.post('/contact-message', async (req, res) => {
         });
 
         if (!response.ok) {
-            // Logs the exact reason Brevo rejected the email to your terminal
             const errData = await response.json();
             console.error("Brevo API Error Details:", errData);
             throw new Error("Failed to send message via Brevo.");

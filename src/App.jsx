@@ -36,6 +36,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeForm, setActiveForm] = useState(null);
   const [user, setUser] = useState(null);
+
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDishModal, setShowDishModal] = useState(false);
   const [showEventFormModal, setShowEventFormModal] = useState(false);
@@ -146,6 +147,7 @@ function App() {
       {!isAdminRoute && (
         <Navbar setActiveForm={setActiveForm} isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} onShowVerifyModal={handleShowVerifyModal} />
       )}
+
       {!isAdminRoute && isLoggedIn && user && !['admin', 'manager', 'staff'].includes(user.role) && user.username !== 'admin' && <ChatBot user={user} />}
       
       <Routes>
@@ -155,7 +157,8 @@ function App() {
             <Services />
             <Packages handlePackageSelection={handlePackageSelection} />
             <Events handleEventSelection={handleEventSelection} />
-            <Contact />
+            {/* LINKED LIVE USER STATE HERE */}
+            <Contact isLoggedIn={isLoggedIn} user={user} />
             <Footer />
             <Auth onLogin={handleAuthLogin} />
           </>
@@ -171,7 +174,8 @@ function App() {
             <Services />
             <Packages handlePackageSelection={handlePackageSelection} />
             <Events handleEventSelection={handleEventSelection} />
-            <Contact />
+            {/* LINKED LIVE USER STATE HERE */}
+            <Contact isLoggedIn={isLoggedIn} user={user} />
             <Footer />
           </>
         } />
