@@ -2,15 +2,20 @@ import React, { useState, useEffect } from "react";
 import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaInstagram, FaLock } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
-const Contact = () => {
+const Contact = ({ isLoggedIn, user }) => {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState({ loading: false, message: "", isError: false });
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Check if the user is logged in without needing props from App.jsx
+  // Auto-fill the name and email if the user is logged in
   useEffect(() => {
-    setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
-  }, []);
+    if (isLoggedIn && user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.fullName || user.username || "",
+        email: user.email || "",
+      }));
+    }
+  }, [isLoggedIn, user]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -30,7 +35,8 @@ const Contact = () => {
 
       if (data.success) {
         setStatus({ loading: false, message: data.message, isError: false });
-        setFormData({ name: "", email: "", message: "" }); // Clear form on success
+        // Clear only the message field, keep the name and email filled
+        setFormData({ ...formData, message: "" }); 
       } else {
         setStatus({ loading: false, message: data.message, isError: true });
       }
