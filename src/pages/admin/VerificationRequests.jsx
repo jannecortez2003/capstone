@@ -92,7 +92,11 @@ const VerificationRequests = () => {
                 <Modal isOpen={!!selectedRequest} onClose={() => setSelectedRequest(null)} title="Review Document">
                     <div className="space-y-4">
                         <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg flex justify-center border dark:border-gray-600 transition-colors duration-300">
-                            <img src={`${import.meta.env.VITE_API_URL}/${selectedRequest.id_image_path}`} alt="ID" className="max-h-64 object-contain rounded shadow" />
+                            <img 
+                                src={selectedRequest.id_image_path.startsWith('http') ? selectedRequest.id_image_path : `${import.meta.env.VITE_API_URL}/${selectedRequest.id_image_path}`} 
+                                alt="ID" 
+                                className="max-h-64 object-contain rounded shadow" 
+                            />
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm text-gray-800 dark:text-gray-200 transition-colors duration-300">
                             <p><strong>Name:</strong> {selectedRequest.first_name} {selectedRequest.last_name}</p>
@@ -110,9 +114,10 @@ const VerificationRequests = () => {
                     </div>
                 </Modal>
             )}
-            
+
             <SuccessModal isOpen={showSuccess} onClose={() => setShowSuccess(false)} message={successMessage} />
         </div>
     );
-};
+}
+
 export default VerificationRequests;

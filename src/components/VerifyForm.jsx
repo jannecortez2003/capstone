@@ -17,6 +17,10 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
 
   const idOptions = ["Drivers License", "PhilID", "PhilHealth", "TIN ID"];
 
+  // CLOUDINARY CONFIGURATION 
+  const CLOUD_NAME = "doleapzk"; 
+  const UPLOAD_PRESET = "mommyrosal"; 
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
@@ -44,33 +48,56 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
       setMessage({ type: "error", text: err });
       return;
     }
-
+    
     setLoading(true);
     setMessage(null);
 
-    const formData = new FormData();
-    formData.append("userId", user?.id);
-    formData.append("idType", form.idType);
-    formData.append("idNumber", form.idNumber);
-    formData.append("lastName", form.lastName);
-    formData.append("firstName", form.firstName);
-    formData.append("address", form.address);
-    formData.append("phone", form.phone); 
-    formData.append("email", form.email); 
-    formData.append("idImage", idImage);
-
     try {
+      // 1. Upload the ID image to Cloudinary
+      const uploadData = new FormData();
+      uploadData.append("file", idImage);
+      uploadData.append("upload_preset", UPLOAD_PRESET);
+      uploadData.append("cloud_name", CLOUD_NAME);
+
+      const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+          method: "POST",
+          body: uploadData,
+      });
+      
+      const uploadedImage = await cloudinaryRes.json();
+      
+      // Added Explicit Error Check
+      if (!cloudinaryRes.ok) {
+          throw new Error(uploadedImage.error?.message || "Cloudinary upload failed.");
+      }
+      
+      const finalImageUrl = uploadedImage.secure_url;
+
+      // 2. Send the form data + Cloudinary URL to the backend
+      const payload = {
+          userId: user?.id,
+          idType: form.idType,
+          idNumber: form.idNumber,
+          lastName: form.lastName,
+          firstName: form.firstName,
+          address: form.address,
+          phone: form.phone,
+          email: form.email,
+          idImage: finalImageUrl // Pass the Cloudinary URL
+      };
+
       const res = await fetch(`${import.meta.env.VITE_API_URL}/verify`, {
         method: "POST",
-        body: formData, 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-
+      
       const responseData = await res.json();
       
       if (!res.ok || !responseData.success) {
         throw new Error(responseData.message || "Verification failed.");
       }
-
+      
       setMessage({ type: "success", text: responseData.message || "Verification submitted!" });
       
       if (onSuccess) onSuccess();
@@ -79,7 +106,7 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
         setLoading(false);
         if (onClose) onClose();
       }, 1500);
-
+      
     } catch (error) {
       setLoading(false);
       setMessage({ type: "error", text: error.message || "Failed to connect to server" });
@@ -111,12 +138,10 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
             </label>
           </div>
         </div>
-
         <div>
           <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">ID Number</label>
           <input name="idNumber" value={form.idNumber} onChange={handleChange} placeholder="Enter your ID number" className="w-full rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-400 outline-none transition-colors duration-300" />
         </div>
-
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">First Name</label>
@@ -127,21 +152,18 @@ export default function VerifyForm({ user, onClose, onSuccess }) {
             <input name="lastName" value={form.lastName} onChange={handleChange} className="w-full rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-400 outline-none transition-colors duration-300" />
           </div>
         </div>
-
         <div>
           <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase block mb-1 transition-colors duration-300">Full Home Address</label>
           <input name="address" value={form.address} onChange={handleChange} placeholder="Street, Barangay, City" className="w-full rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-400 outline-none transition-colors duration-300" />
         </div>
-
         {message && (
           <div className={`p-3 rounded-lg text-sm font-bold text-center transition-colors duration-300 ${message.type === "error" ? "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400" : "bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400"}`}>
             {message.text}
           </div>
         )}
-
         <div className="flex gap-3 pt-2">
           <button type="submit" disabled={loading} className="flex-1 bg-pink-600 text-white font-bold rounded-full py-3 hover:bg-pink-700 transition shadow-md disabled:opacity-50">
-            {loading ? "Processing..." : "Submit for Approval"}
+            {loading ? "Uploading & Processing..." : "Submit for Approval"}
           </button>
           <button type="button" onClick={onClose} className="px-6 py-3 text-gray-500 dark:text-gray-400 font-bold hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-300">
             Cancel

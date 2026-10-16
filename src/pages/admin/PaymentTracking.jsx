@@ -10,6 +10,7 @@ const PaymentTracking = () => {
     // Modals State
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [historyModalBooking, setHistoryModalBooking] = useState(null); 
+    const [isUploading, setIsUploading] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -22,6 +23,10 @@ const PaymentTracking = () => {
 
     const apiUrl = import.meta.env.VITE_API_URL;
 
+    // CLOUDINARY CONFIGURATION 
+    const CLOUD_NAME = "doleapzk"; 
+    const UPLOAD_PRESET = "mommyrosal"; 
+
     const fetchData = async () => {
         try {
             const [payRes, bookRes] = await Promise.all([
@@ -30,6 +35,7 @@ const PaymentTracking = () => {
             ]);
             const payData = await payRes.json();
             const bookData = await bookRes.json();
+
             if (payData.success) setPayments(payData.payments);
             if (bookData.success) setBookings(bookData.bookings);
         } catch (error) {
@@ -45,22 +51,43 @@ const PaymentTracking = () => {
 
     const handleAddPayment = async (e) => {
         e.preventDefault();
+        setIsUploading(true);
         
-        // Convert to FormData to support the receipt image file
-        const data = new FormData();
-        data.append('appointmentId', formData.appointmentId);
-        data.append('amount', formData.amount);
-        data.append('paymentType', formData.paymentType);
-        data.append('remarks', formData.remarks);
-        if (receiptImage) {
-            data.append('receiptImage', receiptImage);
-        }
+        let finalReceiptUrl = null;
 
         try {
+            // 1. Upload receipt image to Cloudinary (if selected)
+            if (receiptImage) {
+                const uploadData = new FormData();
+                uploadData.append("file", receiptImage);
+                uploadData.append("upload_preset", UPLOAD_PRESET);
+                uploadData.append("cloud_name", CLOUD_NAME);
+
+                const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                    method: "POST",
+                    body: uploadData,
+                });
+                
+                const uploadedImage = await cloudinaryRes.json();
+                if (!cloudinaryRes.ok) throw new Error(uploadedImage.error?.message || "Cloudinary upload failed.");
+                finalReceiptUrl = uploadedImage.secure_url;
+            }
+
+            // 2. Send payload to Backend as JSON
+            const payload = {
+                appointmentId: formData.appointmentId,
+                amount: formData.amount,
+                paymentType: formData.paymentType,
+                remarks: formData.remarks,
+                receiptImage: finalReceiptUrl
+            };
+
             const res = await fetch(`${apiUrl}/admin_process_payment`, {
                 method: 'POST',
-                body: data 
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload) 
             });
+
             const resultData = await res.json();
             
             if (resultData.success) {
@@ -72,7 +99,9 @@ const PaymentTracking = () => {
                 alert(resultData.message || 'Failed to process payment');
             }
         } catch (error) {
-            alert('Server error processing payment');
+            alert('Server error processing payment: ' + error.message);
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -241,7 +270,7 @@ const PaymentTracking = () => {
                                         </td>
                                         <td className="p-4 text-sm">
                                             {payment.receipt_url ? (
-                                                <a href={`${import.meta.env.VITE_API_URL}/${payment.receipt_url}`} target="_blank" rel="noreferrer" className="text-pink-600 hover:underline flex items-center gap-1 font-bold">
+                                                <a href={payment.receipt_url.startsWith('http') ? payment.receipt_url : `${import.meta.env.VITE_API_URL}/${payment.receipt_url}`} target="_blank" rel="noreferrer" className="text-pink-600 hover:underline flex items-center gap-1 font-bold">
                                                     <FaImage /> View
                                                 </a>
                                             ) : (
@@ -274,7 +303,8 @@ const PaymentTracking = () => {
                             </h2>
                             <button onClick={() => setIsPaymentModalOpen(false)} className="text-gray-400 hover:text-red-500 text-2xl transition">&times;</button>
                         </div>
-                        <form onSubmit={handleAddPayment} className="space-y-4" encType="multipart/form-data">
+
+                        <form onSubmit={handleAddPayment} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Select Client / Booking</label>
                                 <select 
@@ -315,6 +345,7 @@ const PaymentTracking = () => {
                                     </select>
                                 </div>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Attach Receipt (Optional)</label>
                                 <input 
@@ -324,6 +355,7 @@ const PaymentTracking = () => {
                                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none transition-colors"
                                 />
                             </div>
+
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Remarks (Optional)</label>
                                 <input 
@@ -333,8 +365,9 @@ const PaymentTracking = () => {
                                     onChange={e => setFormData({...formData, remarks: e.target.value})}
                                 />
                             </div>
-                            <button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition-colors mt-4">
-                                Confirm Payment
+
+                            <button type="submit" disabled={isUploading} className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition-colors mt-4 disabled:opacity-50">
+                                {isUploading ? 'Uploading & Processing...' : 'Confirm Payment'}
                             </button>
                         </form>
                     </div>
@@ -374,7 +407,7 @@ const PaymentTracking = () => {
                                                     <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(txn.transaction_date).toLocaleDateString()} • {txn.payment_type}</p>
                                                     {txn.remarks && <p className="text-xs text-gray-400 italic mt-0.5">"{txn.remarks}"</p>}
                                                     {txn.receipt_url && (
-                                                        <a href={`${import.meta.env.VITE_API_URL}/${txn.receipt_url}`} target="_blank" rel="noreferrer" className="text-pink-500 text-xs hover:underline mt-1 block font-bold flex items-center gap-1">
+                                                        <a href={txn.receipt_url.startsWith('http') ? txn.receipt_url : `${import.meta.env.VITE_API_URL}/${txn.receipt_url}`} target="_blank" rel="noreferrer" className="text-pink-500 text-xs hover:underline mt-1 block font-bold flex items-center gap-1">
                                                             <FaImage /> View Receipt
                                                         </a>
                                                     )}
@@ -402,16 +435,15 @@ const PaymentTracking = () => {
                             <div className="flex justify-between text-lg font-black">
                                 <span className="text-gray-800 dark:text-white">Remaining Balance:</span>
                                 <span className={historyModalBooking.balance > 0 ? "text-red-500" : "text-green-500"}>
-                                     ₱{parseFloat(historyModalBooking.balance).toLocaleString()}
+                                      ₱{parseFloat(historyModalBooking.balance).toLocaleString()}
                                 </span>
                             </div>
                         </div>
-
                     </div>
                 </div>
             )}
         </div>
     );
-};
+}
 
 export default PaymentTracking;

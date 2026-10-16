@@ -285,14 +285,13 @@ app.post('/reset-password', async (req, res) => {
 // SYSTEM ROUTES
 // =====================================
 
-app.post('/verify', upload.single('idImage'), async (req, res) => {
+app.post('/verify', async (req, res) => {
   try {
-    const { userId, idType, idNumber, lastName, firstName, address, phone, email } = req.body;
+    // Note: We now extract idImage directly from req.body instead of relying on multer's req.file
+    const { userId, idType, idNumber, lastName, firstName, address, phone, email, idImage } = req.body;
     
     if (!userId) return res.status(400).json({ success: false, message: "User ID is missing." });
-
-    const idImagePath = req.file ? req.file.path : null;
-    if (!idImagePath) return res.status(400).json({ success: false, message: "ID image is required for upload." });
+    if (!idImage) return res.status(400).json({ success: false, message: "ID image is required for upload." });
 
     const pDb = db.promise();
     
@@ -306,7 +305,8 @@ app.post('/verify', upload.single('idImage'), async (req, res) => {
       email = VALUES(email), id_image_path = VALUES(id_image_path), status = 'Pending'
     `;
 
-    await pDb.query(sql, [userId, idType, idNumber, lastName, firstName, address, phone || '', email || '', idImagePath]);
+    // Save the Cloudinary URL (idImage) into the id_image_path column
+    await pDb.query(sql, [userId, idType, idNumber, lastName, firstName, address, phone || '', email || '', idImage]);
     await logSystemActivity('User', `Verification request submitted by ${firstName} ${lastName}`);
 
     res.json({ success: true, message: "Verification request submitted successfully!" });
@@ -685,18 +685,19 @@ app.post('/admin_delete_staff', async (req, res) => {
 app.get('/admin_fetch_all_payments', (req, res) => { db.query(`SELECT p.*, a.event_type, u.username as customer_name FROM payments p LEFT JOIN appointments a ON p.appointment_id = a.id LEFT JOIN users u ON a.user_id = u.id ORDER BY p.transaction_date DESC`, (err, results) => { res.json({ success: true, payments: results }); }); });
 app.get('/admin_fetch_payment_history', (req, res) => { db.query("SELECT * FROM payments WHERE appointment_id = ? ORDER BY transaction_date DESC", [req.query.appointmentId], (err, r) => { res.json({ success: true, history: r }); }); });
 
-app.post('/admin_process_payment', upload.single('receiptImage'), async (req, res) => {
-  const { appointmentId, amount, paymentType, remarks } = req.body;
+app.post('/admin_process_payment', async (req, res) => {
+  // Extract receiptImage directly from the JSON body instead of using multer
+  const { appointmentId, amount, paymentType, remarks, receiptImage } = req.body;
   if (!appointmentId || !amount) return res.status(400).json({ success: false, message: "Appointment ID and Amount are required." });
-  
-  const receiptUrl = req.file ? req.file.path : null;
 
   try {
       const pDb = db.promise();
-      await pDb.query("INSERT INTO payments (appointment_id, amount_paid, payment_type, remarks, transaction_date, receipt_url) VALUES (?, ?, ?, ?, NOW(), ?)", [appointmentId, amount, paymentType || 'Cash', remarks || '', receiptUrl]);
+      await pDb.query("INSERT INTO payments (appointment_id, amount_paid, payment_type, remarks, transaction_date, receipt_url) VALUES (?, ?, ?, ?, NOW(), ?)", [appointmentId, amount, paymentType || 'Cash', remarks || '', receiptImage]);
       await logSystemActivity('Payment', `Processed payment of ₱${amount} for Booking #${appointmentId}`);
       res.json({ success: true, message: "Payment recorded successfully" });
-  } catch (err) { res.status(500).json({ success: false, message: "Database error: " + err.message }); }
+  } catch (err) { 
+      res.status(500).json({ success: false, message: "Database error: " + err.message }); 
+  }
 });
 
 app.get('/admin_fetch_users', (req, res) => { db.query("SELECT id, username, email, is_verified, created_at FROM users ORDER BY created_at DESC", (err, results) => { res.json({ success: true, users: results }); }); });
