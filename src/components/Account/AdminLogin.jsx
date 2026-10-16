@@ -28,12 +28,11 @@ const AdminLogin = ({ onAdminLogin }) => {
 
       if (data.success) {
         onAdminLogin && onAdminLogin(data.admin);
-
-        localStorage.setItem("adminUser", JSON.stringify(data.admin));
-        localStorage.setItem("isAdmin", "true");
-
+        sessionStorage.setItem("adminUser", JSON.stringify(data.admin));
+        sessionStorage.setItem("isAdmin", "true");
         window.location.href = "/admin-dashboard";
       } else {
+        
         setError(data.message || "Invalid admin credentials");
       }
     } catch (err) {

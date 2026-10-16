@@ -7,7 +7,7 @@ const NotificationBell = () => {
     const dropdownRef = useRef(null);
     
     // Get user from localStorage
-    const userString = localStorage.getItem('user');
+    const userString = sessionStorage.getItem('user');
     const user = userString ? JSON.parse(userString) : null;
 
     useEffect(() => {

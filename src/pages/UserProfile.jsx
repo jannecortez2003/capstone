@@ -34,7 +34,7 @@ const UserProfile = () => {
   };
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedUser = JSON.parse(sessionStorage.getItem("user"));
     if (!storedUser) {
       setShouldRedirect(true);
       return;

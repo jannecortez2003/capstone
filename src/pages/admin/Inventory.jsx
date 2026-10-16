@@ -3,7 +3,7 @@ import { FaBox, FaPlus, FaExclamationTriangle, FaHistory, FaArrowDown, FaArrowUp
 import Modal from '../../components/Modal';
 
 const Inventory = () => {
-  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
   const userRole = adminUser.role || 'admin';
 
   const [items, setItems] = useState([]);

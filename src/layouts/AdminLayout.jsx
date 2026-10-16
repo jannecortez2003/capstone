@@ -5,7 +5,7 @@ import { rtdb } from '../firebase';
 import { ref, set, onDisconnect, onValue } from 'firebase/database';
 
 const AdminLayout = () => {
-  const storedUser = localStorage.getItem('user') || localStorage.getItem('adminUser');
+  const storedUser = sessionStorage.getItem('user') || sessionStorage.getItem('adminUser');
   let isAdmin = false;
 
   if (storedUser) {

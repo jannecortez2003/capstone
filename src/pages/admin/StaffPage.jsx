@@ -3,7 +3,7 @@ import { FaUserTie, FaPlus, FaPhone, FaEnvelope } from "react-icons/fa";
 import Modal from '../../components/Modal';
 
 const StaffPage = () => {
-  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
   const userRole = adminUser.role || 'admin';
 
   const [staff, setStaff] = useState([]);

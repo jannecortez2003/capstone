@@ -13,7 +13,7 @@ const Sidebar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
   const userRole = adminUser.role || 'admin';
 
   const handleLogout = async () => {
@@ -23,9 +23,9 @@ const Sidebar = () => {
     } catch (err) {
       console.error("Failed to update status before logout:", err);
     }
-    localStorage.removeItem('user');
-    localStorage.removeItem('adminUser');
-    localStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('adminUser');
+    sessionStorage.removeItem('isLoggedIn');
     window.location.href = '/'; 
   };
 

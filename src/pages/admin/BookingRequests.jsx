@@ -3,7 +3,7 @@ import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen } from "react-icons/
 import Modal, { SuccessModal } from '../../components/Modal';
 
 const BookingRequests = () => {
-    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+    const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
     const userRole = adminUser.role || 'admin';
 
     const [bookings, setBookings] = useState([]);
