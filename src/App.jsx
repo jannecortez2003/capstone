@@ -47,8 +47,8 @@ function App() {
   const [preSelectedEventType, setPreSelectedEventType] = useState("");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user') || localStorage.getItem('adminUser');
-    const storedLoginState = localStorage.getItem('isLoggedIn');
+    const storedUser = sessionStorage.getItem('user') || sessionStorage.getItem('adminUser');
+    const storedLoginState = sessionStorage.getItem('isLoggedIn');
     
     if (storedUser && storedLoginState === 'true') {
       try {
@@ -64,9 +64,9 @@ function App() {
         }
       } catch (e) {
         console.error("Failed to parse stored user data:", e);
-        localStorage.removeItem('user');
-        localStorage.removeItem('adminUser');
-        localStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('adminUser');
+        sessionStorage.removeItem('isLoggedIn');
       }
     } else {
         if (location.pathname.startsWith('/admin') || location.pathname === '/profile') {
@@ -85,21 +85,21 @@ function App() {
   const handleAuthLogin = (userData) => {
     setUser(userData);
     setIsLoggedIn(true);
-    localStorage.setItem("isLoggedIn", "true");
+    sessionStorage.setItem("isLoggedIn", "true");
     
     if (['admin', 'manager', 'staff'].includes(userData.role) || userData.username === 'admin') {
-        localStorage.setItem("adminUser", JSON.stringify(userData));
+        sessionStorage.setItem("adminUser", JSON.stringify(userData));
         navigate('/admin');
     } else {
-        localStorage.setItem("user", JSON.stringify(userData));
+        sessionStorage.setItem("user", JSON.stringify(userData));
         navigate('/');
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('adminUser');
-    localStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('adminUser');
+    sessionStorage.removeItem('isLoggedIn');
     setIsLoggedIn(false);
     setUser(null);
     navigate('/'); 
