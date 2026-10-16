@@ -33,9 +33,20 @@ import './App.css';
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // FIX: Initialize state directly from sessionStorage to prevent redirect flickering
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return sessionStorage.getItem('isLoggedIn') === 'true';
+  });
+  const [user, setUser] = useState(() => {
+    const storedUser = sessionStorage.getItem('user') || sessionStorage.getItem('adminUser');
+    try {
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [activeForm, setActiveForm] = useState(null);
-  const [user, setUser] = useState(null);
 
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDishModal, setShowDishModal] = useState(false);
@@ -157,7 +168,6 @@ function App() {
             <Services />
             <Packages handlePackageSelection={handlePackageSelection} />
             <Events handleEventSelection={handleEventSelection} />
-            {/* LINKED LIVE USER STATE HERE */}
             <Contact isLoggedIn={isLoggedIn} user={user} />
             <Footer />
             <Auth onLogin={handleAuthLogin} />
@@ -174,7 +184,6 @@ function App() {
             <Services />
             <Packages handlePackageSelection={handlePackageSelection} />
             <Events handleEventSelection={handleEventSelection} />
-            {/* LINKED LIVE USER STATE HERE */}
             <Contact isLoggedIn={isLoggedIn} user={user} />
             <Footer />
           </>
