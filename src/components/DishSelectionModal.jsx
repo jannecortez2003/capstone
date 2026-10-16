@@ -147,7 +147,7 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
                               <p className={`font-bold text-sm ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {item.name}
                               </p>
-                              {/* Short description shown only when collapsed to match your original design */}
+                              {/* Short description shown only when collapsed */}
                               {item.description && !isHovered && (
                                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>
                               )}
@@ -164,7 +164,7 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
                           <div className={`transition-all duration-300 overflow-hidden ${isHovered ? 'max-h-64 mt-3 opacity-100' : 'max-h-0 opacity-0'}`}>
                             {item.image_url && (
                                 <img 
-                                  src={`${import.meta.env.VITE_API_URL}/${item.image_url}`} 
+                                  src={item.image_url.startsWith('http') ? item.image_url : `${import.meta.env.VITE_API_URL}/${item.image_url}`} 
                                   alt={item.name} 
                                   className="w-full h-32 object-cover rounded-lg shadow-sm mb-2" 
                                 />

@@ -9,7 +9,12 @@ const MenuItems = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", category: "", price: "", description: "" });
-  const [imageFile, setImageFile] = useState(null); // Added state for the image upload
+  const [imageFile, setImageFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // CLOUDINARY CONFIGURATION 
+  const CLOUD_NAME = "doleapzk"; 
+  const UPLOAD_PRESET = "mommyrosal"; 
 
   const fetchMenu = async () => {
     try {
@@ -25,7 +30,7 @@ const MenuItems = () => {
   useEffect(() => {
     if (editingItem) {
       setFormData({ ...editingItem, description: editingItem.description || "" });
-      setImageFile(null); // Reset file input when editing a new item
+      setImageFile(null);
     } else {
       setFormData({ name: "", category: "", price: "", description: "" });
       setImageFile(null);
@@ -36,38 +41,58 @@ const MenuItems = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsUploading(true);
     const url = editingItem ? `${import.meta.env.VITE_API_URL}/admin_update_menu` : `${import.meta.env.VITE_API_URL}/admin_add_menu`;
     
-    // Switch to FormData to handle the image file upload properly
-    const data = new FormData();
-    if (editingItem) data.append('id', editingItem.id);
-    data.append('name', formData.name);
-    data.append('category', formData.category);
-    data.append('price', formData.price);
-    data.append('description', formData.description);
-    
-    if (imageFile) {
-        data.append('image', imageFile);
-    }
-    if (editingItem && editingItem.image_url) {
-        data.append('existingImage', editingItem.image_url);
-    }
+    let finalImageUrl = editingItem ? editingItem.image_url : null;
 
     try {
-      const res = await fetch(url, { 
-        method: "POST", 
-        body: data // Removed 'Content-Type' header so browser auto-sets boundary for FormData
-      });
-      const resData = await res.json();
-      
-      if (resData.success) {
-          setShowModal(false); 
-          setEditingItem(null); 
-          fetchMenu();
-      } else {
-          alert(`Warning: ${resData.message}`);
-      }
-    } catch (err) { console.error(err); }
+        // 1. Upload to Cloudinary if a new file is selected
+        if (imageFile) {
+            const uploadData = new FormData();
+            uploadData.append("file", imageFile);
+            uploadData.append("upload_preset", UPLOAD_PRESET);
+            uploadData.append("cloud_name", CLOUD_NAME);
+
+            const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                method: "POST",
+                body: uploadData,
+            });
+            const uploadedImage = await cloudinaryRes.json();
+            finalImageUrl = uploadedImage.secure_url; // This is the permanent Cloudinary link
+        }
+
+        // 2. Send the data + Cloudinary URL to your backend
+        const payload = {
+            id: editingItem?.id,
+            name: formData.name,
+            category: formData.category,
+            price: formData.price,
+            description: formData.description,
+            image_url: finalImageUrl
+        };
+
+        const res = await fetch(url, { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const resData = await res.json();
+        
+        if (resData.success) {
+            setShowModal(false); 
+            setEditingItem(null); 
+            setImageFile(null);
+            fetchMenu();
+        } else {
+            alert(`Warning: ${resData.message}`);
+        }
+    } catch (err) { 
+        console.error(err); 
+        alert("Error saving menu item. Please try again.");
+    } finally {
+        setIsUploading(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -112,11 +137,7 @@ const MenuItems = () => {
             <FaPlus /> ADD DISH
           </button>
         </div>
-        <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-4 m-4 rounded-r-md">
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Menu Rule:</strong> To avoid client confusion on the booking page, duplicate dish names will be rejected by the database.
-            </p>
-        </div>
+        
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
@@ -133,7 +154,11 @@ const MenuItems = () => {
                 <tr key={item.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
                   <td className="p-4">
                       {item.image_url ? (
-                          <img src={`${import.meta.env.VITE_API_URL}/${item.image_url}`} alt={item.name} className="w-12 h-12 object-cover rounded-md shadow-sm border dark:border-gray-600" />
+                          <img 
+                            src={item.image_url.startsWith('http') ? item.image_url : `${import.meta.env.VITE_API_URL}/${item.image_url}`} 
+                            alt={item.name} 
+                            className="w-12 h-12 object-cover rounded-md shadow-sm border dark:border-gray-600" 
+                          />
                       ) : (
                           <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center text-gray-400"><FaImage /></div>
                       )}
@@ -156,7 +181,7 @@ const MenuItems = () => {
       </div>
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingItem ? "Edit Dish" : "New Dish"}>
-        <form onSubmit={handleSubmit} className="space-y-4 p-2 text-gray-800 dark:text-gray-200" encType="multipart/form-data">
+        <form onSubmit={handleSubmit} className="space-y-4 p-2 text-gray-800 dark:text-gray-200">
             <div>
                 <label className="text-sm font-medium mb-1 block">Dish Image</label>
                 <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 rounded focus:ring-2 focus:ring-pink-500 outline-none transition-colors text-sm" />
@@ -185,7 +210,9 @@ const MenuItems = () => {
             </div>
             <div className="flex justify-end gap-2 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-pink-600 text-white rounded hover:bg-pink-700 transition">Save</button>
+                <button type="submit" disabled={isUploading} className="px-4 py-2 bg-pink-600 text-white font-bold rounded hover:bg-pink-700 transition disabled:opacity-50">
+                    {isUploading ? 'Uploading...' : 'Save'}
+                </button>
             </div>
         </form>
       </Modal>
