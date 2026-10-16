@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaUtensils, FaCoffee, FaIceCream, FaHamburger } from "react-icons/fa"; 
+import { FaPlus, FaUtensils, FaCoffee, FaIceCream, FaHamburger, FaImage } from "react-icons/fa"; 
 import Modal from '../../components/Modal';
 
 const MenuItems = () => {
@@ -9,6 +9,7 @@ const MenuItems = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({ name: "", category: "", price: "", description: "" });
+  const [imageFile, setImageFile] = useState(null); // Added state for the image upload
 
   const fetchMenu = async () => {
     try {
@@ -22,8 +23,13 @@ const MenuItems = () => {
   useEffect(() => { fetchMenu(); }, []);
 
   useEffect(() => {
-    if (editingItem) setFormData({ ...editingItem, description: editingItem.description || "" });
-    else setFormData({ name: "", category: "", price: "", description: "" });
+    if (editingItem) {
+      setFormData({ ...editingItem, description: editingItem.description || "" });
+      setImageFile(null); // Reset file input when editing a new item
+    } else {
+      setFormData({ name: "", category: "", price: "", description: "" });
+      setImageFile(null);
+    }
   }, [editingItem]);
 
   const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,16 +37,35 @@ const MenuItems = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const url = editingItem ? `${import.meta.env.VITE_API_URL}/admin_update_menu` : `${import.meta.env.VITE_API_URL}/admin_add_menu`;
+    
+    // Switch to FormData to handle the image file upload properly
+    const data = new FormData();
+    if (editingItem) data.append('id', editingItem.id);
+    data.append('name', formData.name);
+    data.append('category', formData.category);
+    data.append('price', formData.price);
+    data.append('description', formData.description);
+    
+    if (imageFile) {
+        data.append('image', imageFile);
+    }
+    if (editingItem && editingItem.image_url) {
+        data.append('existingImage', editingItem.image_url);
+    }
+
     try {
-      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editingItem ? { ...formData, id: editingItem.id } : formData) });
-      const data = await res.json();
+      const res = await fetch(url, { 
+        method: "POST", 
+        body: data // Removed 'Content-Type' header so browser auto-sets boundary for FormData
+      });
+      const resData = await res.json();
       
-      if (data.success) {
+      if (resData.success) {
           setShowModal(false); 
           setEditingItem(null); 
           fetchMenu();
       } else {
-          alert(`⚠️ Warning: ${data.message}`);
+          alert(`Warning: ${resData.message}`);
       }
     } catch (err) { console.error(err); }
   };
@@ -60,7 +85,7 @@ const MenuItems = () => {
     <div className="p-6 fade-in transition-colors duration-300">
       <h1 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white transition-colors duration-300">Menu Management</h1>
       <p className="text-gray-500 dark:text-gray-400 mb-8 transition-colors duration-300">Curate your catering offerings.</p>
-
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-pink-300 transition-colors duration-300">
             <div className="bg-pink-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300"><FaUtensils className="text-pink-500 text-2xl" /></div>
@@ -87,17 +112,16 @@ const MenuItems = () => {
             <FaPlus /> ADD DISH
           </button>
         </div>
-
         <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-4 m-4 rounded-r-md">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>💡 Menu Rule:</strong> To avoid client confusion on the booking page, Duplicate dish names will be rejected by the database.
+                <strong>Menu Rule:</strong> To avoid client confusion on the booking page, duplicate dish names will be rejected by the database.
             </p>
         </div>
-
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
               <tr>
+                <th className="p-4 text-left">Image</th>
                 <th className="p-4 text-left">Dish Name</th>
                 <th className="p-4 text-left">Category</th>
                 <th className="p-4 text-left">Price</th>
@@ -107,17 +131,24 @@ const MenuItems = () => {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filteredItems.map((item) => (
                 <tr key={item.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                  <td className="p-4">
+                      {item.image_url ? (
+                          <img src={`${import.meta.env.VITE_API_URL}/${item.image_url}`} alt={item.name} className="w-12 h-12 object-cover rounded-md shadow-sm border dark:border-gray-600" />
+                      ) : (
+                          <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center text-gray-400"><FaImage /></div>
+                      )}
+                  </td>
                   <td className="p-4 font-medium text-gray-800 dark:text-white transition-colors duration-300">{item.name}</td>
                   <td className="p-4"><span className="bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200 px-2 py-1 rounded text-xs font-bold transition-colors duration-300">{item.category}</span></td>
                   <td className="p-4 font-bold text-pink-600 dark:text-pink-400 transition-colors duration-300">₱{parseFloat(item.price).toLocaleString()}</td>
-                  <td className="p-4 flex justify-center gap-2">
+                  <td className="p-4 flex justify-center gap-2 mt-2">
                     <button onClick={() => { setEditingItem(item); setShowModal(true); }} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-semibold text-sm rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm border border-blue-100 dark:border-blue-800">EDIT</button>
                     <button onClick={() => handleDelete(item.id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 font-semibold text-sm rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors shadow-sm border border-red-100 dark:border-red-800">DELETE</button>
                   </td>
                 </tr>
               ))}
               {filteredItems.length === 0 && (
-                  <tr><td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400">No menu items found.</td></tr>
+                  <tr><td colSpan="5" className="p-8 text-center text-gray-500 dark:text-gray-400">No menu items found.</td></tr>
               )}
             </tbody>
           </table>
@@ -125,7 +156,12 @@ const MenuItems = () => {
       </div>
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingItem ? "Edit Dish" : "New Dish"}>
-        <form onSubmit={handleSubmit} className="space-y-4 p-2 text-gray-800 dark:text-gray-200">
+        <form onSubmit={handleSubmit} className="space-y-4 p-2 text-gray-800 dark:text-gray-200" encType="multipart/form-data">
+            <div>
+                <label className="text-sm font-medium mb-1 block">Dish Image</label>
+                <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 rounded focus:ring-2 focus:ring-pink-500 outline-none transition-colors text-sm" />
+                {editingItem?.image_url && !imageFile && <p className="text-xs text-green-500 mt-1">Leave empty to keep existing image.</p>}
+            </div>
             <div>
                 <label className="text-sm font-medium mb-1 block">Name</label>
                 <input name="name" className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 p-2 rounded focus:ring-2 focus:ring-pink-500 outline-none transition-colors" value={formData.name} onChange={handleInputChange} required />
@@ -155,6 +191,6 @@ const MenuItems = () => {
       </Modal>
     </div>
   );
-};
+}
 
 export default MenuItems;

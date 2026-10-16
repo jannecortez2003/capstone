@@ -7,12 +7,16 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
   const [loading, setLoading] = useState(true);
   const [isCustomCooking, setIsCustomCooking] = useState(false);
   
+  // Track which dish is currently hovered to expand it
+  const [hoveredDishId, setHoveredDishId] = useState(null);
+
   const limit = packageData?.dishLimit || 7;
 
   useEffect(() => {
     if (isOpen) {
       setSelectedDishes([]);
       setIsCustomCooking(false);
+      setHoveredDishId(null);
       fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`)
         .then(res => res.json())
         .then(data => {
@@ -50,7 +54,6 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
         onConfirm(customDishes);
         return;
     }
-
     if (selectedDishes.length < limit) {
       alert(`Please select exactly ${limit} dishes. You still need ${limit - selectedDishes.length} more.`);
       return;
@@ -95,6 +98,7 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
               ></div>
             </div>
           </div>
+
           <div className="w-full sm:w-auto bg-pink-50 dark:bg-gray-700/50 p-2.5 rounded-lg border border-pink-100 dark:border-gray-600">
               <label className="flex items-center gap-2 cursor-pointer">
                   <input 
@@ -124,28 +128,50 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {groupedMenu[category].map(item => {
                       const isSelected = selectedDishes.includes(item.name);
+                      const isHovered = hoveredDishId === item.id;
+                      
                       return (
                         <div 
                           key={item.id} 
                           onClick={() => handleToggleDish(item.name)}
-                          className={`cursor-pointer p-3 rounded-xl border-2 transition-all duration-200 flex items-center justify-between
+                          onMouseEnter={() => setHoveredDishId(item.id)}
+                          onMouseLeave={() => setHoveredDishId(null)}
+                          className={`cursor-pointer p-3 rounded-xl border-2 transition-all duration-300 flex flex-col justify-center
                             ${isSelected 
-                               ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 shadow-sm' 
-                               : 'border-transparent bg-white dark:bg-gray-800 shadow-sm hover:border-pink-300 dark:hover:border-gray-600'}
+                                ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 shadow-sm' 
+                                : 'border-transparent bg-white dark:bg-gray-800 shadow-sm hover:border-pink-300 dark:hover:border-gray-600'}
                           `}
                         >
-                          <div>
-                            <p className={`font-bold text-sm ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                              {item.name}
-                            </p>
-                            {item.description && (
-                              <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>
-                            )}
+                          <div className="flex justify-between items-center w-full gap-2">
+                            <div className="flex-1">
+                              <p className={`font-bold text-sm ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                {item.name}
+                              </p>
+                              {/* Short description shown only when collapsed to match your original design */}
+                              {item.description && !isHovered && (
+                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>
+                              )}
+                            </div>
+                            
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0
+                              ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'border-gray-300 dark:border-gray-600'}
+                            `}>
+                              {isSelected && <FaCheck className="text-xs" />}
+                            </div>
                           </div>
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0
-                            ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'border-gray-300 dark:border-gray-600'}
-                          `}>
-                            {isSelected && <FaCheck className="text-xs" />}
+
+                          {/* Expansion Area on Hover */}
+                          <div className={`transition-all duration-300 overflow-hidden ${isHovered ? 'max-h-64 mt-3 opacity-100' : 'max-h-0 opacity-0'}`}>
+                            {item.image_url && (
+                                <img 
+                                  src={`${import.meta.env.VITE_API_URL}/${item.image_url}`} 
+                                  alt={item.name} 
+                                  className="w-full h-32 object-cover rounded-lg shadow-sm mb-2" 
+                                />
+                            )}
+                            <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-normal leading-relaxed">
+                              {item.description || 'No description provided.'}
+                            </p>
                           </div>
                         </div>
                       );
@@ -166,7 +192,7 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
             onClick={handleNext}
             disabled={!isCustomCooking && selectedDishes.length < limit}
             className={`px-8 py-2.5 font-bold rounded-lg transition flex items-center gap-2 shadow-md
-              ${(isCustomCooking || selectedDishes.length >= limit)
+              ${(isCustomCooking || selectedDishes.length >= limit) 
                  ? 'bg-pink-600 text-white hover:bg-pink-700 cursor-pointer' 
                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
               }
@@ -178,6 +204,6 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
       </div>
     </div>
   );
-};
+}
 
 export default DishSelectionModal;
