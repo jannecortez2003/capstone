@@ -145,8 +145,17 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal, 
               )}
             </div>
 
-            {/* MOBILE HAMBURGER ICON */}
+            {/* MOBILE HAMBURGER & THEME ICON */}
             <div className="md:hidden flex items-center gap-4">
+              
+              {/* Added Client Mobile Theme Toggle */}
+              <button 
+                onClick={toggleTheme} 
+                className="text-xl text-gray-500 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 focus:outline-none transition-colors"
+              >
+                {theme === 'dark' ? <FaSun className="text-yellow-400" /> : <FaMoon />}
+              </button>
+
               {isLoggedIn && user?.role !== 'admin' && user?.username !== 'admin' && (
                   <NotificationBell />
               )}
@@ -180,6 +189,7 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal, 
         </div>
 
         <div className="p-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 space-y-3">
+          {/* Theme Toggle Button in Drawer */}
           <button 
             onClick={toggleTheme} 
             className="flex justify-center items-center gap-2 w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 px-4 py-3 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"

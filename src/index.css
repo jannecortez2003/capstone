@@ -1,14 +1,11 @@
 @import "tailwindcss";
 
-/* THE FIX: Added 'custom-' to the variant so Tailwind listens to the button! */
 @custom-variant dark (&:is(.dark *));
 
-/* Set the global background colors */
 @layer base {
   body {
     @apply bg-white text-gray-900 transition-colors duration-300;
   }
-  
   .dark body {
     @apply bg-gray-900 text-gray-100;
   }
