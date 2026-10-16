@@ -1,26 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight, FaSun, FaMoon } from 'react-icons/fa';
 
-const Dashboard = () => {
+const Dashboard = ({ theme, toggleTheme }) => {
   const [stats, setStats] = useState({ bookings: 0, revenue: 0, menuItems: 0, customers: 0 });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
-  
   const [filter, setFilter] = useState('All');
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_dashboard_stats`)
@@ -131,17 +117,19 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase transition-colors duration-300">Total Revenue</h3>
-              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">₱ {parseFloat(stats.revenue || 0).toLocaleString()}</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">₱{parseFloat(stats.revenue || 0).toLocaleString()}</div>
             </div>
             <div className="bg-green-100 dark:bg-gray-700 p-3 rounded-full text-green-600 dark:text-green-400 transition-colors duration-300">
               <FaMoneyBillWave className="text-xl" />
             </div>
           </div>
         </div>
+
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-yellow-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
@@ -153,6 +141,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-blue-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
@@ -179,8 +168,8 @@ const Dashboard = () => {
                   onClick={() => setFilter(status)}
                   className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
                     filter === status 
-                    ? 'bg-white dark:bg-gray-800 text-pink-600 shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white'
+                     ? 'bg-white dark:bg-gray-800 text-pink-600 shadow-sm' 
+                     : 'text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white'
                   }`}
                 >
                   {status}
