@@ -34,10 +34,10 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // FIX: Initialize state directly from sessionStorage to prevent redirect flickering
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return sessionStorage.getItem('isLoggedIn') === 'true';
   });
+  
   const [user, setUser] = useState(() => {
     const storedUser = sessionStorage.getItem('user') || sessionStorage.getItem('adminUser');
     try {
@@ -46,8 +46,24 @@ function App() {
       return null;
     }
   });
-  const [activeForm, setActiveForm] = useState(null);
 
+  // --- GLOBAL THEME STATE ---
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+  // --------------------------
+
+  const [activeForm, setActiveForm] = useState(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDishModal, setShowDishModal] = useState(false);
   const [showEventFormModal, setShowEventFormModal] = useState(false);
@@ -66,7 +82,6 @@ function App() {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setIsLoggedIn(true);
-
         if (location.pathname.startsWith('/admin')) {
             const isAdminType = ['admin', 'manager', 'staff'].includes(parsedUser.role) || parsedUser.username === 'admin';
             if (!isAdminType) {
@@ -156,7 +171,15 @@ function App() {
   return (
     <>
       {!isAdminRoute && (
-        <Navbar setActiveForm={setActiveForm} isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} onShowVerifyModal={handleShowVerifyModal} />
+        <Navbar 
+          setActiveForm={setActiveForm} 
+          isLoggedIn={isLoggedIn} 
+          onLogout={handleLogout} 
+          user={user} 
+          onShowVerifyModal={handleShowVerifyModal} 
+          theme={theme} 
+          toggleTheme={toggleTheme} 
+        />
       )}
 
       {!isAdminRoute && isLoggedIn && user && !['admin', 'manager', 'staff'].includes(user.role) && user.username !== 'admin' && <ChatBot user={user} />}
@@ -190,7 +213,7 @@ function App() {
         } />
 
         <Route path="/admin/*" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
+          <Route index element={<Dashboard theme={theme} toggleTheme={toggleTheme} />} />
           <Route path="booking-requests" element={<BookingRequests />} />
           <Route path="inventory" element={<Inventory />} />
           <Route path="menu-items" element={<MenuItems />} />

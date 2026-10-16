@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaCheckCircle, FaSun, FaMoon } from 'react-icons/fa';
 import NotificationBell from './NotificationBell';
 
-// Helper component for animated desktop links
 const NavLink = ({ title, onClick, href }) => {
   const Component = href ? 'a' : 'button';
   return (
@@ -18,28 +17,12 @@ const NavLink = ({ title, onClick, href }) => {
   );
 };
 
-const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }) => {
+const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal, theme, toggleTheme }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // === DARK MODE LOGIC ===
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-  
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
-
-  // === SCROLL EFFECT ===
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -48,8 +31,6 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // === SCROLL HANDLING LOGIC ===
-  // If we navigated to a hash path from another page, scroll to it once we are on '/'
   useEffect(() => {
     if (location.pathname === '/' && location.hash) {
       setTimeout(() => {
@@ -62,7 +43,6 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
     }
   }, [location]);
 
-  // Handle Home specifically to scroll to top
   const handleHomeClick = (e) => {
     e.preventDefault();
     setIsOpen(false);
@@ -74,7 +54,6 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
     }
   };
 
-  // Handle Hash links (Services, Packages, Contact)
   const handleHashClick = (e, hashId) => {
     e.preventDefault();
     setIsOpen(false);
@@ -103,16 +82,13 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
             
-            {/* Logo */}
             <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={handleHomeClick}>
               <h1 className="text-2xl font-black bg-gradient-to-r from-pink-600 to-rose-400 bg-clip-text text-transparent tracking-tight">
                 Mommy Rosal's
               </h1>
             </div>
 
-            {/* ========================================== */}
-            {/* DESKTOP MENU (Hidden on Mobile)              */}
-            {/* ========================================== */}
+            {/* DESKTOP MENU */}
             <div className="hidden md:flex items-center space-x-8">
               <div className="flex space-x-6 mr-4">
                 <NavLink onClick={handleHomeClick} title="Home" />
@@ -169,9 +145,7 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
               )}
             </div>
 
-            {/* ========================================== */}
-            {/* MOBILE HAMBURGER ICON                        */}
-            {/* ========================================== */}
+            {/* MOBILE HAMBURGER ICON */}
             <div className="md:hidden flex items-center gap-4">
               {isLoggedIn && user?.role !== 'admin' && user?.username !== 'admin' && (
                   <NotificationBell />
@@ -184,20 +158,13 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
         </div>
       </nav>
 
-      {/* ========================================== */}
-      {/* MOBILE SIDE DRAWER MENU                      */}
-      {/* ========================================== */}
-      
-      {/* Dark Overlay Backdrop */}
+      {/* MOBILE SIDE DRAWER MENU */}
       <div 
         className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] transition-opacity duration-300 md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setIsOpen(false)}
       />
-
-      {/* Side Drawer */}
       <div className={`fixed top-0 right-0 h-full w-[280px] bg-white dark:bg-gray-900 z-[70] shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         
-        {/* Drawer Header */}
         <div className="flex justify-between items-center p-5 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-xl font-black bg-gradient-to-r from-pink-600 to-rose-400 bg-clip-text text-transparent">Menu</h2>
           <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-pink-600 dark:text-gray-400 text-2xl p-1 transition-colors">
@@ -205,7 +172,6 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
           </button>
         </div>
 
-        {/* Drawer Links */}
         <div className="flex-1 overflow-y-auto py-4 px-4 space-y-2">
           <button onClick={handleHomeClick} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Home</button>
           <a href="/#services" onClick={(e) => handleHashClick(e, '#services')} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Services</a>
@@ -213,7 +179,6 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
           <a href="/#contact" onClick={(e) => handleHashClick(e, '#contact')} className="block w-full text-left px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-gray-800 hover:text-pink-600 font-bold rounded-xl transition-colors">Contact</a>
         </div>
 
-        {/* Drawer Footer / Actions */}
         <div className="p-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 space-y-3">
           <button 
             onClick={toggleTheme} 
@@ -257,6 +222,6 @@ const Navbar = ({ setActiveForm, isLoggedIn, onLogout, user, onShowVerifyModal }
       </div>
     </>
   );
-};
+}
 
 export default Navbar;
