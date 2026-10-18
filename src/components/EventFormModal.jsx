@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
-const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCapacity, preSelectedDishes, onBookingSuccess, preSelectedEventType }) => {
+const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCapacity, packagePrice, preSelectedDishes, onBookingSuccess, preSelectedEventType }) => {
   const [formData, setFormData] = useState({ eventType: '', preferredDate: '', duration: 1, guestCount: '', notes: '' });
   const [bookedDates, setBookedDates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
@@ -21,7 +20,6 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
       }));
       setError(null);
       setCurrentMonth(new Date());
-
       fetch(`${import.meta.env.VITE_API_URL}/fetch_booked_dates`)
         .then(res => res.json())
         .then(data => {
@@ -90,19 +88,18 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
     
     setLoading(true); setError(null);
     try {
-      const payload = { 
-        userId, 
-        packageType: preSelectedPackage, 
-        selectedDishes: preSelectedDishes.join('; '), 
-        ...formData 
-      };
-
+      const payload = {
+         userId,
+         packageType: preSelectedPackage,
+         totalCost: packagePrice ? parseFloat(String(packagePrice).replace(/[^0-9.-]+/g, "")) : 0,
+         selectedDishes: preSelectedDishes.join('; '),
+         ...formData
+       };
       const res = await fetch(`${import.meta.env.VITE_API_URL}/book_event`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-
       if (data.success) {
          onBookingSuccess("Your event has been successfully booked! Please wait for admin confirmation.");
        } else {
@@ -110,9 +107,9 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
        }
     } catch (err) {
        setError("Network error. Please try again.");
-     } finally {
+    } finally {
        setLoading(false);
-     }
+    }
   };
 
   const handlePrevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -123,15 +120,12 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
     const month = currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDay = new Date(year, month, 1).getDay();
-
-    // 3 Days advance locking logic
     const today = new Date();
     today.setHours(0,0,0,0);
     const minDate = new Date(today);
     minDate.setDate(minDate.getDate() + 3);
     const minDateStr = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}`;
-
-    // Highlight selected range
+    
     let selectedDates = [];
     if (formData.preferredDate) {
         let cur = new Date(formData.preferredDate);
@@ -145,7 +139,6 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="p-2"></div>);
     }
-
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       
@@ -178,12 +171,10 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-black/40 flex items-center justify-center z-50 p-4 transition-colors duration-300">
       <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md shadow-2xl border dark:border-gray-700 flex flex-col max-h-[95vh]">
-        
         <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">Book Your Event</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-red-500 transition-colors text-2xl leading-none">&times;</button>
         </div>
-
         <div className="p-4 overflow-y-auto custom-scrollbar">
             {error && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded mb-4 text-sm font-bold">{error}</div>}
             
@@ -193,7 +184,6 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
             </div>
 
             <form id="bookingForm" onSubmit={handleSubmit} className="space-y-5">
-              
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Select Start Date <span className="text-red-500">*</span></label>
                 <div className="border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl p-4 shadow-inner transition-colors duration-300">
@@ -230,6 +220,7 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
                       <option value={5}>5 Days</option>
                     </select>
                   </div>
+
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Event Type</label>
                     <select name="eventType" value={formData.eventType} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500 transition-colors" required>
@@ -241,15 +232,16 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
                       <option value="Other">Other</option>
                     </select>
                   </div>
+
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Total Guests</label>
                     <input 
-                        type="number" 
-                        name="guestCount" 
-                        value={formData.guestCount} 
-                        readOnly
+                         type="number" 
+                         name="guestCount" 
+                         value={formData.guestCount} 
+                         readOnly
                         className="w-full border dark:border-gray-600 bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg p-2.5 outline-none cursor-not-allowed font-bold" 
-                    />
+                     />
                   </div>
               </div>
 
@@ -257,7 +249,6 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Additional Notes</label>
                 <textarea name="notes" rows="2" placeholder="Theme, color motif, special requests..." value={formData.notes} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500 transition-colors"></textarea>
               </div>
-
             </form>
         </div>
 
@@ -267,7 +258,6 @@ const EventFormModal = ({ isOpen, onClose, userId, preSelectedPackage, packageCa
             {loading ? "Processing..." : "Confirm Booking"}
           </button>
         </div>
-
       </div>
     </div>
   );

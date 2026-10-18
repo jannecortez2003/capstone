@@ -252,6 +252,7 @@ function App() {
         userId={user?.id} 
         preSelectedPackage={selectedPackageForBooking?.title}
         packageCapacity={selectedPackageForBooking?.guestCount} 
+        packagePrice={selectedPackageForBooking?.price}
         preSelectedDishes={finalSelectedDishes}
         preSelectedEventType={preSelectedEventType} 
         onBookingSuccess={handleBookingSuccess} 
