@@ -5,7 +5,6 @@ import Modal from '../../components/Modal';
 const Inventory = () => {
   const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
   const userRole = adminUser.role || 'admin';
-
   const [items, setItems] = useState([]);
   const [logs, setLogs] = useState([]); 
   const [activeTab, setActiveTab] = useState('inventory'); 
@@ -27,11 +26,10 @@ const Inventory = () => {
       ]);
       const invData = await invRes.json();
       const logsData = await logsRes.json();
-
       if (invData.success && Array.isArray(invData.inventory)) setItems(invData.inventory);
       if (logsData.success && Array.isArray(logsData.logs)) setLogs(logsData.logs);
-    } catch (err) { console.error("Error fetching data:", err); } 
-    finally { setLoading(false); }
+    } catch (err) { console.error("Error fetching data:", err); }
+     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchInventoryData(); }, []);
@@ -49,9 +47,9 @@ const Inventory = () => {
       const data = await res.json();
       
       if (data.success) {
-          fetchInventoryData(); 
-          setShowModal(false); 
-          setEditingItem(null);
+          fetchInventoryData();
+           setShowModal(false);
+           setEditingItem(null);
       } else { alert(`⚠️ Warning: ${data.message}`); }
     } catch (err) { console.error("Error saving item:", err); }
   };
@@ -62,6 +60,29 @@ const Inventory = () => {
         await fetch(`${import.meta.env.VITE_API_URL}/admin_delete_inventory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
         fetchInventoryData();
     } catch (err) { alert("Delete failed"); }
+  };
+
+  // --- NEW: Delete Grouped History Logs ---
+  const handleDeleteHistoryGroup = async (group) => {
+      if (!window.confirm(`Are you sure you want to permanently delete the history logs for ${group.title}?`)) return;
+      
+      const logIds = group.logs.map(l => l.id); // Extract all IDs in this group
+      try {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/admin_delete_inventory_logs`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ logIds })
+          });
+          const data = await res.json();
+          if (data.success) {
+              fetchInventoryData();
+          } else {
+              alert(data.message || "Failed to delete logs.");
+          }
+      } catch (err) {
+          console.error("Error deleting logs:", err);
+          alert("Network error.");
+      }
   };
 
   const formatDate = (dateString) => {
@@ -131,7 +152,7 @@ const Inventory = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
-         
+          
         {/* TAB CONTROLS */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex justify-between items-center overflow-x-auto">
             <div className="flex space-x-2">
@@ -222,10 +243,15 @@ const Inventory = () => {
                                         {group.logs.length} Item Updates
                                     </span>
                                 </td>
-                                <td className="p-4 flex justify-center">
+                                <td className="p-4 flex justify-center gap-2">
                                     <button onClick={() => setSelectedHistory(group)} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition shadow-sm">
                                         VIEW DETAILS
                                     </button>
+                                    {userRole === 'admin' && (
+                                        <button onClick={() => handleDeleteHistoryGroup(group)} className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900 transition shadow-sm">
+                                            DELETE
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))
@@ -262,7 +288,6 @@ const Inventory = () => {
         </form>
       </Modal>
 
-      {/*   FIX: SPLIT TRANSACTION DETAILS MODAL   */}
       {selectedHistory && (
           <Modal isOpen={!!selectedHistory} onClose={() => setSelectedHistory(null)} title={selectedHistory.title} size="max-w-2xl">
               <div className="p-2 md:p-4 text-gray-800 dark:text-gray-200">

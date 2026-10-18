@@ -5,16 +5,16 @@ import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 const AdminPackages = () => {
   const [packages, setPackages] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
   const [formData, setFormData] = useState({ 
     id: null, 
     package_name: '', 
     description: '', 
     price: '', 
     pax_capacity: '',
-    dish_limit: '' 
+    dish_limit: '',
+    physical_assets: '' // NEW FIELD
   });
-  
+
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const fetchPackages = async () => {
@@ -23,14 +23,14 @@ const AdminPackages = () => {
       if (res.data.success) {
         setPackages(res.data.packages);
       }
-    } catch (err) { 
-      console.error("Error fetching packages", err); 
-    }
+    } catch (err) {
+       console.error("Error fetching packages", err);
+     }
   };
 
-  useEffect(() => { 
-    fetchPackages(); 
-  }, []);
+  useEffect(() => {
+     fetchPackages();
+   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,20 +43,20 @@ const AdminPackages = () => {
       } else {
         alert("Failed to save package.");
       }
-    } catch (err) { 
-      console.error(err);
-      alert("Error saving package. Please check your console."); 
-    }
+    } catch (err) {
+       console.error(err);
+      alert("Error saving package. Please check your console.");
+     }
   };
 
   const handleDelete = async (id) => {
     if(window.confirm("Are you sure you want to delete this package?")) {
       try {
         await axios.post(`${apiUrl}/admin_delete_package`, { id });
-        fetchPackages(); 
-      } catch (err) { 
-        alert("Error deleting package"); 
-      }
+        fetchPackages();
+       } catch (err) {
+         alert("Error deleting package");
+       }
     }
   };
 
@@ -68,10 +68,11 @@ const AdminPackages = () => {
         description: pkg.description, 
         price: pkg.price, 
         pax_capacity: pkg.pax_capacity,
-        dish_limit: pkg.dish_limit || '' 
-      });
+        dish_limit: pkg.dish_limit || '',
+        physical_assets: pkg.physical_assets || '' // LOAD EXISTING
+       });
     } else {
-      setFormData({ id: null, package_name: '', description: '', price: '', pax_capacity: '', dish_limit: '' });
+      setFormData({ id: null, package_name: '', description: '', price: '', pax_capacity: '', dish_limit: '', physical_assets: '' });
     }
     setIsModalOpen(true);
   };
@@ -105,7 +106,8 @@ const AdminPackages = () => {
                 <tr key={pkg.id} className="hover:bg-pink-50/50 dark:hover:bg-gray-700/50 transition-colors duration-200">
                   <td className="p-4 border-b border-gray-100 dark:border-gray-700 font-bold text-pink-600 dark:text-pink-400">
                     {pkg.package_name}
-                    <div className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1 max-w-xs truncate">{pkg.description}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-1 max-w-xs truncate">Inclusions: {pkg.description}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5 max-w-xs truncate text-purple-500 dark:text-purple-400">Assets: {pkg.physical_assets || 'Standard'}</div>
                   </td>
                   <td className="p-4 border-b border-gray-100 dark:border-gray-700 text-sm font-bold text-gray-800 dark:text-gray-300 text-center">
                     <span className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-xs text-gray-600 dark:text-gray-300 border dark:border-gray-600">
@@ -115,7 +117,6 @@ const AdminPackages = () => {
                   <td className="p-4 border-b border-gray-100 dark:border-gray-700 font-extrabold text-gray-800 dark:text-gray-200">₱{pkg.price}</td>
                   <td className="p-4 border-b border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium">{pkg.pax_capacity} Pax</td>
                   
-                  {/* MODERNIZED ACTION BUTTONS */}
                   <td className="p-4 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex justify-center gap-3">
                       <button 
@@ -134,7 +135,6 @@ const AdminPackages = () => {
                       </button>
                     </div>
                   </td>
-
                 </tr>
               )) : (
                 <tr>
@@ -148,7 +148,6 @@ const AdminPackages = () => {
         </div>
       </div>
 
-      {/* Modern Transparent Blurred Modal Background */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex justify-center items-center z-50 p-4 transition-all duration-300">
           <div className="bg-white/95 dark:bg-gray-800/95 p-8 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] w-full max-w-lg border border-white/20 dark:border-gray-600 relative backdrop-blur-xl">
@@ -159,7 +158,6 @@ const AdminPackages = () => {
             >
               &times;
             </button>
-
             <h3 className="text-2xl font-black mb-6 text-gray-800 dark:text-white border-b pb-3 dark:border-gray-700">
               {formData.id ? 'Edit Package Details' : 'Create New Package'}
             </h3>
@@ -216,12 +214,24 @@ const AdminPackages = () => {
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Features / Inclusions <span className="text-xs font-normal text-gray-500">(comma separated)</span></label>
                 <textarea 
-                  rows="3" 
+                  rows="2" 
                   value={formData.description} 
                   onChange={(e) => setFormData({...formData, description: e.target.value})} 
                   className="w-full border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 transition-shadow shadow-inner" 
                   required
                   placeholder="Standard Setup, Tables & Chairs, Basic Styling..."
+                ></textarea>
+              </div>
+
+              {/* NEW PHYSICAL ASSETS FIELD */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Physical Assets / Equipment <span className="text-xs font-normal text-gray-500">(Optional)</span></label>
+                <textarea 
+                  rows="2" 
+                  value={formData.physical_assets} 
+                  onChange={(e) => setFormData({...formData, physical_assets: e.target.value})} 
+                  className="w-full border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-pink-500 transition-shadow shadow-inner" 
+                  placeholder="e.g., Chafing Dishes, Table Linens, Event Tents..."
                 ></textarea>
               </div>
 
@@ -246,6 +256,6 @@ const AdminPackages = () => {
       )}
     </div>
   );
-};
+}
 
 export default AdminPackages;
