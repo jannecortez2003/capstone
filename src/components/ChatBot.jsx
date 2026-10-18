@@ -97,7 +97,7 @@ const ChatBot = ({ user }) => {
     e.preventDefault();
     if (!input.trim()) return;
     const textToSend = input;
-    setInput(""); 
+    setInput("");
 
     try {
       await addDoc(collection(db, `chats/${userId}/messages`), {
@@ -105,10 +105,11 @@ const ChatBot = ({ user }) => {
         sender: "user",
         createdAt: serverTimestamp()
       });
-
+      
       await setDoc(doc(db, "chats", userId), {
           lastMessage: `You: ${textToSend}`,
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
+          unreadByAdmin: true // <--- ADD THIS LINE
         }, { merge: true }
       );
     } catch (error) {

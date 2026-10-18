@@ -70,7 +70,27 @@ const CustomerChat = () => {
     } catch(err) {
       setUserStatus("offline");
     }
-  }, [activeChatDetails?.userId]); 
+  }, [activeChatDetails?.userId]);
+
+  // NEW: Automatically clear unread flag when viewing an active chat
+  useEffect(() => {
+    if (activeChatId) {
+        const activeChat = conversations.find(c => c.id === activeChatId);
+        if (activeChat && activeChat.unreadByAdmin) {
+            setDoc(doc(db, "chats", activeChatId), { unreadByAdmin: false }, { merge: true }).catch(e => console.error(e));
+        }
+    }
+  }, [activeChatId, conversations]);
+
+  // NEW: Select chat and clear unread notification
+  const handleChatSelect = async (chatId) => {
+    setActiveChatId(chatId);
+    try {
+        await setDoc(doc(db, "chats", chatId), { unreadByAdmin: false }, { merge: true });
+    } catch (err) {
+        console.error("Failed to mark chat as read", err);
+    }
+  };
 
   // SEND MESSAGE
   const handleSendReply = async (e) => {
@@ -127,7 +147,7 @@ const CustomerChat = () => {
             {conversations.map((c) => (
               <div
                 key={c.id}
-                onClick={() => setActiveChatId(c.id)}
+                onClick={() => handleChatSelect(c.id)}
                 className={`p-3 cursor-pointer rounded-xl transition-colors duration-200 flex items-center gap-3 ${
                   activeChatId === c.id 
                     ? "bg-pink-50 dark:bg-gray-700 border-l-4 border-pink-500 shadow-sm" 
@@ -137,14 +157,19 @@ const CustomerChat = () => {
                 <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-gray-600 flex items-center justify-center font-bold text-pink-700 dark:text-pink-300 shrink-0">
                   {c.customerName ? c.customerName.substring(0, 2).toUpperCase() : 'C'}
                 </div>
-                <div className="overflow-hidden">
+                
+                <div className="overflow-hidden flex-1">
                   <div className="font-bold text-sm text-gray-800 dark:text-gray-200 truncate">
                     {c.customerName || "Customer"}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                  <div className={`text-xs truncate mt-0.5 ${c.unreadByAdmin ? "text-gray-800 dark:text-gray-200 font-bold" : "text-gray-500 dark:text-gray-400"}`}>
                     {c.lastMessage}
                   </div>
                 </div>
+                
+                {c.unreadByAdmin && (
+                    <div className="w-2.5 h-2.5 bg-pink-500 rounded-full shrink-0 shadow-sm"></div>
+                )}
               </div>
             ))}
           </div>

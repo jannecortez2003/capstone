@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { rtdb } from '../../firebase';
+import { rtdb, db } from '../../firebase';
 import { ref, set } from 'firebase/database';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { 
   FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, 
   FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, 
   FaBars, FaTimes, FaSignOutAlt, FaIdBadge, FaHistory, 
-  FaTags
+  FaTags 
 } from 'react-icons/fa';
 
 const Sidebar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-
   const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
   const userRole = adminUser.role || 'admin';
+  const [unreadChats, setUnreadChats] = useState(0);
+
+  // --- NEW: Global Listener for Unread Client Messages ---
+  useEffect(() => {
+    if (!['admin', 'manager', 'staff'].includes(userRole)) return;
+    const q = query(collection(db, "chats"), where("unreadByAdmin", "==", true));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadChats(snapshot.docs.length);
+    });
+    return () => unsubscribe();
+  }, [userRole]);
 
   const handleLogout = async () => {
     try {
@@ -64,13 +75,16 @@ const Sidebar = () => {
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 className={`flex items-center gap-4 p-4 border-b border-pink-600/50 dark:border-gray-800 transition ${
-                  location.pathname === item.path 
-                    ? 'bg-pink-800 dark:bg-gray-800 font-bold border-l-4 border-white dark:border-pink-500 text-white' 
+                  location.pathname === item.path
+                    ? 'bg-pink-800 dark:bg-gray-800 font-bold border-l-4 border-white dark:border-pink-500 text-white'
                     : 'hover:bg-pink-800 dark:hover:bg-gray-800 text-pink-100 dark:text-gray-300'
                 }`}
               >
                 <span className="text-xl">{item.icon}</span>
                 <span>{item.label}</span>
+                {item.label === 'Chat' && unreadChats > 0 && (
+                    <span className="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md animate-pulse">{unreadChats} New</span>
+                )}
               </Link>
             ))}
             <button onClick={handleLogout} className="flex items-center gap-4 p-4 mt-2 border-t-2 border-pink-900 dark:border-gray-800 bg-pink-800 dark:bg-gray-900 hover:bg-pink-900 dark:hover:bg-gray-800 text-white font-bold transition w-full text-left">
@@ -92,16 +106,20 @@ const Sidebar = () => {
               key={item.path}
               to={item.path}
               className={`flex items-center gap-4 px-6 py-4 transition ${
-                location.pathname === item.path 
-                  ? 'bg-pink-800 dark:bg-gray-800 border-l-4 border-white dark:border-pink-500 font-bold text-white' 
+                location.pathname === item.path
+                  ? 'bg-pink-800 dark:bg-gray-800 border-l-4 border-white dark:border-pink-500 font-bold text-white'
                   : 'hover:bg-pink-700 dark:hover:bg-gray-800 text-pink-50 dark:text-gray-400'
               }`}
             >
               <span className="text-xl">{item.icon}</span>
               <span>{item.label}</span>
+              {item.label === 'Chat' && unreadChats > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md animate-pulse">{unreadChats} New</span>
+              )}
             </Link>
           ))}
         </div>
+
         <div className="border-t border-pink-500 dark:border-gray-800 bg-pink-700 dark:bg-gray-900 transition-colors duration-300">
           <button onClick={handleLogout} className="w-full flex items-center gap-4 px-6 py-5 hover:bg-pink-800 dark:hover:bg-gray-800 text-white dark:text-gray-300 font-bold transition">
             <span className="text-xl"><FaSignOutAlt /></span>
