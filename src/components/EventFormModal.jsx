@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { FaChevronLeft, FaChevronRight, FaArrowRight } from 'react-icons/fa';
+import { regions, provinces, cities, barangays } from "select-philippines-address";
 
 const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, preSelectedEventType, onNext }) => {
   const [formData, setFormData] = useState({ 
-      eventType: '', preferredDate: '', eventTime: '', eventLocation: '', duration: 1, guestCount: '', notes: '' 
+      eventType: '', preferredDate: '', eventTime: '', duration: 1, guestCount: '', notes: '' 
   });
+  
+  // Philippine Address States
+  const [regionList, setRegionList] = useState([]);
+  const [provinceList, setProvinceList] = useState([]);
+  const [cityList, setCityList] = useState([]);
+  const [barangayList, setBarangayList] = useState([]);
+  
+  const [addressData, setAddressData] = useState({
+      regionCode: '', regionName: '',
+      provinceCode: '', provinceName: '',
+      cityCode: '', cityName: '',
+      barangayCode: '', barangayName: '',
+      street: ''
+  });
+
   const [bookedDates, setBookedDates] = useState([]);
   const [error, setError] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -14,13 +30,20 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
       setFormData(prev => ({
         ...prev,
         eventType: preSelectedEventType || 'Wedding',
-        preferredDate: '', eventTime: '', eventLocation: '',
+        preferredDate: '', eventTime: '',
         duration: 1,
         guestCount: packageCapacity || '', 
         notes: ''
       }));
+      setAddressData({
+        regionCode: '', regionName: '', provinceCode: '', provinceName: '', cityCode: '', cityName: '', barangayCode: '', barangayName: '', street: ''
+      });
       setError(null);
       setCurrentMonth(new Date());
+      
+      // Load Regions initially
+      regions().then(response => setRegionList(response));
+
       fetch(`${import.meta.env.VITE_API_URL}/fetch_booked_dates`)
         .then(res => res.json())
         .then(data => { if (data.success) setBookedDates(data.bookedDates); })
@@ -30,6 +53,42 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
 
   if (!isOpen) return null;
 
+  // --- ADDRESS HANDLERS ---
+  const handleRegionChange = (e) => {
+    const code = e.target.value;
+    const name = e.target.options[e.target.selectedIndex].text;
+    setAddressData(prev => ({...prev, regionCode: code, regionName: name, provinceCode: '', provinceName: '', cityCode: '', cityName: '', barangayCode: '', barangayName: ''}));
+    provinces(code).then(response => setProvinceList(response));
+    setCityList([]);
+    setBarangayList([]);
+  };
+
+  const handleProvinceChange = (e) => {
+    const code = e.target.value;
+    const name = e.target.options[e.target.selectedIndex].text;
+    setAddressData(prev => ({...prev, provinceCode: code, provinceName: name, cityCode: '', cityName: '', barangayCode: '', barangayName: ''}));
+    cities(code).then(response => setCityList(response));
+    setBarangayList([]);
+  };
+
+  const handleCityChange = (e) => {
+    const code = e.target.value;
+    const name = e.target.options[e.target.selectedIndex].text;
+    setAddressData(prev => ({...prev, cityCode: code, cityName: name, barangayCode: '', barangayName: ''}));
+    barangays(code).then(response => setBarangayList(response));
+  };
+
+  const handleBarangayChange = (e) => {
+    const code = e.target.value;
+    const name = e.target.options[e.target.selectedIndex].text;
+    setAddressData(prev => ({...prev, barangayCode: code, barangayName: name}));
+  };
+
+  const handleStreetChange = (e) => {
+    setAddressData(prev => ({...prev, street: e.target.value}));
+  };
+
+  // --- DATE & FORM HANDLERS ---
   const handleDateClick = (dateStr) => {
     let cur = new Date(dateStr);
     let isValid = true;
@@ -71,7 +130,16 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
         setError("Please select an available date from the calendar.");
         return;
     }
-    onNext(formData); // PASS DATA TO STEP 2
+    
+    // Combine the address parts into a single string for the database
+    const fullLocation = `${addressData.street}, Brgy. ${addressData.barangayName}, ${addressData.cityName}, ${addressData.provinceName}, ${addressData.regionName}`;
+    
+    const finalData = {
+        ...formData,
+        eventLocation: fullLocation
+    };
+
+    onNext(finalData); // PASS COMBINED DATA TO STEP 2
   };
 
   const handlePrevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -133,6 +201,8 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
             {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm font-bold">{error}</div>}
             
             <form id="eventDetailsForm" onSubmit={handleNextClick} className="space-y-4">
+              
+              {/* DATE PICKER */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Select Date <span className="text-red-500">*</span></label>
                 <div className="border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl p-4 shadow-inner">
@@ -148,6 +218,37 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
                 </div>
               </div>
 
+              {/* LOCATION SELECTORS */}
+              <div className="border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl p-4 shadow-inner">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Event Location <span className="text-red-500">*</span></label>
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                      <select value={addressData.regionCode} onChange={handleRegionChange} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500" required>
+                          <option value="">Select Region</option>
+                          {regionList.map(r => <option key={r.region_code} value={r.region_code}>{r.region_name}</option>)}
+                      </select>
+                      
+                      <select value={addressData.provinceCode} onChange={handleProvinceChange} disabled={!addressData.regionCode} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required>
+                          <option value="">Select Province</option>
+                          {provinceList.map(p => <option key={p.province_code} value={p.province_code}>{p.province_name}</option>)}
+                      </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                      <select value={addressData.cityCode} onChange={handleCityChange} disabled={!addressData.provinceCode} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required>
+                          <option value="">Select City</option>
+                          {cityList.map(c => <option key={c.city_code} value={c.city_code}>{c.city_name}</option>)}
+                      </select>
+                      
+                      <select value={addressData.barangayCode} onChange={handleBarangayChange} disabled={!addressData.cityCode} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required>
+                          <option value="">Select Barangay</option>
+                          {barangayList.map(b => <option key={b.brgy_code} value={b.brgy_code}>{b.brgy_name}</option>)}
+                      </select>
+                  </div>
+
+                  <input type="text" value={addressData.street} onChange={handleStreetChange} placeholder="Street, House No., Building Name..." className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-500" required />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Time</label>
@@ -159,11 +260,6 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
                       <option value={1}>1 Day</option><option value={2}>2 Days</option><option value={3}>3 Days</option>
                     </select>
                   </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Event Location / Venue</label>
-                <input type="text" name="eventLocation" value={formData.eventLocation} onChange={handleChange} placeholder="Full address of the event..." className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500" required />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
