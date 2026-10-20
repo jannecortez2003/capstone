@@ -4,10 +4,9 @@ import { regions, provinces, cities, barangays } from "select-philippines-addres
 
 const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, preSelectedEventType, onNext }) => {
   const [formData, setFormData] = useState({ 
-      eventType: '', preferredDate: '', eventTime: '', duration: 1, guestCount: '', notes: '' 
+      eventType: '', serviceType: 'Food and Decoration', preferredDate: '', eventTime: '', duration: 1, guestCount: '', notes: '' 
   });
   
-  // Philippine Address States
   const [regionList, setRegionList] = useState([]);
   const [provinceList, setProvinceList] = useState([]);
   const [cityList, setCityList] = useState([]);
@@ -30,6 +29,7 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
       setFormData(prev => ({
         ...prev,
         eventType: preSelectedEventType || 'Wedding',
+        serviceType: 'Food and Decoration',
         preferredDate: '', eventTime: '',
         duration: 1,
         guestCount: packageCapacity || '', 
@@ -41,7 +41,6 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
       setError(null);
       setCurrentMonth(new Date());
       
-      // Load Regions initially
       regions().then(response => setRegionList(response));
 
       fetch(`${import.meta.env.VITE_API_URL}/fetch_booked_dates`)
@@ -53,14 +52,12 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
 
   if (!isOpen) return null;
 
-  // --- ADDRESS HANDLERS ---
   const handleRegionChange = (e) => {
     const code = e.target.value;
     const name = e.target.options[e.target.selectedIndex].text;
     setAddressData(prev => ({...prev, regionCode: code, regionName: name, provinceCode: '', provinceName: '', cityCode: '', cityName: '', barangayCode: '', barangayName: ''}));
     provinces(code).then(response => setProvinceList(response));
-    setCityList([]);
-    setBarangayList([]);
+    setCityList([]); setBarangayList([]);
   };
 
   const handleProvinceChange = (e) => {
@@ -88,7 +85,6 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
     setAddressData(prev => ({...prev, street: e.target.value}));
   };
 
-  // --- DATE & FORM HANDLERS ---
   const handleDateClick = (dateStr) => {
     let cur = new Date(dateStr);
     let isValid = true;
@@ -131,7 +127,6 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
         return;
     }
     
-    // Combine the address parts into a single string for the database
     const fullLocation = `${addressData.street}, Brgy. ${addressData.barangayName}, ${addressData.cityName}, ${addressData.provinceName}, ${addressData.regionName}`;
     
     const finalData = {
@@ -139,7 +134,7 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
         eventLocation: fullLocation
     };
 
-    onNext(finalData); // PASS COMBINED DATA TO STEP 2
+    onNext(finalData);
   };
 
   const handlePrevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -202,7 +197,6 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
             
             <form id="eventDetailsForm" onSubmit={handleNextClick} className="space-y-4">
               
-              {/* DATE PICKER */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Select Date <span className="text-red-500">*</span></label>
                 <div className="border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl p-4 shadow-inner">
@@ -218,7 +212,6 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
                 </div>
               </div>
 
-              {/* LOCATION SELECTORS */}
               <div className="border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl p-4 shadow-inner">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Event Location <span className="text-red-500">*</span></label>
                   
@@ -262,6 +255,7 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
                   </div>
               </div>
 
+              {/* NEW: SERVICE TYPE DROPDOWN */}
               <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Event Type</label>
@@ -269,11 +263,26 @@ const EventFormModal = ({ isOpen, onClose, preSelectedPackage, packageCapacity, 
                       <option value="Wedding">Wedding</option><option value="Birthday">Birthday</option><option value="Corporate Event">Corporate Event</option><option value="Other">Other</option>
                     </select>
                   </div>
+                  
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Guests</label>
-                    <input type="number" name="guestCount" value={formData.guestCount} readOnly className="w-full border dark:border-gray-600 bg-gray-200 dark:bg-gray-600 text-gray-500 rounded-lg p-2.5 cursor-not-allowed font-bold" />
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Service Type</label>
+                    <select name="serviceType" value={formData.serviceType} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500" required>
+                      <option value="Food and Decoration">Food and Decoration</option>
+                      <option value="Food Service Only">Food Service Only</option>
+                    </select>
+                    {formData.serviceType === 'Food Service Only' && (
+                        <p className="text-[10px] text-orange-500 font-bold mt-1 leading-tight">
+                            * Tables, chairs, and styling assets are excluded.
+                        </p>
+                    )}
                   </div>
               </div>
+
+              <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Guests</label>
+                  <input type="number" name="guestCount" value={formData.guestCount} readOnly className="w-full border dark:border-gray-600 bg-gray-200 dark:bg-gray-600 text-gray-500 rounded-lg p-2.5 cursor-not-allowed font-bold" />
+              </div>
+
             </form>
         </div>
         <div className="p-4 border-t dark:border-gray-700 flex gap-3 bg-white dark:bg-gray-800 rounded-b-xl z-10">
