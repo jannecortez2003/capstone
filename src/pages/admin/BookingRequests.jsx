@@ -5,11 +5,9 @@ import Modal, { SuccessModal } from '../../components/Modal';
 const BookingRequests = () => {
     const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
     const userRole = adminUser.role || 'admin';
-
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [actionDetails, setActionDetails] = useState(null);
@@ -201,8 +199,8 @@ const BookingRequests = () => {
                             key={status}
                             onClick={() => setFilter(status)}
                             className={`px-4 py-2 text-sm font-bold rounded-lg transition-all duration-200 whitespace-nowrap ${
-                                filter === status
-                                ? 'bg-pink-600 text-white shadow-md'
+                                filter === status 
+                                ? 'bg-pink-600 text-white shadow-md' 
                                 : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
                             }`}
                         >
@@ -245,7 +243,6 @@ const BookingRequests = () => {
                                             {b.status}
                                         </span>
                                     </td>
-
                                     <td className="p-4 flex flex-wrap justify-center gap-2">
                                         <button onClick={() => setSelectedBooking(b)} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition">
                                             VIEW
@@ -307,18 +304,16 @@ const BookingRequests = () => {
                                 <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-blue-500 border-[3px] border-white dark:border-gray-800"></span>
                                 <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">1. Event Specifics</h4>
                                 
-                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-1">
+                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
-                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-0.5">Date</p>
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Date & Time</p>
                                         <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</p>
-                                    </div>
-                                    <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
-                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-0.5">Type</p>
-                                        <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{selectedBooking.event_type}</p>
+                                        <p className="font-semibold text-pink-600 dark:text-pink-400 text-xs mt-1">{selectedBooking.event_time}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-0.5">Guests</p>
-                                        <p className="font-semibold text-xs dark:text-gray-200 leading-tight">{selectedBooking.guest_count} Pax</p>
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Location & Type</p>
+                                        <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{selectedBooking.event_location}</p>
+                                        <p className="font-semibold text-xs text-gray-500 mt-1">{selectedBooking.event_type} - {selectedBooking.guest_count} Pax</p>
                                     </div>
                                 </div>
                             </div>
@@ -329,7 +324,7 @@ const BookingRequests = () => {
                                 <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
                                     <p className="font-bold text-pink-600 dark:text-pink-400 mb-1.5 text-xs leading-tight">{selectedBooking.package_type}</p>
                                     <div className="flex flex-wrap gap-1">
-                                        {selectedBooking.selected_dishes ?
+                                        {selectedBooking.selected_dishes ? 
                                               selectedBooking.selected_dishes.split('; ').map((dish, i) => (
                                                 <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium dark:text-gray-300 shadow-sm leading-tight">{dish}</span>
                                             ))
@@ -356,6 +351,7 @@ const BookingRequests = () => {
                                     )}
                                 </div>
                             </div>
+
                         </div>
 
                         <button onClick={() => setSelectedBooking(null)} className="w-full mt-3 bg-gray-800 dark:bg-gray-700 text-white font-bold py-2 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-sm text-xs">
@@ -436,6 +432,6 @@ const BookingRequests = () => {
             <SuccessModal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} message={successMessage} />
         </div>
     );
-};
+}
 
 export default BookingRequests;

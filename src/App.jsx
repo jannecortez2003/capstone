@@ -47,7 +47,6 @@ function App() {
     }
   });
 
-  // --- GLOBAL THEME STATE ---
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
@@ -61,14 +60,17 @@ function App() {
   }, [theme]);
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
-  // --------------------------
 
   const [activeForm, setActiveForm] = useState(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDishModal, setShowDishModal] = useState(false);
   const [showEventFormModal, setShowEventFormModal] = useState(false);
   const [selectedPackageForBooking, setSelectedPackageForBooking] = useState(null);
-  const [finalSelectedDishes, setFinalSelectedDishes] = useState([]);
+  
+  // NEW STATES FOR FLOW
+  const [eventDetails, setEventDetails] = useState(null);
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
+  
   const [showBookingSuccessModal, setShowBookingSuccessModal] = useState(false);
   const [bookingSuccessMessage, setBookingSuccessMessage] = useState('');
   const [preSelectedEventType, setPreSelectedEventType] = useState("");
@@ -133,12 +135,6 @@ function App() {
 
   const handleShowVerifyModal = () => setShowVerifyModal(true);
 
-  const handleBookingSuccess = (message) => {
-    setShowEventFormModal(false);
-    setBookingSuccessMessage(message);
-    setShowBookingSuccessModal(true);
-  };
-
   const handleHeroBooking = () => {
     setPreSelectedEventType("");
     document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' });
@@ -149,6 +145,7 @@ function App() {
     document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // STEP 1: Opens Event Form FIRST
   const handlePackageSelection = (pkg) => {
     if (!isLoggedIn) {
       navigate('/auth');
@@ -156,14 +153,48 @@ function App() {
       setShowVerifyModal(true);
     } else {
       setSelectedPackageForBooking(pkg);
-      setShowDishModal(true); 
+      setShowEventFormModal(true); 
     }
   };
 
-  const handleDishSelectionConfirm = (dishes) => {
-    setFinalSelectedDishes(dishes);
-    setShowDishModal(false);
-    setShowEventFormModal(true);
+  // STEP 2: Save Event Details and Open Dish Modal SECOND
+  const handleEventDetailsConfirm = (details) => {
+    setEventDetails(details);
+    setShowEventFormModal(false);
+    setShowDishModal(true);
+  };
+
+  // STEP 3: Confirm Dishes and Send to Backend
+  const handleDishSelectionConfirm = async (dishes) => {
+    setIsBookingLoading(true);
+
+    const payload = {
+      userId: user?.id,
+      packageType: selectedPackageForBooking?.title,
+      totalCost: selectedPackageForBooking?.price ? parseFloat(String(selectedPackageForBooking.price).replace(/[^0-9.-]+/g, "")) : 0,
+      selectedDishes: dishes.join('; '),
+      ...eventDetails 
+    };
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/book_event`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      setIsBookingLoading(false);
+      
+      if (data.success) {
+         setShowDishModal(false);
+         setBookingSuccessMessage("Your event has been successfully booked! Please wait for admin confirmation.");
+         setShowBookingSuccessModal(true);
+      } else {
+         alert(data.message || "Booking failed.");
+      }
+    } catch (err) {
+       setIsBookingLoading(false);
+       alert("Network error. Please try again.");
+    }
   };
 
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -239,23 +270,23 @@ function App() {
         </div>
       )}
 
+      {/* STEP 1: EVENT DETAILS MODAL */}
+      <EventFormModal 
+        isOpen={showEventFormModal} 
+        onClose={() => setShowEventFormModal(false)} 
+        preSelectedPackage={selectedPackageForBooking?.title}
+        packageCapacity={selectedPackageForBooking?.guestCount} 
+        preSelectedEventType={preSelectedEventType} 
+        onNext={handleEventDetailsConfirm} 
+      />
+
+      {/* STEP 2: DISH SELECTION MODAL */}
       <DishSelectionModal 
         isOpen={showDishModal} 
         onClose={() => setShowDishModal(false)} 
         packageData={selectedPackageForBooking} 
         onConfirm={handleDishSelectionConfirm} 
-      />
-
-      <EventFormModal 
-        isOpen={showEventFormModal} 
-        onClose={() => setShowEventFormModal(false)} 
-        userId={user?.id} 
-        preSelectedPackage={selectedPackageForBooking?.title}
-        packageCapacity={selectedPackageForBooking?.guestCount} 
-        packagePrice={selectedPackageForBooking?.price}
-        preSelectedDishes={finalSelectedDishes}
-        preSelectedEventType={preSelectedEventType} 
-        onBookingSuccess={handleBookingSuccess} 
+        isLoading={isBookingLoading}
       />
       
       <SuccessModal isOpen={showBookingSuccessModal} onClose={() => setShowBookingSuccessModal(false)} title="Booking Confirmed!" message={bookingSuccessMessage} />

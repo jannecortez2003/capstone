@@ -11,11 +11,9 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState("overview"); 
   const [loading, setLoading] = useState(true);
   const [shouldRedirect, setShouldRedirect] = useState(false); 
-  
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
 
-  // Multi-day formatter
   const formatSafeDateRange = (start, end) => {
     if (!start) return "N/A";
     try {
@@ -44,6 +42,7 @@ const UserProfile = () => {
     const fetchData = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
+
         const resBookings = await fetch(`${apiUrl}/fetch_user_appointments?user_id=${storedUser.id}`);
         const dataBookings = await resBookings.json();
         
@@ -178,7 +177,7 @@ const UserProfile = () => {
                         <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                             <h3 className="font-bold text-gray-700 dark:text-gray-300 transition-colors duration-300">My Appointments</h3>
                         </div>
-
+                        
                         {bookings.length === 0 ? (
                             <div className="p-8 text-center text-gray-500 dark:text-gray-400 transition-colors duration-300">You haven't booked any events yet.</div>
                         ) : (
@@ -224,7 +223,6 @@ const UserProfile = () => {
                     <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center transition-colors duration-300">
                         <h3 className="font-bold text-gray-700 dark:text-gray-300 transition-colors duration-300">Payment History</h3>
                     </div>
-
                     {transactions.length === 0 ? (
                         <div className="p-10 text-center flex flex-col items-center">
                             <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-full mb-3 text-gray-400 dark:text-gray-500 transition-colors duration-300">
@@ -273,6 +271,7 @@ const UserProfile = () => {
                 </div>
             )}
         </div>
+
       </div>
 
       {/* EVENT DETAILS MODAL */}
@@ -283,7 +282,13 @@ const UserProfile = () => {
                       <div>
                           <h4 className="font-bold text-pink-600 dark:text-pink-400 text-2xl">{selectedBooking.event_type}</h4>
                           <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">
-                              <span className="font-semibold">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</span> • {selectedBooking.guest_count} Guests
+                              <span className="font-semibold">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</span> at {selectedBooking.event_time}
+                          </p>
+                          <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">
+                              <span className="font-semibold">Venue:</span> {selectedBooking.event_location}
+                          </p>
+                          <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">
+                             {selectedBooking.guest_count} Guests
                           </p>
                       </div>
                       <div>

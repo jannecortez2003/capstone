@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FaUtensils, FaTimes, FaArrowRight, FaCheck } from 'react-icons/fa';
 
-const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
+const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm, isLoading }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [selectedDishes, setSelectedDishes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCustomCooking, setIsCustomCooking] = useState(false);
-  
-  // Track which dish is currently hovered to expand it
   const [hoveredDishId, setHoveredDishId] = useState(null);
 
   const limit = packageData?.dishLimit || 7;
@@ -20,15 +18,10 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
       fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`)
         .then(res => res.json())
         .then(data => {
-          if (data.success) {
-            setMenuItems(data.items);
-          }
+          if (data.success) setMenuItems(data.items);
           setLoading(false);
         })
-        .catch(err => {
-          console.error("Failed to load menu", err);
-          setLoading(false);
-        });
+        .catch(err => { console.error("Failed to load menu", err); setLoading(false); });
     }
   }, [isOpen, packageData]);
 
@@ -49,7 +42,7 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
   const handleNext = () => {
     if (isCustomCooking) {
         const customDishes = selectedDishes.length > 0 
-            ? [...selectedDishes, "(Custom: Client will cook additional food)"]
+            ? [...selectedDishes, "(Custom: Client will cook additional food)"] 
             : ["Client will cook (Customized Menu)"];
         onConfirm(customDishes);
         return;
@@ -74,10 +67,10 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
         <div className="flex justify-between items-center p-5 border-b dark:border-gray-700 bg-pink-50 dark:bg-gray-800">
           <div>
             <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              <FaUtensils className="text-pink-500" /> Build Your Menu
+              <FaUtensils className="text-pink-500" /> Step 2: Build Your Menu
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {packageData.title}: Select <strong>{limit}</strong> items from the options below.
+              {packageData.title}: Select <strong>{limit}</strong> items.
             </p>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-red-500 transition-colors text-xl"><FaTimes /></button>
@@ -98,15 +91,9 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
               ></div>
             </div>
           </div>
-
           <div className="w-full sm:w-auto bg-pink-50 dark:bg-gray-700/50 p-2.5 rounded-lg border border-pink-100 dark:border-gray-600">
               <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                      type="checkbox" 
-                      checked={isCustomCooking}
-                      onChange={(e) => setIsCustomCooking(e.target.checked)}
-                      className="w-4 h-4 text-pink-600 focus:ring-pink-500 rounded border-gray-300"
-                  />
+                  <input type="checkbox" checked={isCustomCooking} onChange={(e) => setIsCustomCooking(e.target.checked)} className="w-4 h-4 text-pink-600 focus:ring-pink-500 rounded border-gray-300" />
                   <span className="text-sm font-bold text-pink-700 dark:text-pink-400">Customize / Cook Myself</span>
               </label>
               <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 ml-6">Select this if you want to prepare your own food.</p>
@@ -117,7 +104,7 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
           {loading ? (
             <div className="text-center text-gray-500 dark:text-gray-400 py-8 font-bold animate-pulse">Loading amazing food...</div>
           ) : Object.keys(groupedMenu).length === 0 ? (
-            <div className="text-center text-gray-500 dark:text-gray-400 py-8">No menu items found. Please ask admin to add dishes.</div>
+            <div className="text-center text-gray-500 dark:text-gray-400 py-8">No menu items found.</div>
           ) : (
             <div className="space-y-6">
               {Object.keys(groupedMenu).map((category, idx) => (
@@ -129,7 +116,6 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
                     {groupedMenu[category].map(item => {
                       const isSelected = selectedDishes.includes(item.name);
                       const isHovered = hoveredDishId === item.id;
-                      
                       return (
                         <div 
                           key={item.id} 
@@ -137,41 +123,21 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
                           onMouseEnter={() => setHoveredDishId(item.id)}
                           onMouseLeave={() => setHoveredDishId(null)}
                           className={`cursor-pointer p-3 rounded-xl border-2 transition-all duration-300 flex flex-col justify-center
-                            ${isSelected 
-                                ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 shadow-sm' 
-                                : 'border-transparent bg-white dark:bg-gray-800 shadow-sm hover:border-pink-300 dark:hover:border-gray-600'}
+                            ${isSelected ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 shadow-sm' : 'border-transparent bg-white dark:bg-gray-800 shadow-sm hover:border-pink-300 dark:hover:border-gray-600'}
                           `}
                         >
                           <div className="flex justify-between items-center w-full gap-2">
                             <div className="flex-1">
-                              <p className={`font-bold text-sm ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                {item.name}
-                              </p>
-                              {/* Short description shown only when collapsed */}
-                              {item.description && !isHovered && (
-                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>
-                              )}
+                              <p className={`font-bold text-sm ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.name}</p>
+                              {item.description && !isHovered && <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>}
                             </div>
-                            
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0
-                              ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'border-gray-300 dark:border-gray-600'}
-                            `}>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'bg-pink-500 border-pink-500 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
                               {isSelected && <FaCheck className="text-xs" />}
                             </div>
                           </div>
-
-                          {/* Expansion Area on Hover */}
                           <div className={`transition-all duration-300 overflow-hidden ${isHovered ? 'max-h-64 mt-3 opacity-100' : 'max-h-0 opacity-0'}`}>
-                            {item.image_url && (
-                                <img 
-                                  src={item.image_url.startsWith('http') ? item.image_url : `${import.meta.env.VITE_API_URL}/${item.image_url}`} 
-                                  alt={item.name} 
-                                  className="w-full h-32 object-cover rounded-lg shadow-sm mb-2" 
-                                />
-                            )}
-                            <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-normal leading-relaxed">
-                              {item.description || 'No description provided.'}
-                            </p>
+                            {item.image_url && <img src={item.image_url.startsWith('http') ? item.image_url : `${import.meta.env.VITE_API_URL}/${item.image_url}`} alt={item.name} className="w-full h-32 object-cover rounded-lg shadow-sm mb-2" />}
+                            <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-normal leading-relaxed">{item.description || 'No description provided.'}</p>
                           </div>
                         </div>
                       );
@@ -182,28 +148,26 @@ const DishSelectionModal = ({ isOpen, onClose, packageData, onConfirm }) => {
             </div>
           )}
         </div>
-
         <div className="p-4 border-t dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 rounded-b-xl z-10">
           <button onClick={onClose} className="px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
             Cancel
           </button>
-          
           <button 
             onClick={handleNext}
-            disabled={!isCustomCooking && selectedDishes.length < limit}
+            disabled={(!isCustomCooking && selectedDishes.length < limit) || isLoading}
             className={`px-8 py-2.5 font-bold rounded-lg transition flex items-center gap-2 shadow-md
-              ${(isCustomCooking || selectedDishes.length >= limit) 
-                 ? 'bg-pink-600 text-white hover:bg-pink-700 cursor-pointer' 
-                 : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
+              ${(isCustomCooking || selectedDishes.length >= limit) && !isLoading
+                  ? 'bg-pink-600 text-white hover:bg-pink-700 cursor-pointer' 
+                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
               }
             `}
           >
-            Confirm Menu <FaArrowRight />
+            {isLoading ? 'Processing...' : 'Confirm & Book Event'} <FaCheck />
           </button>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default DishSelectionModal;
