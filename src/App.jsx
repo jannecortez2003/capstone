@@ -33,18 +33,11 @@ import './App.css';
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return sessionStorage.getItem('isLoggedIn') === 'true';
-  });
-  
+
+  const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('isLoggedIn') === 'true');
   const [user, setUser] = useState(() => {
     const storedUser = sessionStorage.getItem('user') || sessionStorage.getItem('adminUser');
-    try {
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch {
-      return null;
-    }
+    try { return storedUser ? JSON.parse(storedUser) : null; } catch { return null; }
   });
 
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -63,22 +56,22 @@ function App() {
 
   const [activeForm, setActiveForm] = useState(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [showDishModal, setShowDishModal] = useState(false);
-  const [showEventFormModal, setShowEventFormModal] = useState(false);
-  const [selectedPackageForBooking, setSelectedPackageForBooking] = useState(null);
   
-  // NEW STATES FOR FLOW
+  // MODAL STATES
+  const [showEventFormModal, setShowEventFormModal] = useState(false);
+  const [showDishModal, setShowDishModal] = useState(false);
+  const [showBookingSuccessModal, setShowBookingSuccessModal] = useState(false);
+  
+  // BOOKING DATA STATES
+  const [selectedPackageForBooking, setSelectedPackageForBooking] = useState(null);
   const [eventDetails, setEventDetails] = useState(null);
   const [isBookingLoading, setIsBookingLoading] = useState(false);
-  
-  const [showBookingSuccessModal, setShowBookingSuccessModal] = useState(false);
   const [bookingSuccessMessage, setBookingSuccessMessage] = useState('');
   const [preSelectedEventType, setPreSelectedEventType] = useState("");
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem('user') || sessionStorage.getItem('adminUser');
     const storedLoginState = sessionStorage.getItem('isLoggedIn');
-    
     if (storedUser && storedLoginState === 'true') {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -86,12 +79,9 @@ function App() {
         setIsLoggedIn(true);
         if (location.pathname.startsWith('/admin')) {
             const isAdminType = ['admin', 'manager', 'staff'].includes(parsedUser.role) || parsedUser.username === 'admin';
-            if (!isAdminType) {
-                navigate('/', { replace: true });
-            }
+            if (!isAdminType) navigate('/', { replace: true });
         }
       } catch (e) {
-        console.error("Failed to parse stored user data:", e);
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('adminUser');
         sessionStorage.removeItem('isLoggedIn');
@@ -114,7 +104,6 @@ function App() {
     setUser(userData);
     setIsLoggedIn(true);
     sessionStorage.setItem("isLoggedIn", "true");
-    
     if (['admin', 'manager', 'staff'].includes(userData.role) || userData.username === 'admin') {
         sessionStorage.setItem("adminUser", JSON.stringify(userData));
         navigate('/admin');
@@ -130,10 +119,8 @@ function App() {
     sessionStorage.removeItem('isLoggedIn');
     setIsLoggedIn(false);
     setUser(null);
-    navigate('/'); 
+    navigate('/');
   };
-
-  const handleShowVerifyModal = () => setShowVerifyModal(true);
 
   const handleHeroBooking = () => {
     setPreSelectedEventType("");
@@ -145,7 +132,7 @@ function App() {
     document.getElementById('packages')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // STEP 1: Opens Event Form FIRST
+  // PHASES CONTROLLER
   const handlePackageSelection = (pkg) => {
     if (!isLoggedIn) {
       navigate('/auth');
@@ -157,23 +144,39 @@ function App() {
     }
   };
 
-  // STEP 2: Save Event Details and Open Dish Modal SECOND
+  // Triggered when completing Phase 2
   const handleEventDetailsConfirm = (details) => {
     setEventDetails(details);
     setShowEventFormModal(false);
-    setShowDishModal(true);
+    
+    // Check if customer selected Food/Catering in Phase 2
+    if (details.inclusions.includes('Food/Catering (7 Dishes)')) {
+        setShowDishModal(true); // Proceed to Phase 3
+    } else {
+        submitFinalBooking(details, []); // Skip Phase 3 if no food
+    }
   };
 
-  // STEP 3: Confirm Dishes and Send to Backend
+  // Triggered when completing Phase 3 (if applicable)
   const handleDishSelectionConfirm = async (dishes) => {
-    setIsBookingLoading(true);
+      submitFinalBooking(eventDetails, dishes);
+  };
 
+  // Final Database Submission
+  const submitFinalBooking = async (details, dishes) => {
+    setIsBookingLoading(true);
     const payload = {
       userId: user?.id,
-      packageType: selectedPackageForBooking?.title,
-      totalCost: selectedPackageForBooking?.price ? parseFloat(String(selectedPackageForBooking.price).replace(/[^0-9.-]+/g, "")) : 0,
+      eventType: details.eventType,
+      packageType: selectedPackageForBooking?.title, 
+      serviceType: details.inclusions.join(', '), 
+      preferredDate: details.preferredDate,
+      duration: details.duration,
+      eventTime: details.eventTime,
+      eventLocation: details.eventLocation,
+      guestCount: details.guestCount, // The dynamically edited guest count
       selectedDishes: dishes.join('; '),
-      ...eventDetails 
+      totalCost: 0 // Will be negotiated by admin
     };
 
     try {
@@ -183,10 +186,9 @@ function App() {
       });
       const data = await res.json();
       setIsBookingLoading(false);
-      
       if (data.success) {
          setShowDishModal(false);
-         setBookingSuccessMessage("Your event has been successfully booked! Please wait for admin confirmation.");
+         setBookingSuccessMessage("Event requested successfully! Our admin will review your inclusions and contact you for price negotiation.");
          setShowBookingSuccessModal(true);
       } else {
          alert(data.message || "Booking failed.");
@@ -202,47 +204,18 @@ function App() {
   return (
     <>
       {!isAdminRoute && (
-        <Navbar 
-          setActiveForm={setActiveForm} 
-          isLoggedIn={isLoggedIn} 
-          onLogout={handleLogout} 
-          user={user} 
-          onShowVerifyModal={handleShowVerifyModal} 
-          theme={theme} 
-          toggleTheme={toggleTheme} 
-        />
+        <Navbar setActiveForm={setActiveForm} isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} onShowVerifyModal={() => setShowVerifyModal(true)} theme={theme} toggleTheme={toggleTheme} />
       )}
-
       {!isAdminRoute && isLoggedIn && user && !['admin', 'manager', 'staff'].includes(user.role) && user.username !== 'admin' && <ChatBot user={user} />}
       
       <Routes>
         <Route path="/auth" element={
-          <>
-            <Hero handleHeroBooking={handleHeroBooking} />
-            <Services />
-            <Packages handlePackageSelection={handlePackageSelection} />
-            <Events handleEventSelection={handleEventSelection} />
-            <Contact isLoggedIn={isLoggedIn} user={user} />
-            <Footer />
-            <Auth onLogin={handleAuthLogin} />
-          </>
+          <><Hero handleHeroBooking={handleHeroBooking} /><Services /><Packages handlePackageSelection={handlePackageSelection} /><Events handleEventSelection={handleEventSelection} /><Contact isLoggedIn={isLoggedIn} user={user} /><Footer /><Auth onLogin={handleAuthLogin} /></>
         } />
-        
-        <Route path="/profile" element={
-            isLoggedIn ? <UserProfile /> : <Navigate to="/auth" replace />
-        } />
-        
+        <Route path="/profile" element={isLoggedIn ? <UserProfile /> : <Navigate to="/auth" replace />} />
         <Route path="/" element={
-          <>
-            <Hero handleHeroBooking={handleHeroBooking} />
-            <Services />
-            <Packages handlePackageSelection={handlePackageSelection} />
-            <Events handleEventSelection={handleEventSelection} />
-            <Contact isLoggedIn={isLoggedIn} user={user} />
-            <Footer />
-          </>
+          <><Hero handleHeroBooking={handleHeroBooking} /><Services /><Packages handlePackageSelection={handlePackageSelection} /><Events handleEventSelection={handleEventSelection} /><Contact isLoggedIn={isLoggedIn} user={user} /><Footer /></>
         } />
-
         <Route path="/admin/*" element={<AdminLayout />}>
           <Route index element={<Dashboard theme={theme} toggleTheme={toggleTheme} />} />
           <Route path="booking-requests" element={<BookingRequests />} />
@@ -257,39 +230,37 @@ function App() {
           <Route path="verification" element={<VerificationRequests />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
         </Route>
-
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       {showVerifyModal && user && (
         <div className="fixed inset-0 flex items-center justify-center z-[70] backdrop-blur-sm bg-black/50">
           <div className="bg-pink-500 rounded-lg shadow-lg w-full max-w-lg p-6 relative">
-            <button className="absolute top-5.5 right-6 bg-white p-2 text-gray-600 hover:text-red-600 border-pink-400 border-2 rounded-full" onClick={() => setShowVerifyModal(false)}> X </button>
+            <button className="absolute top-5.5 right-6 bg-white p-2 text-gray-600 hover:text-red-600 border-pink-400 border-2 rounded-full" onClick={() => setShowVerifyModal(false)}>X</button>
             <VerifyForm user={user} onClose={() => setShowVerifyModal(false)} onSuccess={() => setShowVerifyModal(false)} />
           </div>
         </div>
       )}
 
-      {/* STEP 1: EVENT DETAILS MODAL */}
+      {/* PHASE 1 & 2 MODAL */}
       <EventFormModal 
-        isOpen={showEventFormModal} 
-        onClose={() => setShowEventFormModal(false)} 
-        preSelectedPackage={selectedPackageForBooking?.title}
-        packageCapacity={selectedPackageForBooking?.guestCount} 
-        preSelectedEventType={preSelectedEventType} 
-        onNext={handleEventDetailsConfirm} 
-      />
+         isOpen={showEventFormModal} 
+         onClose={() => setShowEventFormModal(false)} 
+         packageCapacity={selectedPackageForBooking?.guestCount} 
+         preSelectedEventType={preSelectedEventType} 
+         onNext={handleEventDetailsConfirm} 
+       />
 
-      {/* STEP 2: DISH SELECTION MODAL */}
+      {/* PHASE 3 MODAL */}
       <DishSelectionModal 
-        isOpen={showDishModal} 
-        onClose={() => setShowDishModal(false)} 
-        packageData={selectedPackageForBooking} 
-        onConfirm={handleDishSelectionConfirm} 
-        isLoading={isBookingLoading}
+         isOpen={showDishModal} 
+         onClose={() => setShowDishModal(false)} 
+         packageData={selectedPackageForBooking} 
+         onConfirm={handleDishSelectionConfirm} 
+         isLoading={isBookingLoading} 
       />
       
-      <SuccessModal isOpen={showBookingSuccessModal} onClose={() => setShowBookingSuccessModal(false)} title="Booking Confirmed!" message={bookingSuccessMessage} />
+      <SuccessModal isOpen={showBookingSuccessModal} onClose={() => setShowBookingSuccessModal(false)} title="Request Sent!" message={bookingSuccessMessage} />
     </>
   );
 }

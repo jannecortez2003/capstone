@@ -11,6 +11,7 @@ const BookingRequests = () => {
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [actionDetails, setActionDetails] = useState(null);
+    const [agreedPrice, setAgreedPrice] = useState("");
     
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -27,11 +28,8 @@ const BookingRequests = () => {
             const apiUrl = import.meta.env.VITE_API_URL;
             const res = await fetch(`${apiUrl}/admin_fetch_bookings`);
             const data = await res.json();
-            if (data.success) {
-                setBookings(data.bookings);
-            } else {
-                setError(data.message);
-            }
+            if (data.success) setBookings(data.bookings);
+            else setError(data.message);
         } catch (err) {
             setError("Failed to connect to server.");
         } finally {
@@ -60,13 +58,23 @@ const BookingRequests = () => {
 
     const handleStatusUpdate = async () => {
         if (!actionDetails) return;
+        
+        if (actionDetails.newStatus === 'Confirmed' && (!agreedPrice || parseFloat(agreedPrice) <= 0)) {
+            alert("Please set a valid agreed price for this event before approving.");
+            return;
+        }
+
         setLoading(true);
         try {
             const apiUrl = import.meta.env.VITE_API_URL;
             const res = await fetch(`${apiUrl}/admin_update_booking_status`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ bookingId: actionDetails.id, status: actionDetails.newStatus }),
+                body: JSON.stringify({ 
+                    bookingId: actionDetails.id, 
+                    status: actionDetails.newStatus,
+                    agreedPrice: agreedPrice
+                }),
             });
             const data = await res.json();
             
@@ -78,9 +86,7 @@ const BookingRequests = () => {
             } else {
                 alert(`Status Update Failed: ${data.message}`);
             }
-        } catch (err) { 
-            alert("Network error. Could not reach the server.");
-        }
+        } catch (err) { alert("Network error. Could not reach the server."); }
         finally { setLoading(false); }
     };
 
@@ -90,61 +96,38 @@ const BookingRequests = () => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL;
             const res = await fetch(`${apiUrl}/admin_reconcile_booking`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    bookingId: reconcileBooking.id, 
-                    damagedItems: damagedItems || {} 
-                }),
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ bookingId: reconcileBooking.id, damagedItems: damagedItems || {} }),
             });
             const data = await res.json();
-            
             if (data.success) {
                 await fetchBookings();
-                setShowReconcileModal(false);
-                setReconcileBooking(null);
-                setDamagedItems({});
-                setSuccessMessage(data.message);
-                setShowSuccessModal(true);
-            } else {
-                alert(`Reconciliation Failed: ${data.message}`);
-            }
-        } catch (err) { 
-            alert("Network error. Could not reach the server.");
-        }
+                setShowReconcileModal(false); setReconcileBooking(null); setDamagedItems({});
+                setSuccessMessage(data.message); setShowSuccessModal(true);
+            } else { alert(`Reconciliation Failed: ${data.message}`); }
+        } catch (err) { alert("Network error. Could not reach the server."); }
         finally { setLoading(false); }
     };
 
     const handleDeleteBooking = async (id) => {
         if (!window.confirm(`Are you sure you want to permanently delete Booking #${id}? This action cannot be undone.`)) return;
-        
         setLoading(true);
         try {
             const apiUrl = import.meta.env.VITE_API_URL;
             const res = await fetch(`${apiUrl}/admin_delete_booking`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id }),
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }),
             });
             const data = await res.json();
-            
             if (data.success) {
                 await fetchBookings();
                 setSuccessMessage(`Booking #${id} successfully deleted.`);
                 setShowSuccessModal(true);
-            } else {
-                alert(`Delete Failed: ${data.message}`);
-            }
-        } catch (err) {
-            alert("Network error. Could not reach the server.");
-        } finally {
-            setLoading(false);
-        }
+            } else { alert(`Delete Failed: ${data.message}`); }
+        } catch (err) { alert("Network error. Could not reach the server."); } 
+        finally { setLoading(false); }
     };
 
-    const handleDamagedInputChange = (itemName, value) => {
-        setDamagedItems(prev => ({ ...prev, [itemName]: value }));
-    };
+    const handleDamagedInputChange = (itemName, value) => setDamagedItems(prev => ({ ...prev, [itemName]: value }));
 
     const getStatusBadgeClass = (status) => {
         switch (status) {
@@ -155,10 +138,7 @@ const BookingRequests = () => {
         }
     };
 
-    const filteredBookings = bookings.filter(b => {
-        if (filter === 'All') return true;
-        return b.status === filter;
-    });
+    const filteredBookings = bookings.filter(b => filter === 'All' ? true : b.status === filter);
 
     return (
         <div className="p-6 transition-colors duration-300">
@@ -223,7 +203,6 @@ const BookingRequests = () => {
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {filteredBookings.length > 0 ? filteredBookings.map((b) => (
                                 <tr key={b.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
-                                    
                                     <td className="p-4">
                                         <span className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 font-mono text-xs px-2 py-1 rounded border dark:border-gray-600 shadow-sm font-bold">
                                             #{b.id}
@@ -233,11 +212,9 @@ const BookingRequests = () => {
                                         <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300">{b.customer_name}</div>
                                         <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">{b.customer_email}</div>
                                     </td>
-                                    
                                     <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">
                                         {formatSafeDateRange(b.preferred_date || b.event_date, b.end_date)}
                                     </td>
-                                    
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${getStatusBadgeClass(b.status)}`}>
                                             {b.status}
@@ -250,7 +227,11 @@ const BookingRequests = () => {
                                         
                                         {userRole !== 'staff' && b.status === 'Pending' && (
                                             <>
-                                                <button onClick={() => { setActionDetails({id: b.id, newStatus: 'Confirmed', customerName: b.customer_name}); setShowStatusModal(true); }} className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 px-3 py-1 rounded text-xs font-bold hover:bg-green-200 transition">
+                                                <button onClick={() => { 
+                                                    setActionDetails({id: b.id, newStatus: 'Confirmed', customerName: b.customer_name}); 
+                                                    setAgreedPrice(b.total_cost > 0 ? b.total_cost : "");
+                                                    setShowStatusModal(true); 
+                                                }} className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 px-3 py-1 rounded text-xs font-bold hover:bg-green-200 transition">
                                                     APPROVE
                                                 </button>
                                                 <button onClick={() => { setActionDetails({id: b.id, newStatus: 'Cancelled', customerName: b.customer_name}); setShowStatusModal(true); }} className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 px-3 py-1 rounded text-xs font-bold hover:bg-yellow-200 transition">
@@ -261,11 +242,7 @@ const BookingRequests = () => {
 
                                         {userRole !== 'staff' && b.status === 'Confirmed' && (
                                             <button 
-                                                onClick={() => {
-                                                    setReconcileBooking(b);
-                                                    setDamagedItems({});
-                                                    setShowReconcileModal(true);
-                                                }}
+                                                onClick={() => { setReconcileBooking(b); setDamagedItems({}); setShowReconcileModal(true); }}
                                                 className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400 px-3 py-1 rounded text-xs font-bold hover:bg-purple-200 transition"
                                             >
                                                 COMPLETE & RECONCILE
@@ -299,11 +276,9 @@ const BookingRequests = () => {
                         </div>
 
                         <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-3 space-y-3 pb-1">
-                            
                             <div className="relative pl-5 md:pl-6">
                                 <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-blue-500 border-[3px] border-white dark:border-gray-800"></span>
                                 <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">1. Event Specifics</h4>
-                                
                                 <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
                                         <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Date & Time</p>
@@ -311,7 +286,7 @@ const BookingRequests = () => {
                                         <p className="font-semibold text-pink-600 dark:text-pink-400 text-xs mt-1">{selectedBooking.event_time}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Location & Type</p>
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Location & Details</p>
                                         <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{selectedBooking.event_location}</p>
                                         <p className="font-semibold text-xs text-gray-500 mt-1">{selectedBooking.event_type} - {selectedBooking.guest_count} Pax</p>
                                     </div>
@@ -320,9 +295,17 @@ const BookingRequests = () => {
 
                             <div className="relative pl-5 md:pl-6">
                                 <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-pink-500 border-[3px] border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">2. Package & Menu</h4>
+                                <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">2. Package Inclusions & Menu</h4>
                                 <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
-                                    <p className="font-bold text-pink-600 dark:text-pink-400 mb-1.5 text-xs leading-tight">{selectedBooking.package_type}</p>
+                                    
+                                    <div className="flex flex-wrap gap-1 mb-2 pb-2 border-b dark:border-gray-700">
+                                        {selectedBooking.service_type ? 
+                                              selectedBooking.service_type.split(', ').map((inc, i) => (
+                                                <span key={i} className="bg-pink-100 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold text-pink-700 dark:text-pink-400 shadow-sm leading-tight">{inc}</span>
+                                            ))
+                                        : <span className="text-gray-400 italic text-[10px]">No inclusions specified.</span>}
+                                    </div>
+
                                     <div className="flex flex-wrap gap-1">
                                         {selectedBooking.selected_dishes ? 
                                               selectedBooking.selected_dishes.split('; ').map((dish, i) => (
@@ -351,7 +334,6 @@ const BookingRequests = () => {
                                     )}
                                 </div>
                             </div>
-
                         </div>
 
                         <button onClick={() => setSelectedBooking(null)} className="w-full mt-3 bg-gray-800 dark:bg-gray-700 text-white font-bold py-2 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-sm text-xs">
@@ -364,14 +346,22 @@ const BookingRequests = () => {
             {showStatusModal && (
                 <Modal isOpen={showStatusModal} onClose={() => setShowStatusModal(false)} title="Confirm Status Change">
                     <div className="p-2 md:p-4 text-center text-gray-800 dark:text-gray-200">
-                        <p className="mb-4 text-base md:text-lg">Approve booking for <strong className="text-pink-600 dark:text-pink-400 break-words">{actionDetails.customerName}</strong>?</p>
+                        <p className="mb-4 text-base md:text-lg">Approve booking for <strong className="text-pink-600 dark:text-pink-400 break-words">{actionDetails?.customerName}</strong>?</p>
                         
-                        <div className="bg-orange-50 dark:bg-orange-900/30 p-3 rounded-xl mb-6 border border-orange-100 dark:border-orange-800/50">
-                            <p className="text-xs md:text-sm text-orange-600 dark:text-orange-400 font-bold flex items-center justify-center gap-2 text-left md:text-center">
-                                <FaBoxOpen className="text-xl shrink-0" /> 
-                                <span>Note: This will automatically deduct required inventory from the warehouse.</span>
-                            </p>
-                        </div>
+                        {actionDetails?.newStatus === 'Confirmed' && (
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-600 mb-6 text-left shadow-inner">
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Set Agreed Price (₱) <span className="text-red-500">*</span></label>
+                                <input 
+                                    type="number" 
+                                    min="1"
+                                    value={agreedPrice} 
+                                    onChange={(e) => setAgreedPrice(e.target.value)} 
+                                    className="w-full p-3 border border-pink-200 dark:border-gray-600 bg-pink-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-pink-700 dark:text-pink-400 font-bold" 
+                                    placeholder="Enter final negotiated price..."
+                                />
+                                <p className="text-xs text-gray-500 mt-2 italic">This price will be shown to the client and saved to their billing account.</p>
+                            </div>
+                        )}
 
                         <div className="flex flex-col sm:flex-row justify-center gap-3">
                             <button onClick={() => setShowStatusModal(false)} className="w-full sm:w-auto px-6 py-2.5 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm">Cancel</button>
@@ -388,7 +378,6 @@ const BookingRequests = () => {
                             Please record any damaged or missing inventory for <strong className="text-gray-900 dark:text-white break-words">{reconcileBooking.customer_name}'s</strong> event. 
                             The remaining items will be automatically returned to the warehouse.
                         </p>
-                        
                         <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 max-h-60 overflow-y-auto border dark:border-gray-700 custom-scrollbar">
                             {reconcileBooking.required_inventory ? (
                                 <div className="space-y-3">
@@ -403,12 +392,8 @@ const BookingRequests = () => {
                                                 <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 bg-gray-100 dark:bg-gray-800 p-2 sm:p-0 rounded-lg sm:bg-transparent">
                                                     <label className="text-[10px] md:text-xs text-red-500 font-bold uppercase tracking-wider">Lost/Broken:</label>
                                                     <input 
-                                                        type="number" 
-                                                        min="0" 
-                                                        max={allocatedQty}
-                                                        placeholder="0"
-                                                        value={damagedItems[itemName] || ''}
-                                                        onChange={(e) => handleDamagedInputChange(itemName, e.target.value)}
+                                                        type="number" min="0" max={allocatedQty} placeholder="0"
+                                                        value={damagedItems[itemName] || ''} onChange={(e) => handleDamagedInputChange(itemName, e.target.value)}
                                                         className="w-16 md:w-20 p-1.5 border dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-center font-bold focus:ring-2 focus:ring-pink-500 outline-none transition text-sm"
                                                     />
                                                 </div>
@@ -420,7 +405,6 @@ const BookingRequests = () => {
                                 <p className="text-sm text-gray-500 italic text-center py-2">No specific inventory was allocated.</p>
                             )}
                         </div>
-
                         <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
                             <button onClick={() => setShowReconcileModal(false)} className="w-full sm:w-auto px-5 py-2 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm">Cancel</button>
                             <button onClick={handleReconciliationSubmit} className="w-full sm:w-auto px-5 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-md transition text-sm">Reconcile & Complete</button>

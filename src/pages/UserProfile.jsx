@@ -190,13 +190,15 @@ const UserProfile = () => {
                                     >
                                         <div>
                                             <h4 className="font-bold text-gray-800 dark:text-white text-lg transition-colors duration-300">{booking.event_type}</h4>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
-                                                {formatSafeDateRange(booking.preferred_date, booking.end_date)} • {booking.package_type}
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300 mb-1">
+                                                {formatSafeDateRange(booking.preferred_date, booking.end_date)}
                                             </p>
                                             
                                             <div className="mt-2 flex gap-2">
                                                 <span className="text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition-colors duration-300">Guests: {booking.guest_count}</span>
-                                                <span className="text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition-colors duration-300">Total: ₱ {parseFloat(booking.total_cost || 0).toLocaleString()}</span>
+                                                <span className="text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded transition-colors duration-300">
+                                                    Cost: {parseFloat(booking.total_cost) === 0 ? 'TBD' : `₱ ${parseFloat(booking.total_cost).toLocaleString()}`}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
@@ -305,19 +307,19 @@ const UserProfile = () => {
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="bg-gray-50 dark:bg-gray-900 p-5 rounded-xl border dark:border-gray-700 shadow-sm">
-                          <h4 className="font-black border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 text-sm uppercase tracking-wider text-gray-500">Package Selected</h4>
-                          <p className="text-base font-bold text-pink-600 dark:text-pink-400 mb-3">{selectedBooking.package_type}</p>
-                          {selectedBooking.inclusions ? (
+                          <h4 className="font-black border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 text-sm uppercase tracking-wider text-gray-500">Service Inclusions</h4>
+                          
+                          {selectedBooking.service_type ? (
                               <ul className="space-y-2">
-                                  {selectedBooking.inclusions.split(',').map((inc, i) => (
-                                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                  {selectedBooking.service_type.split(',').map((inc, i) => (
+                                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300 font-bold">
                                           <FaCheckCircle className="text-pink-500 shrink-0 mt-1" />
                                           <span className="leading-tight">{inc.trim()}</span>
                                       </li>
                                   ))}
                               </ul>
                           ) : (
-                              <p className="text-sm text-gray-500 italic">Standard inclusions apply.</p>
+                              <p className="text-sm text-gray-500 italic">No custom inclusions recorded.</p>
                           )}
                       </div>
 
@@ -343,7 +345,9 @@ const UserProfile = () => {
                   
                   <div className="flex justify-between items-center bg-gray-100 dark:bg-gray-800 p-5 rounded-xl font-bold border dark:border-gray-700 shadow-inner">
                       <span className="text-gray-700 dark:text-gray-300 uppercase tracking-wider text-sm">Total Event Cost</span>
-                      <span className="text-green-600 dark:text-green-400 text-2xl">₱ {parseFloat(selectedBooking.total_cost || 0).toLocaleString()}</span>
+                      <span className="text-green-600 dark:text-green-400 text-xl md:text-2xl">
+                          {parseFloat(selectedBooking.total_cost) === 0 ? 'TBD (Under Negotiation)' : `₱ ${parseFloat(selectedBooking.total_cost).toLocaleString()}`}
+                      </span>
                   </div>
                   
                   <button onClick={() => setShowBookingModal(false)} className="w-full bg-gray-800 dark:bg-gray-700 text-white font-bold py-3.5 rounded-xl hover:bg-gray-900 dark:hover:bg-gray-600 transition shadow-md mt-4">
