@@ -2,21 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { FaChevronLeft, FaChevronRight, FaArrowRight, FaCheckSquare, FaRegSquare } from 'react-icons/fa';
 import { regions, provinces, cities, barangays } from "select-philippines-address";
 
-const inclusionOptions = [
-    'Food/Catering (7 Dishes)', 
-    'Tables & Chairs', 
-    'Event Styling/Decoration', 
-    'Lights & Sound System'
-];
-
-const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType, onNext }) => {
+const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, preSelectedEventType, onNext }) => {
   const [step, setStep] = useState(1);
   
   const [formData, setFormData] = useState({ 
       eventType: '', preferredDate: '', eventTime: '', duration: 1, guestCount: '', notes: '' 
   });
   
-  const [inclusions, setInclusions] = useState([...inclusionOptions]); 
+  // Dynamically generates the inclusion options based on the selected package's actual limit
+  const getDynamicInclusions = () => [
+      `Food/Catering (${packageDishLimit || 7} Dishes)`, 
+      'Tables & Chairs', 
+      'Event Styling/Decoration', 
+      'Lights & Sound System'
+  ];
+
+  const [inclusions, setInclusions] = useState([]); 
 
   const [regionList, setRegionList] = useState([]);
   const [provinceList, setProvinceList] = useState([]);
@@ -41,7 +42,8 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
         guestCount: packageCapacity || '50', 
         notes: ''
       }));
-      setInclusions([...inclusionOptions]); 
+      
+      setInclusions(getDynamicInclusions()); 
       setAddressData({ regionCode: '', regionName: '', provinceCode: '', provinceName: '', cityCode: '', cityName: '', barangayCode: '', barangayName: '', street: '' });
       setError(null);
       setCurrentMonth(new Date());
@@ -63,7 +65,7 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
         .then(res => res.json())
         .then(data => { if (data.success) setBookedDates(data.bookedDates); });
     }
-  }, [isOpen, preSelectedEventType, packageCapacity]);
+  }, [isOpen, preSelectedEventType, packageCapacity, packageDishLimit]);
 
   if (!isOpen) return null;
 
@@ -288,7 +290,7 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
                         Please check the services you want included in your booking. Prices will be negotiated and finalized by the admin based on your selections.
                     </p>
                     <div className="space-y-3">
-                        {inclusionOptions.map(option => {
+                        {getDynamicInclusions().map(option => {
                             const isChecked = inclusions.includes(option);
                             return (
                                 <div 
@@ -324,7 +326,7 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
                     <FaChevronLeft /> Back
                   </button>
                   <button type="button" onClick={handlePhase2Submit} className="flex-[2] px-4 py-3 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 transition flex items-center justify-center gap-2">
-                    {inclusions.includes('Food/Catering (7 Dishes)') ? 'Next: Choose Menu' : 'Submit Request'} <FaArrowRight />
+                    {inclusions.some(inc => inc.startsWith('Food/Catering')) ? 'Next: Choose Menu' : 'Submit Request'} <FaArrowRight />
                   </button>
               </>
           )}

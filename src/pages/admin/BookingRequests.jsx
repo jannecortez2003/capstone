@@ -201,6 +201,7 @@ const BookingRequests = () => {
 
     // DYNAMIC EDIT LOGIC
     const currentServices = editModalBooking?.service_type ? editModalBooking.service_type.split(',').map(s => s.trim()) : [];
+    
     const handleServiceToggle = (option) => {
         const baseOption = option.split(' (')[0]; 
         const isCurrentlySelected = currentServices.some(s => s.startsWith(baseOption));
@@ -506,18 +507,17 @@ const BookingRequests = () => {
                                     const isSelected = currentServices.some(s => s.startsWith(baseOption));
                                     
                                     return (
-                                        <div 
-                                            key={option} 
-                                            onClick={() => handleServiceToggle(option)}
-                                            className={`p-3 rounded-xl border-2 flex items-center gap-3 cursor-pointer transition-all duration-200 ${isSelected ? 'bg-pink-50 border-pink-500 dark:bg-pink-900/30' : 'bg-gray-50 border-transparent dark:bg-gray-800 hover:border-pink-300'}`}
-                                        >
-                                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-pink-600 border-pink-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                                                {isSelected && <FaCheck className="text-xs" />}
-                                            </div>
-                                            <span className={`text-sm font-bold ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                        <label key={option} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-pink-50 border-pink-300 dark:bg-pink-900/30 dark:border-pink-800' : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:border-pink-300'}`}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={isSelected} 
+                                                onChange={() => handleServiceToggle(option)} 
+                                                className="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 accent-pink-600 cursor-pointer" 
+                                            />
+                                            <span className={`text-sm font-semibold ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                                 {option === 'Food/Catering' && editModalBooking?.dish_limit ? `Food/Catering (${editModalBooking.dish_limit} Dishes)` : option}
                                             </span>
-                                        </div>
+                                        </label>
                                     )
                                 })}
                             </div>
@@ -540,16 +540,15 @@ const BookingRequests = () => {
                                                 {groupedMenu[category].map(item => {
                                                     const isSelected = currentDishes.includes(item.name);
                                                     return (
-                                                    <div 
-                                                        key={item.id} 
-                                                        onClick={() => handleDishToggle(item.name)}
-                                                        className={`flex items-start gap-2 text-sm p-2.5 rounded-lg border-2 cursor-pointer transition-all ${isSelected ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-transparent bg-white dark:bg-gray-900 hover:border-pink-300 dark:hover:border-gray-600'}`}
-                                                    >
-                                                        <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-pink-600 border-pink-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
-                                                            {isSelected && <FaCheck className="text-[10px]" />}
-                                                        </div>
+                                                    <label key={item.id} className={`flex items-start gap-2 text-sm p-2.5 rounded-lg border cursor-pointer transition-all ${isSelected ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700'}`}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={isSelected} 
+                                                            onChange={() => handleDishToggle(item.name)} 
+                                                            className="mt-0.5 w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 shrink-0 accent-pink-600 cursor-pointer" 
+                                                        />
                                                         <span className={`leading-tight ${isSelected ? 'font-bold text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.name}</span>
-                                                    </div>
+                                                    </label>
                                                 )})}
                                             </div>
                                         </div>

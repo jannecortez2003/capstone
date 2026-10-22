@@ -149,8 +149,8 @@ function App() {
     setEventDetails(details);
     setShowEventFormModal(false);
     
-    // Check if customer selected Food/Catering in Phase 2
-    if (details.inclusions.includes('Food/Catering (7 Dishes)')) {
+    // Dynamically checks for Food/Catering regardless of dish limit number
+    if (details.inclusions.some(inc => inc.startsWith('Food/Catering'))) {
         setShowDishModal(true); // Proceed to Phase 3
     } else {
         submitFinalBooking(details, []); // Skip Phase 3 if no food
@@ -174,9 +174,9 @@ function App() {
       duration: details.duration,
       eventTime: details.eventTime,
       eventLocation: details.eventLocation,
-      guestCount: details.guestCount, // The dynamically edited guest count
+      guestCount: details.guestCount, 
       selectedDishes: dishes.join('; '),
-      totalCost: 0 // Will be negotiated by admin
+      totalCost: 0 
     };
 
     try {
@@ -247,6 +247,7 @@ function App() {
          isOpen={showEventFormModal} 
          onClose={() => setShowEventFormModal(false)} 
          packageCapacity={selectedPackageForBooking?.guestCount} 
+         packageDishLimit={selectedPackageForBooking?.dishLimit} 
          preSelectedEventType={preSelectedEventType} 
          onNext={handleEventDetailsConfirm} 
        />
