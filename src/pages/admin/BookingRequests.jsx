@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit } from "react-icons/fa";
+import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit, FaTimes } from "react-icons/fa";
 import Modal, { SuccessModal } from '../../components/Modal';
+
+const inclusionOptions = [
+    'Food/Catering (7 Dishes)', 
+    'Tables & Chairs', 
+    'Event Styling/Decoration', 
+    'Lights & Sound System'
+];
 
 const BookingRequests = () => {
     const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
     const userRole = adminUser.role || 'admin';
     const [bookings, setBookings] = useState([]);
+    const [menuItems, setMenuItems] = useState([]); // Stores menu for the edit modal
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
@@ -40,7 +48,14 @@ const BookingRequests = () => {
         }
     };
 
-    useEffect(() => { fetchBookings(); }, []);
+    useEffect(() => { 
+        fetchBookings(); 
+        // Fetch Menu Items for the Edit Modal
+        fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`)
+            .then(res => res.json())
+            .then(data => { if (data.success) setMenuItems(data.items); })
+            .catch(err => console.error(err));
+    }, []);
 
     const formatSafeDateRange = (start, end) => {
         if (!start) return "N/A";
@@ -174,6 +189,25 @@ const BookingRequests = () => {
     };
 
     const filteredBookings = bookings.filter(b => filter === 'All' ? true : b.status === filter);
+
+    // Dynamic Edit Handlers
+    const currentServices = editModalBooking?.service_type ? editModalBooking.service_type.split(',').map(s => s.trim()) : [];
+    const handleServiceToggle = (option) => {
+        let newServices = currentServices.includes(option) ? currentServices.filter(s => s !== option) : [...currentServices, option];
+        setEditModalBooking({...editModalBooking, service_type: newServices.join(', ')});
+    };
+
+    const currentDishes = editModalBooking?.selected_dishes ? editModalBooking.selected_dishes.split(';').map(d => d.trim()).filter(d => d) : [];
+    const handleDishToggle = (dishName) => {
+        let newDishes = currentDishes.includes(dishName) ? currentDishes.filter(d => d !== dishName) : [...currentDishes, dishName];
+        setEditModalBooking({...editModalBooking, selected_dishes: newDishes.join('; ')});
+    };
+
+    const groupedMenu = menuItems.reduce((acc, item) => {
+        if (!acc[item.category]) acc[item.category] = [];
+        acc[item.category].push(item);
+        return acc;
+    }, {});
 
     return (
         <div className="p-6 transition-colors duration-300">
@@ -386,26 +420,27 @@ const BookingRequests = () => {
 
             {/* EDIT BOOKING MODAL */}
             {editModalBooking && (
-                <Modal isOpen={!!editModalBooking} onClose={() => setEditModalBooking(null)} title={`Edit Booking #${editModalBooking.id}`} size="max-w-xl">
+                <Modal isOpen={!!editModalBooking} onClose={() => setEditModalBooking(null)} title={`Edit Booking #${editModalBooking.id}`} size="max-w-2xl">
                     <form onSubmit={handleEditSubmit} className="space-y-4 px-2 text-gray-800 dark:text-gray-200">
+                        
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-bold mb-1">Event Type</label>
+                                <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Type</label>
                                 <input 
                                     type="text" 
                                     value={editModalBooking.event_type} 
                                     onChange={(e) => setEditModalBooking({...editModalBooking, event_type: e.target.value})} 
-                                    className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
                                     required 
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold mb-1">Guest Count</label>
+                                <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Guest Count</label>
                                 <input 
                                     type="number" 
                                     value={editModalBooking.guest_count} 
                                     onChange={(e) => setEditModalBooking({...editModalBooking, guest_count: e.target.value})} 
-                                    className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm font-bold" 
+                                    className="w-full p-2.5 border border-pink-300 dark:border-pink-800/50 bg-pink-50/50 dark:bg-pink-900/20 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm font-bold text-pink-700 dark:text-pink-400" 
                                     required 
                                 />
                             </div>
@@ -413,50 +448,79 @@ const BookingRequests = () => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-bold mb-1">Event Time (24h)</label>
+                                <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Time</label>
                                 <input 
                                     type="time" 
                                     value={editModalBooking.event_time} 
                                     onChange={(e) => setEditModalBooking({...editModalBooking, event_time: e.target.value})} 
-                                    className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
                                     required 
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold mb-1">Event Location</label>
+                                <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Location</label>
                                 <input 
                                     type="text" 
                                     value={editModalBooking.event_location} 
                                     onChange={(e) => setEditModalBooking({...editModalBooking, event_location: e.target.value})} 
-                                    className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
                                     required 
                                 />
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-bold mb-1">Services/Inclusions <span className="text-xs font-normal text-gray-500">(comma-separated)</span></label>
-                            <textarea 
-                                rows="2"
-                                value={editModalBooking.service_type} 
-                                onChange={(e) => setEditModalBooking({...editModalBooking, service_type: e.target.value})} 
-                                className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
-                            />
+                        <div className="pt-2 border-t dark:border-gray-700">
+                            <label className="block text-xs font-bold mb-3 uppercase tracking-wider text-gray-500">Services & Inclusions</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                {inclusionOptions.map(option => (
+                                    <label key={option} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${currentServices.includes(option) ? 'bg-pink-50 border-pink-300 dark:bg-pink-900/30 dark:border-pink-800' : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:border-pink-300'}`}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={currentServices.includes(option)} 
+                                            onChange={() => handleServiceToggle(option)} 
+                                            className="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500" 
+                                        />
+                                        <span className={`text-sm font-semibold ${currentServices.includes(option) ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{option}</span>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-bold mb-1">Selected Dishes <span className="text-xs font-normal text-gray-500">(semicolon-separated)</span></label>
-                            <textarea 
-                                rows="3"
-                                value={editModalBooking.selected_dishes} 
-                                onChange={(e) => setEditModalBooking({...editModalBooking, selected_dishes: e.target.value})} 
-                                className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
-                            />
+                        <div className="pt-2 border-t dark:border-gray-700">
+                            <div className="flex justify-between items-center mb-3">
+                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Menu / Food Choices</label>
+                                <span className="bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300 text-xs font-bold px-2.5 py-0.5 rounded-full">{currentDishes.length} Selected</span>
+                            </div>
+                            
+                            <div className="max-h-[220px] overflow-y-auto pr-2 custom-scrollbar space-y-4">
+                                {Object.keys(groupedMenu).length > 0 ? (
+                                    Object.keys(groupedMenu).map(category => (
+                                        <div key={category} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700">
+                                            <h4 className="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2">{category}</h4>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {groupedMenu[category].map(item => (
+                                                    <label key={item.id} className="flex items-start gap-2 text-sm bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-pink-300 dark:hover:border-pink-700 transition">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={currentDishes.includes(item.name)} 
+                                                            onChange={() => handleDishToggle(item.name)} 
+                                                            className="mt-0.5 w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 shrink-0" 
+                                                        />
+                                                        <span className={`leading-tight ${currentDishes.includes(item.name) ? 'font-bold text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.name}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-4 text-sm text-gray-500 italic">No menu items found. Add some in the Menu page.</div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-4">
-                            <button type="button" onClick={() => setEditModalBooking(null)} className="px-5 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-bold text-sm">Cancel</button>
-                            <button type="submit" className="px-5 py-2 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition shadow-md text-sm">Save Changes</button>
+                        <div className="flex justify-end gap-3 pt-4 mt-4 border-t dark:border-gray-700">
+                            <button type="button" onClick={() => setEditModalBooking(null)} className="px-5 py-2.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition font-bold text-sm">Cancel</button>
+                            <button type="submit" className="px-6 py-2.5 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition shadow-md text-sm flex items-center gap-2"><FaEdit /> Save Changes</button>
                         </div>
                     </form>
                 </Modal>
