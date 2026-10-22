@@ -56,6 +56,15 @@ const BookingRequests = () => {
         } catch(e) { return "N/A"; }
     };
 
+    const formatTime12Hour = (time24) => {
+        if (!time24) return "";
+        const [hour, minute] = time24.split(':');
+        const h = parseInt(hour, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${minute} ${ampm}`;
+    };
+
     const handleStatusUpdate = async () => {
         if (!actionDetails) return;
         
@@ -216,7 +225,7 @@ const BookingRequests = () => {
                                         {formatSafeDateRange(b.preferred_date || b.event_date, b.end_date)}
                                     </td>
                                     <td className="p-4">
-                                        <span className={`px-2 py-1 rounded text-xs font-bold ${getStatusBadgeClass(b.status)}`}>
+                                        <span className={`shrink-0 whitespace-nowrap px-2 py-1 rounded text-xs font-bold ${getStatusBadgeClass(b.status)}`}>
                                             {b.status}
                                         </span>
                                     </td>
@@ -270,7 +279,7 @@ const BookingRequests = () => {
                         <div className="mb-2 text-center">
                             <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white break-words leading-tight">{selectedBooking.customer_name}</h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400 break-words mt-0.5">{selectedBooking.customer_email}</p>
-                            <span className={`mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusBadgeClass(selectedBooking.status)}`}>
+                            <span className={`shrink-0 whitespace-nowrap mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusBadgeClass(selectedBooking.status)}`}>
                                 Status: {selectedBooking.status}
                             </span>
                         </div>
@@ -283,7 +292,7 @@ const BookingRequests = () => {
                                     <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
                                         <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Date & Time</p>
                                         <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</p>
-                                        <p className="font-semibold text-pink-600 dark:text-pink-400 text-xs mt-1">{selectedBooking.event_time}</p>
+                                        <p className="font-semibold text-pink-600 dark:text-pink-400 text-xs mt-1">{formatTime12Hour(selectedBooking.event_time)}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Location & Details</p>

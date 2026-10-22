@@ -38,15 +38,27 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
         ...prev,
         eventType: preSelectedEventType || 'Wedding',
         preferredDate: '', eventTime: '', duration: 1,
-        guestCount: packageCapacity || '50', // Pre-fills with package capacity, but EDITABLE
+        guestCount: packageCapacity || '50', 
         notes: ''
       }));
-      setInclusions([...inclusionOptions]); // Reset to all checked by default
+      setInclusions([...inclusionOptions]); 
       setAddressData({ regionCode: '', regionName: '', provinceCode: '', provinceName: '', cityCode: '', cityName: '', barangayCode: '', barangayName: '', street: '' });
       setError(null);
       setCurrentMonth(new Date());
       
-      regions().then(response => setRegionList(response));
+      // RESTRICT TO CALABARZON ONLY & AUTO-SELECT IT
+      regions().then(response => {
+          const calabarzon = response.filter(r => r.region_name.toUpperCase().includes("CALABARZON"));
+          const listToUse = calabarzon.length > 0 ? calabarzon : response;
+          setRegionList(listToUse);
+          
+          if (listToUse.length === 1) {
+              const rCode = listToUse[0].region_code;
+              setAddressData(prev => ({ ...prev, regionCode: rCode, regionName: listToUse[0].region_name }));
+              provinces(rCode).then(res => setProvinceList(res));
+          }
+      });
+
       fetch(`${import.meta.env.VITE_API_URL}/fetch_booked_dates`)
         .then(res => res.json())
         .then(data => { if (data.success) setBookedDates(data.bookedDates); });
@@ -55,7 +67,6 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
 
   if (!isOpen) return null;
 
-  // --- ADDRESS HANDLERS ---
   const handleRegionChange = (e) => {
     const code = e.target.value;
     const name = e.target.options[e.target.selectedIndex].text;
@@ -87,7 +98,6 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
 
   const handleStreetChange = (e) => setAddressData(prev => ({...prev, street: e.target.value}));
 
-  // --- DATE & FORM HANDLERS ---
   const handleDateClick = (dateStr) => {
     let cur = new Date(dateStr);
     let isValid = true;
@@ -214,7 +224,6 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
             {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm font-bold">{error}</div>}
             
             {step === 1 ? (
-                // ------------------ PHASE 1: LOGISTICS ------------------
                 <form id="phase1Form" onSubmit={handlePhase1Submit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Select Date <span className="text-red-500">*</span></label>
@@ -234,25 +243,28 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
                   <div className="border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl p-4 shadow-inner">
                       <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Event Location <span className="text-red-500">*</span></label>
                       <div className="grid grid-cols-2 gap-3 mb-3">
-                          <select value={addressData.regionCode} onChange={handleRegionChange} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500" required><option value="">Select Region</option>{regionList.map(r => <option key={r.region_code} value={r.region_code}>{r.region_name}</option>)}</select>
-                          <select value={addressData.provinceCode} onChange={handleProvinceChange} disabled={!addressData.regionCode} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required><option value="">Select Province</option>{provinceList.map(p => <option key={p.province_code} value={p.province_code}>{p.province_name}</option>)}</select>
+                          <select value={addressData.regionCode} onChange={handleRegionChange} className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-500" required>
+                              <option value="" disabled>Select Region</option>
+                              {regionList.map(r => <option key={r.region_code} value={r.region_code}>{r.region_name}</option>)}
+                          </select>
+                          <select value={addressData.provinceCode} onChange={handleProvinceChange} disabled={!addressData.regionCode} className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required><option value="">Select Province</option>{provinceList.map(p => <option key={p.province_code} value={p.province_code}>{p.province_name}</option>)}</select>
                       </div>
                       <div className="grid grid-cols-2 gap-3 mb-3">
-                          <select value={addressData.cityCode} onChange={handleCityChange} disabled={!addressData.provinceCode} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required><option value="">Select City</option>{cityList.map(c => <option key={c.city_code} value={c.city_code}>{c.city_name}</option>)}</select>
-                          <select value={addressData.barangayCode} onChange={handleBarangayChange} disabled={!addressData.cityCode} className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required><option value="">Select Barangay</option>{barangayList.map(b => <option key={b.brgy_code} value={b.brgy_code}>{b.brgy_name}</option>)}</select>
+                          <select value={addressData.cityCode} onChange={handleCityChange} disabled={!addressData.provinceCode} className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required><option value="">Select City</option>{cityList.map(c => <option key={c.city_code} value={c.city_code}>{c.city_name}</option>)}</select>
+                          <select value={addressData.barangayCode} onChange={handleBarangayChange} disabled={!addressData.cityCode} className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-500 disabled:opacity-50" required><option value="">Select Barangay</option>{barangayList.map(b => <option key={b.brgy_code} value={b.brgy_code}>{b.brgy_name}</option>)}</select>
                       </div>
-                      <input type="text" value={addressData.street} onChange={handleStreetChange} placeholder="Street, House No., Building Name..." className="w-full border dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-500" required />
+                      <input type="text" value={addressData.street} onChange={handleStreetChange} placeholder="Street, House No., Building Name..." className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-pink-500" required />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Time</label>
-                        <input type="time" name="eventTime" value={formData.eventTime} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500" required />
+                        <input type="time" name="eventTime" value={formData.eventTime} onChange={handleChange} className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg px-3 py-2 h-[42px] text-sm outline-none focus:ring-2 focus:ring-pink-500" required />
                       </div>
                       <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Duration</label>
-                        <select name="duration" value={formData.duration} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-pink-500" required>
-                          <option value={1}>1 Day</option><option value={2}>2 Days</option><option value={3}>3 Days</option>
+                        <select name="duration" value={formData.duration} onChange={handleChange} className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg px-3 py-2 h-[42px] text-sm outline-none focus:ring-2 focus:ring-pink-500" required>
+                          <option value={1}>1 Day</option><option value={2}>2 Days</option><option value={3}>3 Days</option><option value={4}>4 Days</option><option value={5}>5 Days</option>
                         </select>
                       </div>
                   </div>
@@ -260,18 +272,17 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, preSelectedEventType
                   <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Event Type</label>
-                        <select name="eventType" value={formData.eventType} onChange={handleChange} className="w-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg p-2.5" required>
+                        <select name="eventType" value={formData.eventType} onChange={handleChange} className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg px-3 py-2 h-[42px] text-sm outline-none focus:ring-2 focus:ring-pink-500" required>
                           <option value="Wedding">Wedding</option><option value="Birthday">Birthday</option><option value="Corporate Event">Corporate Event</option><option value="Other">Other</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Total Guests</label>
-                        <input type="number" min="10" name="guestCount" value={formData.guestCount} onChange={handleChange} className="w-full border border-pink-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg p-2.5 font-bold outline-none focus:ring-2 focus:ring-pink-500" required />
+                        <input type="number" min="10" name="guestCount" value={formData.guestCount} onChange={handleChange} className="w-full border border-pink-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg px-3 py-2 h-[42px] text-sm font-bold outline-none focus:ring-2 focus:ring-pink-500" required />
                       </div>
                   </div>
                 </form>
             ) : (
-                // ------------------ PHASE 2: INCLUSIONS ------------------
                 <div className="space-y-4">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                         Please check the services you want included in your booking. Prices will be negotiated and finalized by the admin based on your selections.

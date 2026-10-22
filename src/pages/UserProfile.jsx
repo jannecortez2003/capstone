@@ -31,6 +31,15 @@ const UserProfile = () => {
     } catch(e) { return "N/A"; }
   };
 
+  const formatTime12Hour = (time24) => {
+      if (!time24) return "";
+      const [hour, minute] = time24.split(':');
+      const h = parseInt(hour, 10);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${h12}:${minute} ${ampm}`;
+  };
+
   useEffect(() => {
     const storedUser = JSON.parse(sessionStorage.getItem("user"));
     if (!storedUser) {
@@ -202,7 +211,7 @@ const UserProfile = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold transition-colors duration-300 ${
+                                            <span className={`shrink-0 whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold transition-colors duration-300 ${
                                                 booking.status === 'Confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' :
                                                 booking.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' :
                                                 booking.status === 'Cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' :
@@ -210,7 +219,7 @@ const UserProfile = () => {
                                             }`}>
                                                 {booking.status}
                                             </span>
-                                            <FaChevronRight className="text-gray-400 dark:text-gray-500" />
+                                            <FaChevronRight className="text-gray-400 dark:text-gray-500 shrink-0" />
                                         </div>
                                     </div>
                                 ))}
@@ -284,7 +293,7 @@ const UserProfile = () => {
                       <div>
                           <h4 className="font-bold text-pink-600 dark:text-pink-400 text-2xl">{selectedBooking.event_type}</h4>
                           <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">
-                              <span className="font-semibold">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</span> at {selectedBooking.event_time}
+                              <span className="font-semibold">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</span> at {formatTime12Hour(selectedBooking.event_time)}
                           </p>
                           <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">
                               <span className="font-semibold">Venue:</span> {selectedBooking.event_location}
@@ -294,7 +303,7 @@ const UserProfile = () => {
                           </p>
                       </div>
                       <div>
-                          <span className={`px-4 py-1.5 rounded-full text-sm font-bold shadow-sm ${
+                          <span className={`shrink-0 whitespace-nowrap inline-block px-4 py-1.5 rounded-full text-sm font-bold shadow-sm ${
                               selectedBooking.status === 'Confirmed' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' :
                               selectedBooking.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400' :
                               selectedBooking.status === 'Cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400' :
