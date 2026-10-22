@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit, FaTimes } from "react-icons/fa";
+import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit, FaTimes, FaCheck } from "react-icons/fa";
 import Modal, { SuccessModal } from '../../components/Modal';
 
 const inclusionOptions = [
-    'Food/Catering (7 Dishes)', 
+    'Food/Catering', 
     'Tables & Chairs', 
     'Event Styling/Decoration', 
     'Lights & Sound System'
@@ -13,7 +13,7 @@ const BookingRequests = () => {
     const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
     const userRole = adminUser.role || 'admin';
     const [bookings, setBookings] = useState([]);
-    const [menuItems, setMenuItems] = useState([]); // Stores menu for the edit modal
+    const [menuItems, setMenuItems] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
@@ -50,7 +50,6 @@ const BookingRequests = () => {
 
     useEffect(() => { 
         fetchBookings(); 
-        // Fetch Menu Items for the Edit Modal
         fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`)
             .then(res => res.json())
             .then(data => { if (data.success) setMenuItems(data.items); })
@@ -119,6 +118,16 @@ const BookingRequests = () => {
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
+        
+        // Final Validation before submitting
+        const currentDishes = editModalBooking.selected_dishes ? editModalBooking.selected_dishes.split(';').map(d => d.trim()).filter(d => d) : [];
+        const currentLimit = editModalBooking.dish_limit || 7;
+
+        if (editModalBooking.service_type.includes('Food/Catering') && currentDishes.length < currentLimit && !currentDishes.includes("Client will cook (Customized Menu)")) {
+            alert(`This package requires exactly ${currentLimit} dishes. You currently have ${currentDishes.length} selected.`);
+            return;
+        }
+
         setLoading(true);
         try {
             const apiUrl = import.meta.env.VITE_API_URL;
@@ -190,17 +199,37 @@ const BookingRequests = () => {
 
     const filteredBookings = bookings.filter(b => filter === 'All' ? true : b.status === filter);
 
-    // Dynamic Edit Handlers
+    // DYNAMIC EDIT LOGIC
     const currentServices = editModalBooking?.service_type ? editModalBooking.service_type.split(',').map(s => s.trim()) : [];
     const handleServiceToggle = (option) => {
-        let newServices = currentServices.includes(option) ? currentServices.filter(s => s !== option) : [...currentServices, option];
+        const baseOption = option.split(' (')[0]; 
+        const isCurrentlySelected = currentServices.some(s => s.startsWith(baseOption));
+        
+        let newServices;
+        if (isCurrentlySelected) {
+            newServices = currentServices.filter(s => !s.startsWith(baseOption));
+        } else {
+            const optionString = option === 'Food/Catering' && editModalBooking?.dish_limit ? `Food/Catering (${editModalBooking.dish_limit} Dishes)` : option;
+            newServices = [...currentServices, optionString];
+        }
         setEditModalBooking({...editModalBooking, service_type: newServices.join(', ')});
     };
 
     const currentDishes = editModalBooking?.selected_dishes ? editModalBooking.selected_dishes.split(';').map(d => d.trim()).filter(d => d) : [];
+    const currentLimit = editModalBooking?.dish_limit || 7;
+
     const handleDishToggle = (dishName) => {
-        let newDishes = currentDishes.includes(dishName) ? currentDishes.filter(d => d !== dishName) : [...currentDishes, dishName];
-        setEditModalBooking({...editModalBooking, selected_dishes: newDishes.join('; ')});
+        if (currentDishes.includes(dishName)) {
+            let newDishes = currentDishes.filter(d => d !== dishName);
+            setEditModalBooking({...editModalBooking, selected_dishes: newDishes.join('; ')});
+        } else {
+            if (currentDishes.length >= currentLimit) {
+                alert(`You can only select up to ${currentLimit} dishes for this package.`);
+                return;
+            }
+            let newDishes = [...currentDishes, dishName];
+            setEditModalBooking({...editModalBooking, selected_dishes: newDishes.join('; ')});
+        }
     };
 
     const groupedMenu = menuItems.reduce((acc, item) => {
@@ -472,24 +501,34 @@ const BookingRequests = () => {
                         <div className="pt-2 border-t dark:border-gray-700">
                             <label className="block text-xs font-bold mb-3 uppercase tracking-wider text-gray-500">Services & Inclusions</label>
                             <div className="grid grid-cols-2 gap-3">
-                                {inclusionOptions.map(option => (
-                                    <label key={option} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${currentServices.includes(option) ? 'bg-pink-50 border-pink-300 dark:bg-pink-900/30 dark:border-pink-800' : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:border-pink-300'}`}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={currentServices.includes(option)} 
-                                            onChange={() => handleServiceToggle(option)} 
-                                            className="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500" 
-                                        />
-                                        <span className={`text-sm font-semibold ${currentServices.includes(option) ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{option}</span>
-                                    </label>
-                                ))}
+                                {inclusionOptions.map(option => {
+                                    const baseOption = option.split(' (')[0];
+                                    const isSelected = currentServices.some(s => s.startsWith(baseOption));
+                                    
+                                    return (
+                                        <div 
+                                            key={option} 
+                                            onClick={() => handleServiceToggle(option)}
+                                            className={`p-3 rounded-xl border-2 flex items-center gap-3 cursor-pointer transition-all duration-200 ${isSelected ? 'bg-pink-50 border-pink-500 dark:bg-pink-900/30' : 'bg-gray-50 border-transparent dark:bg-gray-800 hover:border-pink-300'}`}
+                                        >
+                                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-pink-600 border-pink-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
+                                                {isSelected && <FaCheck className="text-xs" />}
+                                            </div>
+                                            <span className={`text-sm font-bold ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                {option === 'Food/Catering' && editModalBooking?.dish_limit ? `Food/Catering (${editModalBooking.dish_limit} Dishes)` : option}
+                                            </span>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
 
                         <div className="pt-2 border-t dark:border-gray-700">
                             <div className="flex justify-between items-center mb-3">
                                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Menu / Food Choices</label>
-                                <span className="bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300 text-xs font-bold px-2.5 py-0.5 rounded-full">{currentDishes.length} Selected</span>
+                                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${currentDishes.length >= currentLimit ? 'bg-green-100 text-green-800' : 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300'}`}>
+                                    {currentDishes.length} / {currentLimit} Selected
+                                </span>
                             </div>
                             
                             <div className="max-h-[220px] overflow-y-auto pr-2 custom-scrollbar space-y-4">
@@ -498,17 +537,20 @@ const BookingRequests = () => {
                                         <div key={category} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700">
                                             <h4 className="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2">{category}</h4>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {groupedMenu[category].map(item => (
-                                                    <label key={item.id} className="flex items-start gap-2 text-sm bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-pink-300 dark:hover:border-pink-700 transition">
-                                                        <input 
-                                                            type="checkbox" 
-                                                            checked={currentDishes.includes(item.name)} 
-                                                            onChange={() => handleDishToggle(item.name)} 
-                                                            className="mt-0.5 w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 shrink-0" 
-                                                        />
-                                                        <span className={`leading-tight ${currentDishes.includes(item.name) ? 'font-bold text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.name}</span>
-                                                    </label>
-                                                ))}
+                                                {groupedMenu[category].map(item => {
+                                                    const isSelected = currentDishes.includes(item.name);
+                                                    return (
+                                                    <div 
+                                                        key={item.id} 
+                                                        onClick={() => handleDishToggle(item.name)}
+                                                        className={`flex items-start gap-2 text-sm p-2.5 rounded-lg border-2 cursor-pointer transition-all ${isSelected ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-transparent bg-white dark:bg-gray-900 hover:border-pink-300 dark:hover:border-gray-600'}`}
+                                                    >
+                                                        <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-pink-600 border-pink-600 text-white' : 'border-gray-300 dark:border-gray-600'}`}>
+                                                            {isSelected && <FaCheck className="text-[10px]" />}
+                                                        </div>
+                                                        <span className={`leading-tight ${isSelected ? 'font-bold text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.name}</span>
+                                                    </div>
+                                                )})}
                                             </div>
                                         </div>
                                     ))
