@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight, FaSun, FaMoon } from 'react-icons/fa';
+import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight, FaSun, FaMoon, FaClock } from 'react-icons/fa';
+import Modal from '../../components/Modal'; // Added Modal import
 
 const Dashboard = ({ theme, toggleTheme }) => {
   const [stats, setStats] = useState({ bookings: 0, revenue: 0, menuItems: 0, customers: 0 });
@@ -7,6 +8,11 @@ const Dashboard = ({ theme, toggleTheme }) => {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState('All');
+
+  // New states for the Calendar Popup
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDayEvents, setSelectedDayEvents] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_dashboard_stats`)
@@ -52,6 +58,12 @@ const Dashboard = ({ theme, toggleTheme }) => {
     return event.status === filter;
   });
 
+  const handleDateClick = (dateStr, dayEvents) => {
+    setSelectedDate(dateStr);
+    setSelectedDayEvents(dayEvents);
+    setIsModalOpen(true);
+  };
+
   const renderCalendarDays = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -71,7 +83,8 @@ const Dashboard = ({ theme, toggleTheme }) => {
       const d = String(day).padStart(2, '0');
       const dateStr = `${year}-${m}-${d}`;
       
-      const hasEvent = upcomingEvents.some(e => {
+      // Get all events falling on this specific day
+      const dayEvents = upcomingEvents.filter(e => {
         if (e.status !== 'Confirmed' && e.status !== 'Pending') return false;
         if (!e.preferred_date) return false;
         
@@ -80,14 +93,24 @@ const Dashboard = ({ theme, toggleTheme }) => {
         return dateStr >= start && dateStr <= end;
       });
 
+      const hasEvent = dayEvents.length > 0;
       const isToday = todayStr === dateStr;
 
       days.push(
-        <div key={day} className={`p-2 text-center text-sm rounded-full mx-auto w-8 h-8 flex items-center justify-center font-medium transition-colors
-          ${hasEvent ? 'bg-pink-600 text-white font-bold shadow-md' : 'text-gray-700 dark:text-gray-300'}
-          ${isToday && !hasEvent ? 'border-2 border-pink-500 text-pink-600 dark:text-pink-400' : ''}
-        `}>
-          {day}
+        <div 
+          key={day} 
+          onClick={() => hasEvent ? handleDateClick(dateStr, dayEvents) : null}
+          className={`p-2 text-center text-sm rounded-lg mx-auto w-full h-12 flex flex-col items-center justify-center font-medium transition-all duration-200
+            ${hasEvent ? 'bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 font-bold border border-pink-200 dark:border-pink-800 cursor-pointer hover:bg-pink-200 dark:hover:bg-pink-800/60 shadow-sm' : 'text-gray-700 dark:text-gray-300'}
+            ${isToday && !hasEvent ? 'border-2 border-pink-500 text-pink-600 dark:text-pink-400' : ''}
+          `}
+        >
+          <span>{day}</span>
+          {hasEvent && (
+              <span className="text-[9px] mt-0.5 bg-pink-600 text-white px-1.5 rounded-full">
+                  {dayEvents.length} Event{dayEvents.length > 1 ? 's' : ''}
+              </span>
+          )}
         </div>
       );
     }
@@ -117,19 +140,17 @@ const Dashboard = ({ theme, toggleTheme }) => {
             </div>
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase transition-colors duration-300">Total Revenue</h3>
-              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">₱{parseFloat(stats.revenue || 0).toLocaleString()}</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white mt-2 transition-colors duration-300">₱ {parseFloat(stats.revenue || 0).toLocaleString()}</div>
             </div>
             <div className="bg-green-100 dark:bg-gray-700 p-3 rounded-full text-green-600 dark:text-green-400 transition-colors duration-300">
               <FaMoneyBillWave className="text-xl" />
             </div>
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-yellow-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
@@ -141,7 +162,6 @@ const Dashboard = ({ theme, toggleTheme }) => {
             </div>
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-blue-500 transition-colors duration-300">
           <div className="flex justify-between items-center">
             <div>
@@ -157,7 +177,6 @@ const Dashboard = ({ theme, toggleTheme }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300 h-fit">
-          
           <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="font-bold text-gray-800 dark:text-white transition-colors duration-300">Event Overview</h2>
             
@@ -167,9 +186,9 @@ const Dashboard = ({ theme, toggleTheme }) => {
                   key={status}
                   onClick={() => setFilter(status)}
                   className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
-                    filter === status 
-                     ? 'bg-white dark:bg-gray-800 text-pink-600 shadow-sm' 
-                     : 'text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white'
+                    filter === status
+                      ? 'bg-white dark:bg-gray-800 text-pink-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white'
                   }`}
                 >
                   {status}
@@ -177,7 +196,6 @@ const Dashboard = ({ theme, toggleTheme }) => {
               ))}
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -238,13 +256,58 @@ const Dashboard = ({ theme, toggleTheme }) => {
           </div>
           
           <div className="mt-6 border-t dark:border-gray-700 pt-4 flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <div className="w-3 h-3 bg-pink-600 rounded-full"></div>
-            <span>Dates with active bookings</span>
+            <div className="w-4 h-4 bg-pink-100 border border-pink-200 rounded"></div>
+            <span>Click shaded dates to view events</span>
           </div>
         </div>
       </div>
+
+      {/* CALENDAR EVENT MODAL */}
+      <Modal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          title={selectedDate ? `Events on ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : 'Event Details'}
+          size="max-w-md"
+      >
+          <div className="space-y-4 text-gray-800 dark:text-gray-200">
+              {selectedDayEvents.length > 0 ? (
+                  selectedDayEvents.map(ev => (
+                      <div key={ev.id} className="p-4 border dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 shadow-sm flex flex-col gap-2">
+                          <div className="flex justify-between items-start">
+                              <h4 className="font-bold text-pink-600 dark:text-pink-400 text-lg">{ev.event_type}</h4>
+                              <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                  ev.status === 'Confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                  {ev.status}
+                              </span>
+                          </div>
+                          <div className="text-sm space-y-1">
+                              <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                  <FaCalendarAlt className="text-gray-400" />
+                                  <span className="font-medium">Date Range:</span> {formatSafeDateRange(ev.preferred_date, ev.end_date)}
+                              </p>
+                              <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                  <FaUsers className="text-gray-400" />
+                                  <span className="font-medium">Guests:</span> {ev.guest_count} Pax
+                              </p>
+                          </div>
+                      </div>
+                  ))
+              ) : (
+                  <p className="text-center text-gray-500 py-4">No events scheduled for this day.</p>
+              )}
+              
+              <button 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="w-full mt-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white font-bold py-2.5 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+              >
+                  Close
+              </button>
+          </div>
+      </Modal>
+
     </div>
   );
-}
+};
 
 export default Dashboard;
