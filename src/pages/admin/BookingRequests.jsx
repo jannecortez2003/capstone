@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen } from "react-icons/fa";
+import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit } from "react-icons/fa";
 import Modal, { SuccessModal } from '../../components/Modal';
 
 const BookingRequests = () => {
@@ -13,6 +13,9 @@ const BookingRequests = () => {
     const [actionDetails, setActionDetails] = useState(null);
     const [agreedPrice, setAgreedPrice] = useState("");
     
+    // Edit Booking State
+    const [editModalBooking, setEditModalBooking] = useState(null);
+
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -94,6 +97,29 @@ const BookingRequests = () => {
                 setShowSuccessModal(true);
             } else {
                 alert(`Status Update Failed: ${data.message}`);
+            }
+        } catch (err) { alert("Network error. Could not reach the server."); }
+        finally { setLoading(false); }
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${apiUrl}/admin_update_booking_details`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(editModalBooking),
+            });
+            const data = await res.json();
+            if (data.success) {
+                await fetchBookings();
+                setEditModalBooking(null);
+                setSuccessMessage(data.message);
+                setShowSuccessModal(true);
+            } else {
+                alert(`Update Failed: ${data.message}`);
             }
         } catch (err) { alert("Network error. Could not reach the server."); }
         finally { setLoading(false); }
@@ -233,6 +259,12 @@ const BookingRequests = () => {
                                         <button onClick={() => setSelectedBooking(b)} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition">
                                             VIEW
                                         </button>
+
+                                        {userRole !== 'staff' && b.status !== 'Completed' && b.status !== 'Cancelled' && (
+                                            <button onClick={() => setEditModalBooking(b)} className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400 px-3 py-1 rounded text-xs font-bold hover:bg-orange-200 dark:hover:bg-orange-900 transition flex items-center gap-1">
+                                                <FaEdit /> EDIT
+                                            </button>
+                                        )}
                                         
                                         {userRole !== 'staff' && b.status === 'Pending' && (
                                             <>
@@ -349,6 +381,84 @@ const BookingRequests = () => {
                             Close Timeline
                         </button>
                     </div>
+                </Modal>
+            )}
+
+            {/* EDIT BOOKING MODAL */}
+            {editModalBooking && (
+                <Modal isOpen={!!editModalBooking} onClose={() => setEditModalBooking(null)} title={`Edit Booking #${editModalBooking.id}`} size="max-w-xl">
+                    <form onSubmit={handleEditSubmit} className="space-y-4 px-2 text-gray-800 dark:text-gray-200">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold mb-1">Event Type</label>
+                                <input 
+                                    type="text" 
+                                    value={editModalBooking.event_type} 
+                                    onChange={(e) => setEditModalBooking({...editModalBooking, event_type: e.target.value})} 
+                                    className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                    required 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold mb-1">Guest Count</label>
+                                <input 
+                                    type="number" 
+                                    value={editModalBooking.guest_count} 
+                                    onChange={(e) => setEditModalBooking({...editModalBooking, guest_count: e.target.value})} 
+                                    className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm font-bold" 
+                                    required 
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold mb-1">Event Time (24h)</label>
+                                <input 
+                                    type="time" 
+                                    value={editModalBooking.event_time} 
+                                    onChange={(e) => setEditModalBooking({...editModalBooking, event_time: e.target.value})} 
+                                    className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                    required 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold mb-1">Event Location</label>
+                                <input 
+                                    type="text" 
+                                    value={editModalBooking.event_location} 
+                                    onChange={(e) => setEditModalBooking({...editModalBooking, event_location: e.target.value})} 
+                                    className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                    required 
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Services/Inclusions <span className="text-xs font-normal text-gray-500">(comma-separated)</span></label>
+                            <textarea 
+                                rows="2"
+                                value={editModalBooking.service_type} 
+                                onChange={(e) => setEditModalBooking({...editModalBooking, service_type: e.target.value})} 
+                                className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Selected Dishes <span className="text-xs font-normal text-gray-500">(semicolon-separated)</span></label>
+                            <textarea 
+                                rows="3"
+                                value={editModalBooking.selected_dishes} 
+                                onChange={(e) => setEditModalBooking({...editModalBooking, selected_dishes: e.target.value})} 
+                                className="w-full p-2 border dark:border-gray-600 bg-white dark:bg-gray-700 rounded outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4">
+                            <button type="button" onClick={() => setEditModalBooking(null)} className="px-5 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition font-bold text-sm">Cancel</button>
+                            <button type="submit" className="px-5 py-2 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition shadow-md text-sm">Save Changes</button>
+                        </div>
+                    </form>
                 </Modal>
             )}
 
