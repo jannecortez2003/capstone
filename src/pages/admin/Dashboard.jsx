@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight, FaSun, FaMoon, FaClock, FaEye } from 'react-icons/fa';
+import { 
+    FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, 
+    FaChevronLeft, FaChevronRight, FaSun, FaMoon, FaCheckCircle, 
+    FaClock, FaMapMarkerAlt 
+} from 'react-icons/fa';
 import Modal from '../../components/Modal';
 
 const Dashboard = ({ theme, toggleTheme }) => {
   const [stats, setStats] = useState({ bookings: 0, revenue: 0, menuItems: 0, customers: 0 });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  
+  // NEW: State to hold the detailed booking information
+  const [detailedBookings, setDetailedBookings] = useState([]);
+  
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState('All');
@@ -18,6 +26,7 @@ const Dashboard = ({ theme, toggleTheme }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 1. Fetch the standard dashboard stats
     fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_dashboard_stats`)
       .then(res => res.json())
       .then(data => {
@@ -25,12 +34,22 @@ const Dashboard = ({ theme, toggleTheme }) => {
           setStats(data.stats);
           setUpcomingEvents(data.upcomingEvents || []);
         }
-        setLoading(false);
       })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .catch(err => console.error(err));
+
+    // 2. Fetch the detailed bookings so the calendar modal has full context
+    fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_bookings`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                setDetailedBookings(data.bookings || []);
+            }
+            setLoading(false);
+        })
+        .catch(err => {
+            console.error(err);
+            setLoading(false);
+        });
   }, []);
 
   const formatSafeDateRange = (start, end) => {
@@ -50,6 +69,15 @@ const Dashboard = ({ theme, toggleTheme }) => {
     } catch(e) { return "N/A"; }
   };
 
+  const formatTime12Hour = (time24) => {
+      if (!time24) return "";
+      const [hour, minute] = time24.split(':');
+      const h = parseInt(hour, 10);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${h12}:${minute} ${ampm}`;
+  };
+
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
@@ -63,7 +91,13 @@ const Dashboard = ({ theme, toggleTheme }) => {
 
   const handleDateClick = (dateStr, dayEvents) => {
     setSelectedDate(dateStr);
-    setSelectedDayEvents(dayEvents);
+    
+    // Map the basic calendar events to their detailed counterparts
+    const detailedDayEvents = dayEvents.map(calendarEvent => {
+        return detailedBookings.find(b => b.id === calendarEvent.id) || calendarEvent;
+    });
+    
+    setSelectedDayEvents(detailedDayEvents);
     setIsModalOpen(true);
   };
 
@@ -264,53 +298,101 @@ const Dashboard = ({ theme, toggleTheme }) => {
         </div>
       </div>
 
-      {/* CALENDAR EVENT MODAL */}
+      {/* DETAILED CALENDAR EVENT MODAL */}
       <Modal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           title={selectedDate ? `Events on ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : 'Event Details'}
-          size="max-w-md"
+          size="max-w-2xl"
       >
-          <div className="space-y-4 text-gray-800 dark:text-gray-200">
+          <div className="space-y-6 text-gray-800 dark:text-gray-200 max-h-[75vh] overflow-y-auto custom-scrollbar pr-2">
               {selectedDayEvents.length > 0 ? (
                   selectedDayEvents.map(ev => (
-                      <div key={ev.id} className="p-4 border dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 shadow-sm flex flex-col gap-2">
-                          <div className="flex justify-between items-start">
-                              <h4 className="font-bold text-pink-600 dark:text-pink-400 text-lg">{ev.event_type}</h4>
-                              <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      <div key={ev.id} className="p-5 border dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 shadow-sm flex flex-col gap-4">
+                          
+                          <div className="flex justify-between items-start border-b dark:border-gray-700 pb-3">
+                              <div>
+                                  <h4 className="font-bold text-gray-900 dark:text-white text-xl flex items-center gap-2">
+                                      {ev.customer_name || 'Guest Client'}
+                                  </h4>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">{ev.customer_email || 'No email provided'}</p>
+                              </div>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${
                                   ev.status === 'Confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                               }`}>
                                   {ev.status}
                               </span>
                           </div>
-                          <div className="text-sm space-y-1">
-                              <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                                  <FaCalendarAlt className="text-gray-400" />
-                                  <span className="font-medium">Date Range:</span> {formatSafeDateRange(ev.preferred_date, ev.end_date)}
-                              </p>
-                              <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                                  <FaUsers className="text-gray-400" />
-                                  <span className="font-medium">Guests:</span> {ev.guest_count} Pax
-                              </p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                              <div className="space-y-2">
+                                  <p className="flex items-start gap-2 text-gray-600 dark:text-gray-300">
+                                      <span className="bg-pink-100 dark:bg-gray-700 p-1.5 rounded text-pink-600 dark:text-pink-400 mt-0.5"><FaCalendarAlt /></span>
+                                      <span className="leading-tight">
+                                          <strong>{ev.event_type}</strong><br/>
+                                          {formatSafeDateRange(ev.preferred_date, ev.end_date)} <br/>
+                                          <span className="text-pink-500 font-bold">{formatTime12Hour(ev.event_time)}</span>
+                                      </span>
+                                  </p>
+                                  <p className="flex items-start gap-2 text-gray-600 dark:text-gray-300">
+                                      <span className="bg-pink-100 dark:bg-gray-700 p-1.5 rounded text-pink-600 dark:text-pink-400 mt-0.5"><FaUsers /></span>
+                                      <span className="leading-tight mt-1"><strong>{ev.guest_count}</strong> Guests Expected</span>
+                                  </p>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                  <p className="flex items-start gap-2 text-gray-600 dark:text-gray-300">
+                                      <span className="bg-pink-100 dark:bg-gray-700 p-1.5 rounded text-pink-600 dark:text-pink-400 mt-0.5"><FaMapMarkerAlt /></span>
+                                      <span className="leading-tight">
+                                          <strong>Location:</strong><br/>
+                                          {ev.event_location || 'Not specified'}
+                                      </span>
+                                  </p>
+                              </div>
                           </div>
-                          <button 
-                              onClick={() => {
-                                  setIsModalOpen(false);
-                                  navigate('/admin/booking-requests'); // Redirects to bookings page
-                              }}
-                              className="mt-2 text-xs font-bold bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 hover:bg-pink-200 dark:hover:bg-pink-900/50 py-2 rounded-lg flex items-center justify-center gap-1 transition"
-                          >
-                              <FaEye /> See Event Details
-                          </button>
+
+                          {ev.service_type && (
+                              <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700 text-xs">
+                                  <strong className="text-gray-700 dark:text-gray-300 mb-1 block">Inclusions:</strong>
+                                  <div className="flex flex-wrap gap-1">
+                                      {ev.service_type.split(', ').map((inc, i) => (
+                                          <span key={i} className="bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400 px-2 py-1 rounded font-bold border border-pink-100 dark:border-pink-800/50">
+                                              {inc}
+                                          </span>
+                                      ))}
+                                  </div>
+                              </div>
+                          )}
+
+                          {ev.selected_dishes && (
+                              <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border dark:border-gray-700 text-xs">
+                                  <strong className="text-gray-700 dark:text-gray-300 mb-1 block">Menu Selection:</strong>
+                                  <div className="flex flex-wrap gap-1">
+                                      {ev.selected_dishes.split('; ').map((dish, i) => (
+                                          <span key={i} className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 rounded font-medium border dark:border-gray-700">
+                                              {dish}
+                                          </span>
+                                      ))}
+                                  </div>
+                              </div>
+                          )}
+                          
+                          <div className="flex justify-between items-center pt-2 border-t dark:border-gray-700">
+                              <span className="text-xs font-bold text-gray-500 uppercase">Package: {ev.package_type || 'Custom'}</span>
+                              <span className="font-black text-green-600 dark:text-green-400">Total: ₱{parseFloat(ev.total_cost || 0).toLocaleString()}</span>
+                          </div>
+
                       </div>
                   ))
               ) : (
                   <p className="text-center text-gray-500 py-4">No events scheduled for this day.</p>
               )}
               
+          </div>
+          <div className="mt-4 pt-4 border-t dark:border-gray-700 flex justify-end">
               <button 
                   onClick={() => setIsModalOpen(false)} 
-                  className="w-full mt-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white font-bold py-2.5 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                  className="px-8 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition shadow-sm"
               >
                   Close
               </button>
