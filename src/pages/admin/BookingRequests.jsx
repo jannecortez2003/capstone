@@ -5,9 +5,11 @@ import Modal, { SuccessModal } from '../../components/Modal';
 const BookingRequests = () => {
     const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
     const userRole = adminUser.role || 'admin';
+    
     const [bookings, setBookings] = useState([]);
     const [menuItems, setMenuItems] = useState([]); 
     const [packages, setPackages] = useState([]); 
+    
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
@@ -134,7 +136,6 @@ const BookingRequests = () => {
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
-
         setLoading(true);
         try {
             const apiUrl = import.meta.env.VITE_API_URL;
@@ -363,12 +364,10 @@ const BookingRequests = () => {
                                         <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">{b.customer_name}</div>
                                         <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300 print:text-gray-800">{b.customer_email}</div>
                                     </td>
-                                    
                                     <td className="p-4">
                                         <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">{b.event_type}</div>
                                         <div className="text-xs text-pink-600 dark:text-pink-400 font-bold transition-colors duration-300 print:text-gray-800">{b.package_type || 'Custom Package'}</div>
                                     </td>
-                                    
                                     <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300 print:text-black">
                                         {formatSafeDateRange(b.preferred_date || b.event_date, b.end_date)}
                                     </td>
@@ -429,11 +428,13 @@ const BookingRequests = () => {
                 </div>
             </div>
 
-            {/* MODALS */}
+            {/* VIEW BOOKING DETAILS MODAL */}
             {selectedBooking && (
                 <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title={`Booking Overview (ID: #${selectedBooking.id})`} size="max-w-xl">
                     <div className="flex flex-col">
-                        <div className="px-1 py-1 max-h-[65vh] overflow-y-auto custom-scrollbar">
+                        
+                        {/* SCROLLABLE VIEW AREA */}
+                        <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                             <div className="mb-2 text-center">
                                 <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white break-words leading-tight">{selectedBooking.customer_name}</h3>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 break-words mt-0.5">{selectedBooking.customer_email}</p>
@@ -442,7 +443,7 @@ const BookingRequests = () => {
                                 </span>
                             </div>
 
-                            <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-3 space-y-3 pb-1">
+                            <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-3 space-y-3 pb-1 mt-4">
                                 <div className="relative pl-5 md:pl-6">
                                     <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-blue-500 border-[3px] border-white dark:border-gray-800"></span>
                                     <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">1. Event Specifics</h4>
@@ -505,7 +506,9 @@ const BookingRequests = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="mt-4 pt-4 border-t dark:border-gray-700">
+
+                        {/* FIXED FOOTER BUTTON */}
+                        <div className="mt-4 pt-4 border-t dark:border-gray-700 shrink-0">
                             <button onClick={() => setSelectedBooking(null)} className="w-full bg-gray-800 dark:bg-gray-700 text-white font-bold py-2 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-sm text-xs">
                                 Close Timeline
                             </button>
@@ -520,9 +523,9 @@ const BookingRequests = () => {
                     <form onSubmit={handleEditSubmit} className="flex flex-col text-gray-800 dark:text-gray-200">
                         
                         {/* SCROLLABLE BODY */}
-                        <div className="space-y-4 px-2 max-h-[65vh] overflow-y-auto custom-scrollbar pb-4">
+                        <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar space-y-4">
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4 pt-2">
                                 <div>
                                     <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Type</label>
                                     <input 
@@ -568,7 +571,7 @@ const BookingRequests = () => {
                                 </div>
                             </div>
 
-                            <div className="pt-2 border-t dark:border-gray-700">
+                            <div className="pt-4 border-t dark:border-gray-700">
                                 <label className="block text-xs font-bold mb-3 uppercase tracking-wider text-gray-500">
                                     Services & Inclusions <span className="text-pink-500 lowercase normal-case text-[10px] ml-2">({editModalBooking.package_type || 'Custom'})</span>
                                 </label>
@@ -602,7 +605,7 @@ const BookingRequests = () => {
                                 </div>
                             </div>
 
-                            <div className="pt-2 border-t dark:border-gray-700">
+                            <div className="pt-4 border-t dark:border-gray-700">
                                 <div className="flex justify-between items-center mb-3">
                                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Menu / Food Choices</label>
                                     <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${currentDishes.length >= currentLimit ? 'bg-green-100 text-green-800' : 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300'}`}>
@@ -640,7 +643,7 @@ const BookingRequests = () => {
                         </div>
 
                         {/* FIXED FOOTER */}
-                        <div className="flex justify-end gap-3 pt-4 mt-2 border-t dark:border-gray-700 px-2 shrink-0">
+                        <div className="flex justify-end gap-3 pt-4 mt-2 border-t dark:border-gray-700 shrink-0">
                             <button type="button" onClick={() => setEditModalBooking(null)} className="px-5 py-2.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition font-bold text-sm">Cancel</button>
                             <button type="submit" className="px-6 py-2.5 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition shadow-md text-sm flex items-center gap-2"><FaEdit /> Save Changes</button>
                         </div>
@@ -693,41 +696,46 @@ const BookingRequests = () => {
                 </div>
             </Modal>
 
+            {/* RECONCILE MODAL */}
             {showReconcileModal && reconcileBooking && (
                 <Modal isOpen={showReconcileModal} onClose={() => setShowReconcileModal(false)} title="Post-Event Reconciliation">
-                    <div className="p-2 text-gray-800 dark:text-gray-200">
-                        <p className="text-xs md:text-sm mb-3 text-gray-600 dark:text-gray-400">
-                            Please record any damaged or missing inventory for <strong className="text-gray-900 dark:text-white break-words">{reconcileBooking.customer_name}'s</strong> event. 
-                            The remaining items will be automatically returned to the warehouse.
-                        </p>
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 max-h-60 overflow-y-auto border dark:border-gray-700 custom-scrollbar">
-                            {reconcileBooking.required_inventory ? (
-                                <div className="space-y-3">
-                                    {reconcileBooking.required_inventory.split('; ').map((itemStr, i) => {
-                                        const [itemName, allocatedQty] = itemStr.split(': ');
-                                        return (
-                                            <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b dark:border-gray-700 pb-2 last:border-0 last:pb-0 gap-2 sm:gap-0">
-                                                <div className="w-full sm:w-auto">
-                                                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm break-words">{itemName}</p>
-                                                    <p className="text-[10px] md:text-xs text-gray-500 font-medium">Allocated: {allocatedQty}</p>
+                    <div className="flex flex-col text-gray-800 dark:text-gray-200">
+                        
+                        <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                            <p className="text-xs md:text-sm mb-3 text-gray-600 dark:text-gray-400">
+                                Please record any damaged or missing inventory for <strong className="text-gray-900 dark:text-white break-words">{reconcileBooking.customer_name}'s</strong> event. 
+                                The remaining items will be automatically returned to the warehouse.
+                            </p>
+                            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 border dark:border-gray-700">
+                                {reconcileBooking.required_inventory ? (
+                                    <div className="space-y-3">
+                                        {reconcileBooking.required_inventory.split('; ').map((itemStr, i) => {
+                                            const [itemName, allocatedQty] = itemStr.split(': ');
+                                            return (
+                                                <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b dark:border-gray-700 pb-2 last:border-0 last:pb-0 gap-2 sm:gap-0">
+                                                    <div className="w-full sm:w-auto">
+                                                        <p className="font-bold text-gray-800 dark:text-gray-200 text-sm break-words">{itemName}</p>
+                                                        <p className="text-[10px] md:text-xs text-gray-500 font-medium">Allocated: {allocatedQty}</p>
+                                                    </div>
+                                                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 bg-gray-100 dark:bg-gray-800 p-2 sm:p-0 rounded-lg sm:bg-transparent">
+                                                        <label className="text-[10px] md:text-xs text-red-500 font-bold uppercase tracking-wider">Lost/Broken:</label>
+                                                        <input 
+                                                            type="number" min="0" max={allocatedQty} placeholder="0"
+                                                            value={damagedItems[itemName] || ''} onChange={(e) => handleDamagedInputChange(itemName, e.target.value)}
+                                                            className="w-16 md:w-20 p-1.5 border dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-center font-bold focus:ring-2 focus:ring-pink-500 outline-none transition text-sm"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 bg-gray-100 dark:bg-gray-800 p-2 sm:p-0 rounded-lg sm:bg-transparent">
-                                                    <label className="text-[10px] md:text-xs text-red-500 font-bold uppercase tracking-wider">Lost/Broken:</label>
-                                                    <input 
-                                                        type="number" min="0" max={allocatedQty} placeholder="0"
-                                                        value={damagedItems[itemName] || ''} onChange={(e) => handleDamagedInputChange(itemName, e.target.value)}
-                                                        className="w-16 md:w-20 p-1.5 border dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-center font-bold focus:ring-2 focus:ring-pink-500 outline-none transition text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-500 italic text-center py-2">No specific inventory was allocated.</p>
-                            )}
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-500 italic text-center py-2">No specific inventory was allocated.</p>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
+
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4 pt-4 border-t dark:border-gray-700 shrink-0">
                             <button onClick={() => setShowReconcileModal(false)} className="w-full sm:w-auto px-5 py-2 border dark:border-gray-600 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm">Cancel</button>
                             <button onClick={handleReconciliationSubmit} className="w-full sm:w-auto px-5 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-md transition text-sm">Reconcile & Complete</button>
                         </div>
