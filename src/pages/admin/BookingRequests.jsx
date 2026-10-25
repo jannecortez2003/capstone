@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit, FaTimes, FaCheck } from "react-icons/fa";
+import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit, FaTimes, FaCheck, FaExclamationTriangle } from "react-icons/fa";
 import Modal, { SuccessModal } from '../../components/Modal';
 
 const inclusionOptions = [
@@ -24,8 +24,13 @@ const BookingRequests = () => {
     // Edit Booking State
     const [editModalBooking, setEditModalBooking] = useState(null);
 
+    // Modal States
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    
+    // NEW: Themed Error/Restriction Modal State
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     const [showReconcileModal, setShowReconcileModal] = useState(false);
     const [reconcileBooking, setReconcileBooking] = useState(null);
@@ -86,7 +91,9 @@ const BookingRequests = () => {
         if (!actionDetails) return;
         
         if (actionDetails.newStatus === 'Confirmed' && (!agreedPrice || parseFloat(agreedPrice) <= 0)) {
-            alert("Please set a valid agreed price for this event before approving.");
+            setShowStatusModal(false);
+            setErrorMessage("Please set a valid agreed price for this event before approving.");
+            setShowErrorModal(true);
             return;
         }
 
@@ -110,21 +117,28 @@ const BookingRequests = () => {
                 setSuccessMessage(data.message);
                 setShowSuccessModal(true);
             } else {
-                alert(`Status Update Failed: ${data.message}`);
+                // Trigger the themed error modal instead of a browser alert
+                setShowStatusModal(false);
+                setErrorMessage(data.message);
+                setShowErrorModal(true);
             }
-        } catch (err) { alert("Network error. Could not reach the server."); }
+        } catch (err) { 
+            setShowStatusModal(false);
+            setErrorMessage("Network error. Could not reach the server.");
+            setShowErrorModal(true);
+        }
         finally { setLoading(false); }
     };
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
         
-        // Final Validation before submitting
         const currentDishes = editModalBooking.selected_dishes ? editModalBooking.selected_dishes.split(';').map(d => d.trim()).filter(d => d) : [];
         const currentLimit = editModalBooking.dish_limit || 7;
 
         if (editModalBooking.service_type.includes('Food/Catering') && currentDishes.length < currentLimit && !currentDishes.includes("Client will cook (Customized Menu)")) {
-            alert(`This package requires exactly ${currentLimit} dishes. You currently have ${currentDishes.length} selected.`);
+            setErrorMessage(`This package requires exactly ${currentLimit} dishes. You currently have ${currentDishes.length} selected.`);
+            setShowErrorModal(true);
             return;
         }
 
@@ -143,9 +157,13 @@ const BookingRequests = () => {
                 setSuccessMessage(data.message);
                 setShowSuccessModal(true);
             } else {
-                alert(`Update Failed: ${data.message}`);
+                setErrorMessage(`Update Failed: ${data.message}`);
+                setShowErrorModal(true);
             }
-        } catch (err) { alert("Network error. Could not reach the server."); }
+        } catch (err) { 
+            setErrorMessage("Network error. Could not reach the server.");
+            setShowErrorModal(true);
+        }
         finally { setLoading(false); }
     };
 
@@ -163,8 +181,14 @@ const BookingRequests = () => {
                 await fetchBookings();
                 setShowReconcileModal(false); setReconcileBooking(null); setDamagedItems({});
                 setSuccessMessage(data.message); setShowSuccessModal(true);
-            } else { alert(`Reconciliation Failed: ${data.message}`); }
-        } catch (err) { alert("Network error. Could not reach the server."); }
+            } else { 
+                setErrorMessage(`Reconciliation Failed: ${data.message}`);
+                setShowErrorModal(true);
+            }
+        } catch (err) { 
+            setErrorMessage("Network error. Could not reach the server.");
+            setShowErrorModal(true);
+        }
         finally { setLoading(false); }
     };
 
@@ -181,8 +205,14 @@ const BookingRequests = () => {
                 await fetchBookings();
                 setSuccessMessage(`Booking #${id} successfully deleted.`);
                 setShowSuccessModal(true);
-            } else { alert(`Delete Failed: ${data.message}`); }
-        } catch (err) { alert("Network error. Could not reach the server."); } 
+            } else { 
+                setErrorMessage(`Delete Failed: ${data.message}`);
+                setShowErrorModal(true);
+            }
+        } catch (err) { 
+            setErrorMessage("Network error. Could not reach the server.");
+            setShowErrorModal(true);
+        } 
         finally { setLoading(false); }
     };
 
@@ -199,7 +229,6 @@ const BookingRequests = () => {
 
     const filteredBookings = bookings.filter(b => filter === 'All' ? true : b.status === filter);
 
-    // DYNAMIC EDIT LOGIC
     const currentServices = editModalBooking?.service_type ? editModalBooking.service_type.split(',').map(s => s.trim()) : [];
     
     const handleServiceToggle = (option) => {
@@ -225,7 +254,8 @@ const BookingRequests = () => {
             setEditModalBooking({...editModalBooking, selected_dishes: newDishes.join('; ')});
         } else {
             if (currentDishes.length >= currentLimit) {
-                alert(`You can only select up to ${currentLimit} dishes for this package.`);
+                setErrorMessage(`You can only select up to ${currentLimit} dishes for this package.`);
+                setShowErrorModal(true);
                 return;
             }
             let newDishes = [...currentDishes, dishName];
@@ -594,6 +624,21 @@ const BookingRequests = () => {
                     </div>
                 </Modal>
             )}
+
+            {/* ERROR / RESTRICTION MODAL */}
+            <Modal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} title="Action Restricted" size="max-w-md">
+                <div className="p-4 text-center">
+                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4 border border-red-200 dark:border-red-800">
+                        <FaExclamationTriangle className="text-3xl text-red-600 dark:text-red-400" />
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm mb-6 leading-relaxed">
+                        {errorMessage}
+                    </p>
+                    <button onClick={() => setShowErrorModal(false)} className="w-full bg-gray-800 dark:bg-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-900 dark:hover:bg-gray-600 transition shadow-md text-sm">
+                        Understood
+                    </button>
+                </div>
+            </Modal>
 
             {showReconcileModal && reconcileBooking && (
                 <Modal isOpen={showReconcileModal} onClose={() => setShowReconcileModal(false)} title="Post-Event Reconciliation">
