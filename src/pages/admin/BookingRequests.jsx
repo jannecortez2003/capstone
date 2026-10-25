@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit, FaTimes, FaCheck, FaExclamationTriangle } from "react-icons/fa";
+import { FaCalendarAlt, FaCheckCircle, FaListAlt, FaBoxOpen, FaEdit, FaTimes, FaCheck, FaExclamationTriangle, FaPrint } from "react-icons/fa";
 import Modal, { SuccessModal } from '../../components/Modal';
-
-const inclusionOptions = [
-    'Food/Catering', 
-    'Tables & Chairs', 
-    'Event Styling/Decoration', 
-    'Lights & Sound System'
-];
 
 const BookingRequests = () => {
     const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
     const userRole = adminUser.role || 'admin';
     const [bookings, setBookings] = useState([]);
     const [menuItems, setMenuItems] = useState([]); 
+    const [packages, setPackages] = useState([]); // NEW: State to hold packages
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
@@ -58,9 +52,16 @@ const BookingRequests = () => {
 
     useEffect(() => { 
         fetchBookings(); 
+        
         fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_menu`)
             .then(res => res.json())
             .then(data => { if (data.success) setMenuItems(data.items); })
+            .catch(err => console.error(err));
+            
+        // NEW: Fetch packages so we can dynamically pull inclusions for the edit modal
+        fetch(`${import.meta.env.VITE_API_URL}/fetch_packages`)
+            .then(res => res.json())
+            .then(data => { if (data.success) setPackages(data.packages); })
             .catch(err => console.error(err));
     }, []);
 
@@ -135,11 +136,18 @@ const BookingRequests = () => {
     const handleEditSubmit = async (e) => {
         e.preventDefault();
         
+        const currentServices = editModalBooking.service_type ? editModalBooking.service_type.split(',').map(s => s.trim()) : [];
         const currentDishes = editModalBooking.selected_dishes ? editModalBooking.selected_dishes.split(';').map(d => d.trim()).filter(d => d) : [];
         const currentLimit = editModalBooking.dish_limit || 7;
 
-        if (editModalBooking.service_type.includes('Food/Catering') && currentDishes.length < currentLimit && !currentDishes.includes("Client will cook (Customized Menu)")) {
-            setErrorMessage(`This package requires exactly ${currentLimit} dishes. You currently have ${currentDishes.length} selected.`);
+        // NEW: Dynamic check for food related keywords
+        const hasFood = currentServices.some(s => {
+            const lowerS = s.toLowerCase();
+            return ['food', 'catering', 'dish', 'menu', 'meal', 'buffet'].some(keyword => lowerS.includes(keyword));
+        });
+
+        if (hasFood && currentLimit > 0 && currentDishes.length < currentLimit && !currentDishes.some(d => d.toLowerCase().includes('cook'))) {
+            setErrorMessage(`This package allows up to ${currentLimit} dishes. You currently have ${currentDishes.length} selected.`);
             setShowErrorModal(true);
             return;
         }
@@ -222,30 +230,14 @@ const BookingRequests = () => {
 
     const getStatusBadgeClass = (status) => {
         switch (status) {
-            case 'Confirmed': return 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400';
-            case 'Completed': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400';
-            case 'Cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400';
-            default: return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400';
+            case 'Confirmed': return 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 print:border print:border-green-600 print:text-green-800 print:bg-white';
+            case 'Completed': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 print:border print:border-blue-600 print:text-blue-800 print:bg-white';
+            case 'Cancelled': return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400 print:border print:border-red-600 print:text-red-800 print:bg-white';
+            default: return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 print:border print:border-yellow-600 print:text-yellow-800 print:bg-white';
         }
     };
 
     const filteredBookings = bookings.filter(b => filter === 'All' ? true : b.status === filter);
-
-    const currentServices = editModalBooking?.service_type ? editModalBooking.service_type.split(',').map(s => s.trim()) : [];
-    
-    const handleServiceToggle = (option) => {
-        const baseOption = option.split(' (')[0]; 
-        const isCurrentlySelected = currentServices.some(s => s.startsWith(baseOption));
-        
-        let newServices;
-        if (isCurrentlySelected) {
-            newServices = currentServices.filter(s => !s.startsWith(baseOption));
-        } else {
-            const optionString = option === 'Food/Catering' && editModalBooking?.dish_limit ? `Food/Catering (${editModalBooking.dish_limit} Dishes)` : option;
-            newServices = [...currentServices, optionString];
-        }
-        setEditModalBooking({...editModalBooking, service_type: newServices.join(', ')});
-    };
 
     const currentDishes = editModalBooking?.selected_dishes ? editModalBooking.selected_dishes.split(';').map(d => d.trim()).filter(d => d) : [];
     const currentLimit = editModalBooking?.dish_limit || 7;
@@ -271,40 +263,87 @@ const BookingRequests = () => {
         return acc;
     }, {});
 
+    // NEW: Generate Dynamic Checkboxes for the Edit Modal
+    let combinedInclusions = [];
+    let currentServices = [];
+    if (editModalBooking) {
+        currentServices = editModalBooking.service_type ? editModalBooking.service_type.split(',').map(s => s.trim()).filter(Boolean) : [];
+        
+        const selectedPkg = packages.find(p => p.package_name === editModalBooking.package_type);
+        let dynamicInclusions = [];
+        
+        if (selectedPkg && selectedPkg.description) {
+            dynamicInclusions = selectedPkg.description.split(',').map(f => f.trim());
+            if (selectedPkg.dish_limit > 0) {
+                dynamicInclusions.unshift(`Food/Catering (${selectedPkg.dish_limit} Dishes)`);
+            }
+        } else {
+            // Fallback if package was deleted or not found
+            dynamicInclusions = [
+                `Food/Catering (${editModalBooking.dish_limit || 7} Dishes)`, 
+                'Tables & Chairs', 
+                'Event Styling/Decoration', 
+                'Lights & Sound System'
+            ];
+        }
+
+        // Combine the package defaults with whatever is currently saved in the DB so nothing gets hidden
+        combinedInclusions = Array.from(new Set([...dynamicInclusions, ...currentServices])).filter(Boolean);
+    }
+
     return (
-        <div className="p-6 transition-colors duration-300">
-            <h1 className="text-3xl font-bold mb-2 text-gray-800 dark:text-white transition-colors duration-300">Booking Requests</h1>
-            <p className="text-gray-500 dark:text-gray-400 mb-8 transition-colors duration-300">Manage client appointments and statuses.</p>
+        <div className="p-6 transition-colors duration-300 print:p-0 print:m-0 print:w-full print:bg-white text-black">
+            
+            {/* Header Area */}
+            <div className="flex justify-between items-start mb-2">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">Booking Requests</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mb-8 transition-colors duration-300 print:hidden">Manage client appointments and statuses.</p>
+                    
+                    {/* Only shows on Print */}
+                    <div className="hidden print:block mb-6">
+                        <p className="text-sm text-gray-700 font-bold uppercase tracking-wider">Report Filter: {filter} Events</p>
+                        <p className="text-xs text-gray-500">Generated on: {new Date().toLocaleString()}</p>
+                    </div>
+                </div>
+                
+                <button 
+                    onClick={() => window.print()}
+                    className="bg-gray-800 hover:bg-gray-900 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-md print:hidden"
+                >
+                    <FaPrint /> Export Report
+                </button>
+            </div>
             
             {/* STATS GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-yellow-300 transition-colors duration-300">
-                    <div className="bg-yellow-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300"><FaListAlt className="text-yellow-500 text-2xl" /></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 print:grid-cols-3 print:gap-4 print:mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-yellow-300 transition-colors duration-300 print:border print:shadow-none">
+                    <div className="bg-yellow-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300 print:hidden"><FaListAlt className="text-yellow-500 text-2xl" /></div>
                     <div>
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300">{bookings.filter(b => b.status === 'Pending').length}</div>
-                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-300">Pending Requests</div>
+                        <div className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">{bookings.filter(b => b.status === 'Pending').length}</div>
+                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-300 print:text-gray-800">Pending Requests</div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-green-300 transition-colors duration-300">
-                    <div className="bg-green-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300"><FaCheckCircle className="text-green-500 text-2xl" /></div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-green-300 transition-colors duration-300 print:border print:shadow-none">
+                    <div className="bg-green-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300 print:hidden"><FaCheckCircle className="text-green-500 text-2xl" /></div>
                     <div>
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300">{bookings.filter(b => b.status === 'Confirmed').length}</div>
-                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-300">Confirmed Events</div>
+                        <div className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">{bookings.filter(b => b.status === 'Confirmed').length}</div>
+                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-300 print:text-gray-800">Confirmed Events</div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-blue-300 transition-colors duration-300">
-                    <div className="bg-blue-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300"><FaCalendarAlt className="text-blue-500 text-2xl" /></div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 flex items-center gap-4 border-l-4 border-blue-300 transition-colors duration-300 print:border print:shadow-none">
+                    <div className="bg-blue-50 dark:bg-gray-700 p-3 rounded-full transition-colors duration-300 print:hidden"><FaCalendarAlt className="text-blue-500 text-2xl" /></div>
                     <div>
-                        <div className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300">{bookings.filter(b => b.status === 'Completed').length}</div>
-                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-300">Completed Events</div>
+                        <div className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">{bookings.filter(b => b.status === 'Completed').length}</div>
+                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors duration-300 print:text-gray-800">Completed Events</div>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-colors duration-300 print:shadow-none print:border-none">
                 
-                {/* FILTER TABS */}
-                <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex space-x-2 overflow-x-auto">
+                {/* FILTER TABS (Hidden on Print) */}
+                <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex space-x-2 overflow-x-auto print:hidden">
                     {['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled'].map(status => (
                         <button
                             key={status}
@@ -321,29 +360,37 @@ const BookingRequests = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300">
+                    <table className="min-w-full text-sm print:text-xs">
+                        <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase font-semibold text-xs transition-colors duration-300 print:bg-white print:text-black print:border-b-2 print:border-black">
                             <tr>
                                 <th className="p-4 text-left w-20">ID</th>
                                 <th className="p-4 text-left">Customer</th>
+                                <th className="p-4 text-left">Event / Package</th>
                                 <th className="p-4 text-left">Event Date</th>
                                 <th className="p-4 text-left">Status</th>
-                                <th className="p-4 text-center">Actions</th>
+                                <th className="p-4 text-center print:hidden">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 print:divide-gray-300">
                             {filteredBookings.length > 0 ? filteredBookings.map((b) => (
-                                <tr key={b.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300">
+                                <tr key={b.id} className="hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors duration-300 print:break-inside-avoid">
                                     <td className="p-4">
-                                        <span className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 font-mono text-xs px-2 py-1 rounded border dark:border-gray-600 shadow-sm font-bold">
+                                        <span className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 font-mono text-xs px-2 py-1 rounded border dark:border-gray-600 shadow-sm font-bold print:border-none print:p-0 print:text-black">
                                             #{b.id}
                                         </span>
                                     </td>
                                     <td className="p-4">
-                                        <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300">{b.customer_name}</div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">{b.customer_email}</div>
+                                        <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">{b.customer_name}</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300 print:text-gray-800">{b.customer_email}</div>
                                     </td>
-                                    <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300">
+                                    
+                                    {/* NEW: Displays Event Type and Package Name directly in the table */}
+                                    <td className="p-4">
+                                        <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">{b.event_type}</div>
+                                        <div className="text-xs text-pink-600 dark:text-pink-400 font-bold transition-colors duration-300 print:text-gray-800">{b.package_type || 'Custom Package'}</div>
+                                    </td>
+                                    
+                                    <td className="p-4 text-gray-600 dark:text-gray-300 transition-colors duration-300 print:text-black">
                                         {formatSafeDateRange(b.preferred_date || b.event_date, b.end_date)}
                                     </td>
                                     <td className="p-4">
@@ -351,7 +398,7 @@ const BookingRequests = () => {
                                             {b.status}
                                         </span>
                                     </td>
-                                    <td className="p-4 flex flex-wrap justify-center gap-2">
+                                    <td className="p-4 flex flex-wrap justify-center gap-2 print:hidden">
                                         <button onClick={() => setSelectedBooking(b)} className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 px-3 py-1 rounded text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-900 transition">
                                             VIEW
                                         </button>
@@ -365,7 +412,7 @@ const BookingRequests = () => {
                                         {userRole !== 'staff' && b.status === 'Pending' && (
                                             <>
                                                 <button onClick={() => { 
-                                                    const autoPrice = Number(b.guest_count) * 400; // AUTO COMPUTATION LOGIC
+                                                    const autoPrice = Number(b.guest_count) * 400; 
                                                     setActionDetails({id: b.id, newStatus: 'Confirmed', customerName: b.customer_name}); 
                                                     setAgreedPrice(b.total_cost > 0 ? b.total_cost : autoPrice);
                                                     setCalculatedMath(`${b.guest_count} Guests x ₱400 = ₱${autoPrice.toLocaleString()}`);
@@ -396,13 +443,14 @@ const BookingRequests = () => {
                                     </td>
                                 </tr>
                             )) : (
-                                <tr><td colSpan="5" className="p-10 text-center text-gray-500 dark:text-gray-400 italic">No {filter !== 'All' ? filter.toLowerCase() : ''} bookings found.</td></tr>
+                                <tr><td colSpan="6" className="p-10 text-center text-gray-500 dark:text-gray-400 italic print:text-black">No {filter !== 'All' ? filter.toLowerCase() : ''} bookings found.</td></tr>
                             )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
+            {/* MODALS */}
             {selectedBooking && (
                 <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title={`Booking Overview (ID: #${selectedBooking.id})`} size="max-w-xl">
                     <div className="px-1 py-1">
@@ -427,7 +475,9 @@ const BookingRequests = () => {
                                     <div>
                                         <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Location & Details</p>
                                         <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{selectedBooking.event_location}</p>
+                                        
                                         <p className="font-semibold text-xs text-gray-500 mt-1">{selectedBooking.event_type} - {selectedBooking.guest_count} Pax</p>
+                                        <p className="font-bold text-pink-600 dark:text-pink-400 text-[10px]">{selectedBooking.package_type}</p>
                                     </div>
                                 </div>
                             </div>
@@ -439,8 +489,8 @@ const BookingRequests = () => {
                                     
                                     <div className="flex flex-wrap gap-1 mb-2 pb-2 border-b dark:border-gray-700">
                                         {selectedBooking.service_type ? 
-                                              selectedBooking.service_type.split(', ').map((inc, i) => (
-                                                <span key={i} className="bg-pink-100 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold text-pink-700 dark:text-pink-400 shadow-sm leading-tight">{inc}</span>
+                                              selectedBooking.service_type.split(',').map((inc, i) => (
+                                                <span key={i} className="bg-pink-100 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold text-pink-700 dark:text-pink-400 shadow-sm leading-tight">{inc.trim()}</span>
                                             ))
                                         : <span className="text-gray-400 italic text-[10px]">No inclusions specified.</span>}
                                     </div>
@@ -533,23 +583,34 @@ const BookingRequests = () => {
                             </div>
                         </div>
 
+                        {/* NEW: DYNAMIC CHECKBOXES FOR INCLUSIONS */}
                         <div className="pt-2 border-t dark:border-gray-700">
-                            <label className="block text-xs font-bold mb-3 uppercase tracking-wider text-gray-500">Services & Inclusions</label>
+                            <label className="block text-xs font-bold mb-3 uppercase tracking-wider text-gray-500">
+                                Services & Inclusions <span className="text-pink-500 lowercase normal-case text-[10px] ml-2">({editModalBooking.package_type || 'Custom'})</span>
+                            </label>
+                            
                             <div className="grid grid-cols-2 gap-3">
-                                {inclusionOptions.map(option => {
-                                    const baseOption = option.split(' (')[0];
-                                    const isSelected = currentServices.some(s => s.startsWith(baseOption));
+                                {combinedInclusions.map(option => {
+                                    const isSelected = currentServices.includes(option);
                                     
                                     return (
                                         <label key={option} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-pink-50 border-pink-300 dark:bg-pink-900/30 dark:border-pink-800' : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:border-pink-300'}`}>
                                             <input 
                                                 type="checkbox" 
                                                 checked={isSelected} 
-                                                onChange={() => handleServiceToggle(option)} 
+                                                onChange={() => {
+                                                    let newServices;
+                                                    if (isSelected) {
+                                                        newServices = currentServices.filter(s => s !== option);
+                                                    } else {
+                                                        newServices = [...currentServices, option];
+                                                    }
+                                                    setEditModalBooking({...editModalBooking, service_type: newServices.join(', ')});
+                                                }} 
                                                 className="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 accent-pink-600 cursor-pointer" 
                                             />
                                             <span className={`text-sm font-semibold ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                {option === 'Food/Catering' && editModalBooking?.dish_limit ? `Food/Catering (${editModalBooking.dish_limit} Dishes)` : option}
+                                                {option}
                                             </span>
                                         </label>
                                     )
@@ -632,7 +693,6 @@ const BookingRequests = () => {
                 </Modal>
             )}
 
-            {/* ERROR / RESTRICTION MODAL */}
             <Modal isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} title="Action Restricted" size="max-w-md">
                 <div className="p-4 text-center">
                     <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4 border border-red-200 dark:border-red-800">
