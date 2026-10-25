@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight, FaSun, FaMoon, FaClock } from 'react-icons/fa';
-import Modal from '../../components/Modal'; // Added Modal import
+import { useNavigate } from 'react-router-dom';
+import { FaCalendarAlt, FaMoneyBillWave, FaUtensils, FaUsers, FaChevronLeft, FaChevronRight, FaSun, FaMoon, FaClock, FaEye } from 'react-icons/fa';
+import Modal from '../../components/Modal';
 
 const Dashboard = ({ theme, toggleTheme }) => {
   const [stats, setStats] = useState({ bookings: 0, revenue: 0, menuItems: 0, customers: 0 });
@@ -8,11 +9,13 @@ const Dashboard = ({ theme, toggleTheme }) => {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState('All');
-
-  // New states for the Calendar Popup
+  
+  // Calendar Popup States
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDayEvents, setSelectedDayEvents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/admin_fetch_dashboard_stats`)
@@ -83,7 +86,6 @@ const Dashboard = ({ theme, toggleTheme }) => {
       const d = String(day).padStart(2, '0');
       const dateStr = `${year}-${m}-${d}`;
       
-      // Get all events falling on this specific day
       const dayEvents = upcomingEvents.filter(e => {
         if (e.status !== 'Confirmed' && e.status !== 'Pending') return false;
         if (!e.preferred_date) return false;
@@ -291,6 +293,15 @@ const Dashboard = ({ theme, toggleTheme }) => {
                                   <span className="font-medium">Guests:</span> {ev.guest_count} Pax
                               </p>
                           </div>
+                          <button 
+                              onClick={() => {
+                                  setIsModalOpen(false);
+                                  navigate('/admin/booking-requests'); // Redirects to bookings page
+                              }}
+                              className="mt-2 text-xs font-bold bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 hover:bg-pink-200 dark:hover:bg-pink-900/50 py-2 rounded-lg flex items-center justify-center gap-1 transition"
+                          >
+                              <FaEye /> See Event Details
+                          </button>
                       </div>
                   ))
               ) : (
@@ -305,7 +316,6 @@ const Dashboard = ({ theme, toggleTheme }) => {
               </button>
           </div>
       </Modal>
-
     </div>
   );
 };

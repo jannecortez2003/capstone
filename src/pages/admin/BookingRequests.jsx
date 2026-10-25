@@ -18,8 +18,11 @@ const BookingRequests = () => {
     const [error, setError] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
+    
+    // Approval / Status Action Details
     const [actionDetails, setActionDetails] = useState(null);
     const [agreedPrice, setAgreedPrice] = useState("");
+    const [calculatedMath, setCalculatedMath] = useState("");
     
     // Edit Booking State
     const [editModalBooking, setEditModalBooking] = useState(null);
@@ -28,7 +31,7 @@ const BookingRequests = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     
-    // NEW: Themed Error/Restriction Modal State
+    // Themed Error/Restriction Modal State
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -117,7 +120,6 @@ const BookingRequests = () => {
                 setSuccessMessage(data.message);
                 setShowSuccessModal(true);
             } else {
-                // Trigger the themed error modal instead of a browser alert
                 setShowStatusModal(false);
                 setErrorMessage(data.message);
                 setShowErrorModal(true);
@@ -363,8 +365,10 @@ const BookingRequests = () => {
                                         {userRole !== 'staff' && b.status === 'Pending' && (
                                             <>
                                                 <button onClick={() => { 
+                                                    const autoPrice = Number(b.guest_count) * 400; // AUTO COMPUTATION LOGIC
                                                     setActionDetails({id: b.id, newStatus: 'Confirmed', customerName: b.customer_name}); 
-                                                    setAgreedPrice(b.total_cost > 0 ? b.total_cost : "");
+                                                    setAgreedPrice(b.total_cost > 0 ? b.total_cost : autoPrice);
+                                                    setCalculatedMath(`${b.guest_count} Guests x ₱400 = ₱${autoPrice.toLocaleString()}`);
                                                     setShowStatusModal(true); 
                                                 }} className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 px-3 py-1 rounded text-xs font-bold hover:bg-green-200 transition">
                                                     APPROVE
@@ -613,7 +617,10 @@ const BookingRequests = () => {
                                     className="w-full p-3 border border-pink-200 dark:border-gray-600 bg-pink-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-pink-700 dark:text-pink-400 font-bold" 
                                     placeholder="Enter final negotiated price..."
                                 />
-                                <p className="text-xs text-gray-500 mt-2 italic">This price will be shown to the client and saved to their billing account.</p>
+                                {/* AUTO-CALCULATION TEXT INDICATOR */}
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium bg-gray-100 dark:bg-gray-900 p-2 rounded border dark:border-gray-600">
+                                    💡 <strong className="text-pink-600 dark:text-pink-400">Suggested Price:</strong> {calculatedMath}
+                                </p>
                             </div>
                         )}
 
