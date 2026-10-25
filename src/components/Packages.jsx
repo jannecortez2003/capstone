@@ -21,7 +21,6 @@ const Packages = ({ handlePackageSelection }) => {
         setLoading(false);
       }
     };
-
     fetchPackages();
   }, []);
 
@@ -41,10 +40,7 @@ const Packages = ({ handlePackageSelection }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           {packages.map((pkg, index) => {
-            // Highlights the middle package (index 1) as the popular one for UI design
-            const isPopular = index === 1; 
-            
-            // Splits your admin description by commas so they show up as nice bullet points
+            const isPopular = index === 1;
             const features = pkg.description ? pkg.description.split(',').map(f => f.trim()) : [];
 
             return (
@@ -68,13 +64,11 @@ const Packages = ({ handlePackageSelection }) => {
               <div className="flex-1">
                 <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4 transition-colors duration-300">Inclusions:</p>
                 <ul className="space-y-3 mb-8">
-                  {/* Dynamically renders the dish limit you set in the admin panel */}
                   <li className="flex items-center gap-3 text-pink-600 dark:text-pink-400 text-sm transition-colors duration-300 font-bold">
                     <FaCheckCircle className="text-pink-500 shrink-0" />
                     <span>{pkg.dish_limit} Menu Choices</span>
                   </li>
                   
-                  {/* Maps through your description bullet points */}
                   {features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-3 text-gray-600 dark:text-gray-400 text-sm transition-colors duration-300">
                       <FaCheckCircle className="text-pink-500 shrink-0" />
@@ -89,7 +83,8 @@ const Packages = ({ handlePackageSelection }) => {
                     title: pkg.package_name,
                     price: pkg.price,
                     guestCount: pkg.pax_capacity,
-                    dishLimit: pkg.dish_limit // Sends the dynamic limit to your Modal
+                    dishLimit: pkg.dish_limit,
+                    features: features // NEW: Passing the features to Phase 2
                 })}
                 className={`w-full py-3 rounded-xl font-bold transition shadow-sm ${isPopular ? 'bg-pink-600 text-white hover:bg-pink-700' : 'bg-pink-50 dark:bg-gray-700 text-pink-600 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-gray-600'}`}
               >

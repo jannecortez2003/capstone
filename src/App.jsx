@@ -57,12 +57,12 @@ function App() {
 
   const [activeForm, setActiveForm] = useState(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  
+
   // MODAL STATES
   const [showEventFormModal, setShowEventFormModal] = useState(false);
   const [showDishModal, setShowDishModal] = useState(false);
   const [showBookingSuccessModal, setShowBookingSuccessModal] = useState(false);
-  
+
   // BOOKING DATA STATES
   const [selectedPackageForBooking, setSelectedPackageForBooking] = useState(null);
   const [eventDetails, setEventDetails] = useState(null);
@@ -78,6 +78,7 @@ function App() {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setIsLoggedIn(true);
+
         if (location.pathname.startsWith('/admin')) {
             const isAdminType = ['admin', 'manager', 'staff'].includes(parsedUser.role) || parsedUser.username === 'admin';
             if (!isAdminType) navigate('/', { replace: true });
@@ -105,6 +106,7 @@ function App() {
     setUser(userData);
     setIsLoggedIn(true);
     sessionStorage.setItem("isLoggedIn", "true");
+
     if (['admin', 'manager', 'staff'].includes(userData.role) || userData.username === 'admin') {
         sessionStorage.setItem("adminUser", JSON.stringify(userData));
         navigate('/admin');
@@ -150,8 +152,13 @@ function App() {
     setEventDetails(details);
     setShowEventFormModal(false);
     
-    // Dynamically checks for Food/Catering regardless of dish limit number
-    if (details.inclusions.some(inc => inc.startsWith('Food/Catering'))) {
+    // NEW: Dynamically checks for Food-related keywords regardless of what the admin named the package inclusion
+    const hasFood = details.inclusions.some(inc => {
+        const lowerInc = inc.toLowerCase();
+        return ['food', 'catering', 'dish', 'menu', 'meal', 'buffet'].some(keyword => lowerInc.includes(keyword));
+    });
+
+    if (hasFood && selectedPackageForBooking?.dishLimit > 0) {
         setShowDishModal(true); // Proceed to Phase 3
     } else {
         submitFinalBooking(details, []); // Skip Phase 3 if no food
@@ -187,6 +194,7 @@ function App() {
       });
       const data = await res.json();
       setIsBookingLoading(false);
+      
       if (data.success) {
          setShowDishModal(false);
          setBookingSuccessMessage("Event requested successfully! Our admin will review your inclusions and contact you for price negotiation.");
@@ -207,6 +215,7 @@ function App() {
       {!isAdminRoute && (
         <Navbar setActiveForm={setActiveForm} isLoggedIn={isLoggedIn} onLogout={handleLogout} user={user} onShowVerifyModal={() => setShowVerifyModal(true)} theme={theme} toggleTheme={toggleTheme} />
       )}
+
       {!isAdminRoute && isLoggedIn && user && !['admin', 'manager', 'staff'].includes(user.role) && user.username !== 'admin' && <ChatBot user={user} />}
       
       <Routes>
@@ -217,6 +226,7 @@ function App() {
         <Route path="/" element={
           <><Hero handleHeroBooking={handleHeroBooking} /><Services /><Packages handlePackageSelection={handlePackageSelection} /><Events handleEventSelection={handleEventSelection} /><Contact isLoggedIn={isLoggedIn} user={user} /><Footer /></>
         } />
+        
         <Route path="/admin/*" element={<AdminLayout />}>
           <Route index element={<Dashboard theme={theme} toggleTheme={toggleTheme} />} />
           <Route path="booking-requests" element={<BookingRequests />} />
@@ -232,6 +242,7 @@ function App() {
           <Route path="access-control" element={<RoleManagement />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
         </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
@@ -246,23 +257,24 @@ function App() {
 
       {/* PHASE 1 & 2 MODAL */}
       <EventFormModal 
-         isOpen={showEventFormModal} 
-         onClose={() => setShowEventFormModal(false)} 
-         packageCapacity={selectedPackageForBooking?.guestCount} 
-         packageDishLimit={selectedPackageForBooking?.dishLimit} 
-         preSelectedEventType={preSelectedEventType} 
-         onNext={handleEventDetailsConfirm} 
-       />
+          isOpen={showEventFormModal} 
+          onClose={() => setShowEventFormModal(false)} 
+          packageCapacity={selectedPackageForBooking?.guestCount}
+          packageDishLimit={selectedPackageForBooking?.dishLimit}
+          packageFeatures={selectedPackageForBooking?.features}
+          preSelectedEventType={preSelectedEventType}
+          onNext={handleEventDetailsConfirm}
+        />
 
       {/* PHASE 3 MODAL */}
       <DishSelectionModal 
-         isOpen={showDishModal} 
-         onClose={() => setShowDishModal(false)} 
-         packageData={selectedPackageForBooking} 
-         onConfirm={handleDishSelectionConfirm} 
-         isLoading={isBookingLoading} 
-      />
-      
+          isOpen={showDishModal} 
+          onClose={() => setShowDishModal(false)} 
+          packageData={selectedPackageForBooking}
+          onConfirm={handleDishSelectionConfirm}
+          isLoading={isBookingLoading}
+       />
+       
       <SuccessModal isOpen={showBookingSuccessModal} onClose={() => setShowBookingSuccessModal(false)} title="Request Sent!" message={bookingSuccessMessage} />
     </>
   );

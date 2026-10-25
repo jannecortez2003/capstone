@@ -2,32 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { FaChevronLeft, FaChevronRight, FaArrowRight, FaCheckSquare, FaRegSquare } from 'react-icons/fa';
 import { regions, provinces, cities, barangays } from "select-philippines-address";
 
-const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, preSelectedEventType, onNext }) => {
+const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, packageFeatures, preSelectedEventType, onNext }) => {
   const [step, setStep] = useState(1);
-  
-  const [formData, setFormData] = useState({ 
-      eventType: '', preferredDate: '', eventTime: '', duration: 1, guestCount: '', notes: '' 
-  });
-  
-  // Dynamically generates the inclusion options based on the selected package's actual limit
-  const getDynamicInclusions = () => [
-      `Food/Catering (${packageDishLimit || 7} Dishes)`, 
-      'Tables & Chairs', 
-      'Event Styling/Decoration', 
-      'Lights & Sound System'
-  ];
+  const [formData, setFormData] = useState({
+       eventType: '', preferredDate: '', eventTime: '', duration: 1, guestCount: '', notes: ''
+   });
+
+  // Generates checkboxes dynamically based on the specific package chosen
+  const getDynamicInclusions = () => {
+      if (packageFeatures && packageFeatures.length > 0) {
+          return packageFeatures.map(feature => {
+              const lowerF = feature.toLowerCase();
+              const isFoodRelated = ['food', 'catering', 'dish', 'menu', 'meal', 'buffet'].some(keyword => lowerF.includes(keyword));
+              // Append dish limit hint to the food item if applicable
+              if (isFoodRelated && packageDishLimit > 0) {
+                  return `${feature} (${packageDishLimit} Dishes)`;
+              }
+              return feature;
+          });
+      }
+      
+      // Fallback for custom or old packages
+      return [
+          `Food/Catering (${packageDishLimit || 7} Dishes)`, 
+          'Tables & Chairs', 
+          'Event Styling/Decoration', 
+          'Lights & Sound System'
+      ];
+  };
 
   const [inclusions, setInclusions] = useState([]); 
-
   const [regionList, setRegionList] = useState([]);
   const [provinceList, setProvinceList] = useState([]);
   const [cityList, setCityList] = useState([]);
   const [barangayList, setBarangayList] = useState([]);
-  
   const [addressData, setAddressData] = useState({
       regionCode: '', regionName: '', provinceCode: '', provinceName: '', cityCode: '', cityName: '', barangayCode: '', barangayName: '', street: ''
   });
-
+  
   const [bookedDates, setBookedDates] = useState([]);
   const [error, setError] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -43,6 +55,7 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, pr
         notes: ''
       }));
       
+      // Auto-check all the package features by default
       setInclusions(getDynamicInclusions()); 
       setAddressData({ regionCode: '', regionName: '', provinceCode: '', provinceName: '', cityCode: '', cityName: '', barangayCode: '', barangayName: '', street: '' });
       setError(null);
@@ -65,7 +78,7 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, pr
         .then(res => res.json())
         .then(data => { if (data.success) setBookedDates(data.bookedDates); });
     }
-  }, [isOpen, preSelectedEventType, packageCapacity, packageDishLimit]);
+  }, [isOpen, preSelectedEventType, packageCapacity, packageDishLimit, packageFeatures]);
 
   if (!isOpen) return null;
 
@@ -119,6 +132,7 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, pr
   const handleChange = (e) => {
     const { name, value } = e.target;
     let newData = { ...formData, [name]: value };
+
     if (name === 'duration' && newData.preferredDate) {
         let cur = new Date(newData.preferredDate);
         let isValid = true;
@@ -171,6 +185,7 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, pr
     const month = currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDay = new Date(year, month, 1).getDay();
+
     const today = new Date();
     today.setHours(0,0,0,0);
     const minDate = new Date(today);
@@ -188,6 +203,7 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, pr
 
     const days = [];
     for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} className="p-2"></div>);
+
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const isPast = dateStr < minDateStr;
@@ -287,8 +303,9 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, pr
             ) : (
                 <div className="space-y-4">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        Please check the services you want included in your booking. Prices will be negotiated and finalized by the admin based on your selections.
+                        Please review the services included in this package. You can uncheck items you do not want before submitting your request.
                     </p>
+                    
                     <div className="space-y-3">
                         {getDynamicInclusions().map(option => {
                             const isChecked = inclusions.includes(option);
@@ -325,8 +342,13 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, pr
                   <button type="button" onClick={() => setStep(1)} className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-lg hover:bg-gray-200 transition flex items-center justify-center gap-2">
                     <FaChevronLeft /> Back
                   </button>
+                  
+                  {/* Dynamic button text based on whether food is selected */}
                   <button type="button" onClick={handlePhase2Submit} className="flex-[2] px-4 py-3 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 transition flex items-center justify-center gap-2">
-                    {inclusions.some(inc => inc.startsWith('Food/Catering')) ? 'Next: Choose Menu' : 'Submit Request'} <FaArrowRight />
+                    {inclusions.some(inc => {
+                        const lowerInc = inc.toLowerCase();
+                        return ['food', 'catering', 'dish', 'menu', 'meal', 'buffet'].some(keyword => lowerInc.includes(keyword));
+                    }) && packageDishLimit > 0 ? 'Next: Choose Menu' : 'Submit Request'} <FaArrowRight />
                   </button>
               </>
           )}
@@ -335,4 +357,5 @@ const EventFormModal = ({ isOpen, onClose, packageCapacity, packageDishLimit, pr
     </div>
   );
 };
+
 export default EventFormModal;
