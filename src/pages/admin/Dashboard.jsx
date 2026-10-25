@@ -292,7 +292,7 @@ const Dashboard = ({ theme, toggleTheme }) => {
           </div>
           
           <div className="mt-6 border-t dark:border-pink-700 pt-4 flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <div className="w-4 h-4 bg-pink-100 border border-pink-200 rounded"></div>
+            <div className="w-4 h-4 bg-pink-700 border border-pink-600 rounded"></div>
             <span>Click shaded dates to view events</span>
           </div>
         </div>
