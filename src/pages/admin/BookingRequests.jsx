@@ -5,11 +5,9 @@ import Modal, { SuccessModal } from '../../components/Modal';
 const BookingRequests = () => {
     const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
     const userRole = adminUser.role || 'admin';
-    
     const [bookings, setBookings] = useState([]);
     const [menuItems, setMenuItems] = useState([]); 
-    const [packages, setPackages] = useState([]); // NEW: State to hold packages
-    
+    const [packages, setPackages] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
@@ -60,7 +58,6 @@ const BookingRequests = () => {
             .then(data => { if (data.success) setMenuItems(data.items); })
             .catch(err => console.error(err));
             
-        // NEW: Fetch packages so we can dynamically pull inclusions for the edit modal
         fetch(`${import.meta.env.VITE_API_URL}/fetch_packages`)
             .then(res => res.json())
             .then(data => { if (data.success) setPackages(data.packages); })
@@ -137,9 +134,6 @@ const BookingRequests = () => {
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
-        
-        // REMOVED the strict dish limit validation here so Admins can freely save/update 
-        // the booking details (like time or date) even if the customer hasn't picked all dishes yet.
 
         setLoading(true);
         try {
@@ -252,7 +246,6 @@ const BookingRequests = () => {
         return acc;
     }, {});
 
-    // NEW: Generate Dynamic Checkboxes for the Edit Modal
     let combinedInclusions = [];
     let currentServices = [];
     if (editModalBooking) {
@@ -267,7 +260,6 @@ const BookingRequests = () => {
                 dynamicInclusions.unshift(`Food/Catering (${selectedPkg.dish_limit} Dishes)`);
             }
         } else {
-            // Fallback if package was deleted or not found
             dynamicInclusions = [
                 `Food/Catering (${editModalBooking.dish_limit || 7} Dishes)`, 
                 'Tables & Chairs', 
@@ -276,7 +268,6 @@ const BookingRequests = () => {
             ];
         }
 
-        // Combine the package defaults with whatever is currently saved in the DB so nothing gets hidden
         combinedInclusions = Array.from(new Set([...dynamicInclusions, ...currentServices])).filter(Boolean);
     }
 
@@ -373,7 +364,6 @@ const BookingRequests = () => {
                                         <div className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300 print:text-gray-800">{b.customer_email}</div>
                                     </td>
                                     
-                                    {/* NEW: Displays Event Type and Package Name directly in the table */}
                                     <td className="p-4">
                                         <div className="font-bold text-gray-800 dark:text-white transition-colors duration-300 print:text-black">{b.event_type}</div>
                                         <div className="text-xs text-pink-600 dark:text-pink-400 font-bold transition-colors duration-300 print:text-gray-800">{b.package_type || 'Custom Package'}</div>
@@ -442,81 +432,84 @@ const BookingRequests = () => {
             {/* MODALS */}
             {selectedBooking && (
                 <Modal isOpen={!!selectedBooking} onClose={() => setSelectedBooking(null)} title={`Booking Overview (ID: #${selectedBooking.id})`} size="max-w-xl">
-                    <div className="px-1 py-1">
-                        <div className="mb-2 text-center">
-                            <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white break-words leading-tight">{selectedBooking.customer_name}</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 break-words mt-0.5">{selectedBooking.customer_email}</p>
-                            <span className={`shrink-0 whitespace-nowrap mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusBadgeClass(selectedBooking.status)}`}>
-                                Status: {selectedBooking.status}
-                            </span>
-                        </div>
+                    <div className="flex flex-col">
+                        <div className="px-1 py-1 max-h-[65vh] overflow-y-auto custom-scrollbar">
+                            <div className="mb-2 text-center">
+                                <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white break-words leading-tight">{selectedBooking.customer_name}</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 break-words mt-0.5">{selectedBooking.customer_email}</p>
+                                <span className={`shrink-0 whitespace-nowrap mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusBadgeClass(selectedBooking.status)}`}>
+                                    Status: {selectedBooking.status}
+                                </span>
+                            </div>
 
-                        <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-3 space-y-3 pb-1">
-                            <div className="relative pl-5 md:pl-6">
-                                <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-blue-500 border-[3px] border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">1. Event Specifics</h4>
-                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
-                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Date & Time</p>
-                                        <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</p>
-                                        <p className="font-semibold text-pink-600 dark:text-pink-400 text-xs mt-1">{formatTime12Hour(selectedBooking.event_time)}</p>
+                            <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-2 md:ml-3 space-y-3 pb-1">
+                                <div className="relative pl-5 md:pl-6">
+                                    <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-blue-500 border-[3px] border-white dark:border-gray-800"></span>
+                                    <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">1. Event Specifics</h4>
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="border-b sm:border-0 border-gray-200 dark:border-gray-700 pb-1 sm:pb-0">
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Date & Time</p>
+                                            <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{formatSafeDateRange(selectedBooking.preferred_date, selectedBooking.end_date)}</p>
+                                            <p className="font-semibold text-pink-600 dark:text-pink-400 text-xs mt-1">{formatTime12Hour(selectedBooking.event_time)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Location & Details</p>
+                                            <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{selectedBooking.event_location}</p>
+                                            
+                                            <p className="font-semibold text-xs text-gray-500 mt-1">{selectedBooking.event_type} - {selectedBooking.guest_count} Pax</p>
+                                            <p className="font-bold text-pink-600 dark:text-pink-400 text-[10px]">{selectedBooking.package_type}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-500 uppercase font-bold leading-none mb-1">Location & Details</p>
-                                        <p className="font-semibold text-xs dark:text-gray-200 break-words leading-tight">{selectedBooking.event_location}</p>
+                                </div>
+
+                                <div className="relative pl-5 md:pl-6">
+                                    <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-pink-500 border-[3px] border-white dark:border-gray-800"></span>
+                                    <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">2. Package Inclusions & Menu</h4>
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
                                         
-                                        <p className="font-semibold text-xs text-gray-500 mt-1">{selectedBooking.event_type} - {selectedBooking.guest_count} Pax</p>
-                                        <p className="font-bold text-pink-600 dark:text-pink-400 text-[10px]">{selectedBooking.package_type}</p>
+                                        <div className="flex flex-wrap gap-1 mb-2 pb-2 border-b dark:border-gray-700">
+                                            {selectedBooking.service_type ? 
+                                                  selectedBooking.service_type.split(',').map((inc, i) => (
+                                                    <span key={i} className="bg-pink-100 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold text-pink-700 dark:text-pink-400 shadow-sm leading-tight">{inc.trim()}</span>
+                                                ))
+                                            : <span className="text-gray-400 italic text-[10px]">No inclusions specified.</span>}
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-1">
+                                            {selectedBooking.selected_dishes ? 
+                                                  selectedBooking.selected_dishes.split('; ').map((dish, i) => (
+                                                    <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium dark:text-gray-300 shadow-sm leading-tight">{dish}</span>
+                                                ))
+                                            : <span className="text-gray-400 italic text-[10px]">No dishes selected.</span>}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="relative pl-5 md:pl-6">
-                                <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-pink-500 border-[3px] border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">2. Package Inclusions & Menu</h4>
-                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
-                                    
-                                    <div className="flex flex-wrap gap-1 mb-2 pb-2 border-b dark:border-gray-700">
-                                        {selectedBooking.service_type ? 
-                                              selectedBooking.service_type.split(',').map((inc, i) => (
-                                                <span key={i} className="bg-pink-100 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold text-pink-700 dark:text-pink-400 shadow-sm leading-tight">{inc.trim()}</span>
-                                            ))
-                                        : <span className="text-gray-400 italic text-[10px]">No inclusions specified.</span>}
+                                <div className="relative pl-5 md:pl-6">
+                                    <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-purple-500 border-[3px] border-white dark:border-gray-800"></span>
+                                    <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">3. Auto-Allocated Inventory</h4>
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
+                                        {selectedBooking.required_inventory ? (
+                                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 text-[11px] text-gray-700 dark:text-gray-300">
+                                                {selectedBooking.required_inventory.split('; ').map((item, i) => (
+                                                    <li key={i} className="flex items-center gap-1.5">
+                                                        <div className="w-1 h-1 rounded-full bg-pink-500 shrink-0"></div> 
+                                                        <span className="break-words leading-tight">{item}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-gray-400 italic text-[10px]">Standard setup applies. No specific inventory recorded.</p>
+                                        )}
                                     </div>
-
-                                    <div className="flex flex-wrap gap-1">
-                                        {selectedBooking.selected_dishes ? 
-                                              selectedBooking.selected_dishes.split('; ').map((dish, i) => (
-                                                <span key={i} className="bg-white dark:bg-gray-800 border dark:border-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium dark:text-gray-300 shadow-sm leading-tight">{dish}</span>
-                                            ))
-                                        : <span className="text-gray-400 italic text-[10px]">No dishes selected.</span>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="relative pl-5 md:pl-6">
-                                <span className="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-purple-500 border-[3px] border-white dark:border-gray-800"></span>
-                                <h4 className="font-bold text-sm text-gray-800 dark:text-white mb-1 leading-tight">3. Auto-Allocated Inventory</h4>
-                                <div className="bg-gray-50 dark:bg-gray-900 p-2 rounded-lg border dark:border-gray-700">
-                                    {selectedBooking.required_inventory ? (
-                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 text-[11px] text-gray-700 dark:text-gray-300">
-                                            {selectedBooking.required_inventory.split('; ').map((item, i) => (
-                                                <li key={i} className="flex items-center gap-1.5">
-                                                    <div className="w-1 h-1 rounded-full bg-pink-500 shrink-0"></div> 
-                                                    <span className="break-words leading-tight">{item}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="text-gray-400 italic text-[10px]">Standard setup applies. No specific inventory recorded.</p>
-                                    )}
                                 </div>
                             </div>
                         </div>
-
-                        <button onClick={() => setSelectedBooking(null)} className="w-full mt-3 bg-gray-800 dark:bg-gray-700 text-white font-bold py-2 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-sm text-xs">
-                            Close Timeline
-                        </button>
+                        <div className="mt-4 pt-4 border-t dark:border-gray-700">
+                            <button onClick={() => setSelectedBooking(null)} className="w-full bg-gray-800 dark:bg-gray-700 text-white font-bold py-2 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition shadow-sm text-xs">
+                                Close Timeline
+                            </button>
+                        </div>
                     </div>
                 </Modal>
             )}
@@ -524,126 +517,130 @@ const BookingRequests = () => {
             {/* EDIT BOOKING MODAL */}
             {editModalBooking && (
                 <Modal isOpen={!!editModalBooking} onClose={() => setEditModalBooking(null)} title={`Edit Booking #${editModalBooking.id}`} size="max-w-2xl">
-                    <form onSubmit={handleEditSubmit} className="space-y-4 px-2 text-gray-800 dark:text-gray-200">
+                    <form onSubmit={handleEditSubmit} className="flex flex-col text-gray-800 dark:text-gray-200">
                         
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Type</label>
-                                <input 
-                                    type="text" 
-                                    value={editModalBooking.event_type} 
-                                    onChange={(e) => setEditModalBooking({...editModalBooking, event_type: e.target.value})} 
-                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
-                                    required 
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Guest Count</label>
-                                <input 
-                                    type="number" 
-                                    value={editModalBooking.guest_count} 
-                                    onChange={(e) => setEditModalBooking({...editModalBooking, guest_count: e.target.value})} 
-                                    className="w-full p-2.5 border border-pink-300 dark:border-pink-800/50 bg-pink-50/50 dark:bg-pink-900/20 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm font-bold text-pink-700 dark:text-pink-400" 
-                                    required 
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Time</label>
-                                <input 
-                                    type="time" 
-                                    value={editModalBooking.event_time} 
-                                    onChange={(e) => setEditModalBooking({...editModalBooking, event_time: e.target.value})} 
-                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
-                                    required 
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Location</label>
-                                <input 
-                                    type="text" 
-                                    value={editModalBooking.event_location} 
-                                    onChange={(e) => setEditModalBooking({...editModalBooking, event_location: e.target.value})} 
-                                    className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
-                                    required 
-                                />
-                            </div>
-                        </div>
-
-                        {/* NEW: DYNAMIC CHECKBOXES FOR INCLUSIONS */}
-                        <div className="pt-2 border-t dark:border-gray-700">
-                            <label className="block text-xs font-bold mb-3 uppercase tracking-wider text-gray-500">
-                                Services & Inclusions <span className="text-pink-500 lowercase normal-case text-[10px] ml-2">({editModalBooking.package_type || 'Custom'})</span>
-                            </label>
+                        {/* SCROLLABLE BODY */}
+                        <div className="space-y-4 px-2 max-h-[65vh] overflow-y-auto custom-scrollbar pb-4">
                             
-                            <div className="grid grid-cols-2 gap-3">
-                                {combinedInclusions.map(option => {
-                                    const isSelected = currentServices.includes(option);
-                                    
-                                    return (
-                                        <label key={option} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-pink-50 border-pink-300 dark:bg-pink-900/30 dark:border-pink-800' : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:border-pink-300'}`}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={isSelected} 
-                                                onChange={() => {
-                                                    let newServices;
-                                                    if (isSelected) {
-                                                        newServices = currentServices.filter(s => s !== option);
-                                                    } else {
-                                                        newServices = [...currentServices, option];
-                                                    }
-                                                    setEditModalBooking({...editModalBooking, service_type: newServices.join(', ')});
-                                                }} 
-                                                className="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 accent-pink-600 cursor-pointer" 
-                                            />
-                                            <span className={`text-sm font-semibold ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                {option}
-                                            </span>
-                                        </label>
-                                    )
-                                })}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Type</label>
+                                    <input 
+                                        type="text" 
+                                        value={editModalBooking.event_type} 
+                                        onChange={(e) => setEditModalBooking({...editModalBooking, event_type: e.target.value})} 
+                                        className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                        required 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Guest Count</label>
+                                    <input 
+                                        type="number" 
+                                        value={editModalBooking.guest_count} 
+                                        onChange={(e) => setEditModalBooking({...editModalBooking, guest_count: e.target.value})} 
+                                        className="w-full p-2.5 border border-pink-300 dark:border-pink-800/50 bg-pink-50/50 dark:bg-pink-900/20 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm font-bold text-pink-700 dark:text-pink-400" 
+                                        required 
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="pt-2 border-t dark:border-gray-700">
-                            <div className="flex justify-between items-center mb-3">
-                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Menu / Food Choices</label>
-                                <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${currentDishes.length >= currentLimit ? 'bg-green-100 text-green-800' : 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300'}`}>
-                                    {currentDishes.length} / {currentLimit} Selected
-                                </span>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Time</label>
+                                    <input 
+                                        type="time" 
+                                        value={editModalBooking.event_time} 
+                                        onChange={(e) => setEditModalBooking({...editModalBooking, event_time: e.target.value})} 
+                                        className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                        required 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold mb-1 uppercase tracking-wider text-gray-500">Event Location</label>
+                                    <input 
+                                        type="text" 
+                                        value={editModalBooking.event_location} 
+                                        onChange={(e) => setEditModalBooking({...editModalBooking, event_location: e.target.value})} 
+                                        className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 text-sm" 
+                                        required 
+                                    />
+                                </div>
                             </div>
-                            
-                            <div className="max-h-[220px] overflow-y-auto pr-2 custom-scrollbar space-y-4">
-                                {Object.keys(groupedMenu).length > 0 ? (
-                                    Object.keys(groupedMenu).map(category => (
-                                        <div key={category} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700">
-                                            <h4 className="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2">{category}</h4>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {groupedMenu[category].map(item => {
-                                                    const isSelected = currentDishes.includes(item.name);
-                                                    return (
-                                                    <label key={item.id} className={`flex items-start gap-2 text-sm p-2.5 rounded-lg border cursor-pointer transition-all ${isSelected ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700'}`}>
-                                                        <input 
-                                                            type="checkbox" 
-                                                            checked={isSelected} 
-                                                            onChange={() => handleDishToggle(item.name)} 
-                                                            className="mt-0.5 w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 shrink-0 accent-pink-600 cursor-pointer" 
-                                                        />
-                                                        <span className={`leading-tight ${isSelected ? 'font-bold text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.name}</span>
-                                                    </label>
-                                                )})}
+
+                            <div className="pt-2 border-t dark:border-gray-700">
+                                <label className="block text-xs font-bold mb-3 uppercase tracking-wider text-gray-500">
+                                    Services & Inclusions <span className="text-pink-500 lowercase normal-case text-[10px] ml-2">({editModalBooking.package_type || 'Custom'})</span>
+                                </label>
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                    {combinedInclusions.map(option => {
+                                        const isSelected = currentServices.includes(option);
+                                        
+                                        return (
+                                            <label key={option} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-pink-50 border-pink-300 dark:bg-pink-900/30 dark:border-pink-800' : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:border-pink-300'}`}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isSelected} 
+                                                    onChange={() => {
+                                                        let newServices;
+                                                        if (isSelected) {
+                                                            newServices = currentServices.filter(s => s !== option);
+                                                        } else {
+                                                            newServices = [...currentServices, option];
+                                                        }
+                                                        setEditModalBooking({...editModalBooking, service_type: newServices.join(', ')});
+                                                    }} 
+                                                    className="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 accent-pink-600 cursor-pointer shrink-0" 
+                                                />
+                                                <span className={`text-sm font-semibold leading-tight ${isSelected ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                    {option}
+                                                </span>
+                                            </label>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="pt-2 border-t dark:border-gray-700">
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Menu / Food Choices</label>
+                                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${currentDishes.length >= currentLimit ? 'bg-green-100 text-green-800' : 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300'}`}>
+                                        {currentDishes.length} / {currentLimit} Selected
+                                    </span>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    {Object.keys(groupedMenu).length > 0 ? (
+                                        Object.keys(groupedMenu).map(category => (
+                                            <div key={category} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700">
+                                                <h4 className="font-bold text-xs text-gray-500 uppercase tracking-wider mb-2">{category}</h4>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {groupedMenu[category].map(item => {
+                                                        const isSelected = currentDishes.includes(item.name);
+                                                        return (
+                                                        <label key={item.id} className={`flex items-start gap-2 text-sm p-2.5 rounded-lg border cursor-pointer transition-all ${isSelected ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700'}`}>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={isSelected} 
+                                                                onChange={() => handleDishToggle(item.name)} 
+                                                                className="mt-0.5 w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 shrink-0 accent-pink-600 cursor-pointer" 
+                                                            />
+                                                            <span className={`leading-tight ${isSelected ? 'font-bold text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>{item.name}</span>
+                                                        </label>
+                                                    )})}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-4 text-sm text-gray-500 italic">No menu items found. Add some in the Menu page.</div>
-                                )}
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-4 text-sm text-gray-500 italic">No menu items found. Add some in the Menu page.</div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-4 mt-4 border-t dark:border-gray-700">
+                        {/* FIXED FOOTER */}
+                        <div className="flex justify-end gap-3 pt-4 mt-2 border-t dark:border-gray-700 px-2 shrink-0">
                             <button type="button" onClick={() => setEditModalBooking(null)} className="px-5 py-2.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition font-bold text-sm">Cancel</button>
                             <button type="submit" className="px-6 py-2.5 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition shadow-md text-sm flex items-center gap-2"><FaEdit /> Save Changes</button>
                         </div>
