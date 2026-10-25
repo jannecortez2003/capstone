@@ -5,9 +5,11 @@ import Modal, { SuccessModal } from '../../components/Modal';
 const BookingRequests = () => {
     const adminUser = JSON.parse(sessionStorage.getItem('adminUser') || '{}');
     const userRole = adminUser.role || 'admin';
+    
     const [bookings, setBookings] = useState([]);
     const [menuItems, setMenuItems] = useState([]); 
     const [packages, setPackages] = useState([]); // NEW: State to hold packages
+    
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
@@ -136,21 +138,8 @@ const BookingRequests = () => {
     const handleEditSubmit = async (e) => {
         e.preventDefault();
         
-        const currentServices = editModalBooking.service_type ? editModalBooking.service_type.split(',').map(s => s.trim()) : [];
-        const currentDishes = editModalBooking.selected_dishes ? editModalBooking.selected_dishes.split(';').map(d => d.trim()).filter(d => d) : [];
-        const currentLimit = editModalBooking.dish_limit || 7;
-
-        // NEW: Dynamic check for food related keywords
-        const hasFood = currentServices.some(s => {
-            const lowerS = s.toLowerCase();
-            return ['food', 'catering', 'dish', 'menu', 'meal', 'buffet'].some(keyword => lowerS.includes(keyword));
-        });
-
-        if (hasFood && currentLimit > 0 && currentDishes.length < currentLimit && !currentDishes.some(d => d.toLowerCase().includes('cook'))) {
-            setErrorMessage(`This package allows up to ${currentLimit} dishes. You currently have ${currentDishes.length} selected.`);
-            setShowErrorModal(true);
-            return;
-        }
+        // REMOVED the strict dish limit validation here so Admins can freely save/update 
+        // the booking details (like time or date) even if the customer hasn't picked all dishes yet.
 
         setLoading(true);
         try {
