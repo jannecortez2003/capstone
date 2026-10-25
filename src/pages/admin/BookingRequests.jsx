@@ -247,6 +247,7 @@ const BookingRequests = () => {
         return acc;
     }, {});
 
+    // DYNAMIC INCLUSION FIX: Smart mapping for the Edit Modal
     let combinedInclusions = [];
     let currentServices = [];
     if (editModalBooking) {
@@ -256,10 +257,18 @@ const BookingRequests = () => {
         let dynamicInclusions = [];
         
         if (selectedPkg && selectedPkg.description) {
-            dynamicInclusions = selectedPkg.description.split(',').map(f => f.trim());
-            if (selectedPkg.dish_limit > 0) {
-                dynamicInclusions.unshift(`Food/Catering (${selectedPkg.dish_limit} Dishes)`);
-            }
+            dynamicInclusions = selectedPkg.description.split(',').map(f => {
+                const trimmedF = f.trim();
+                const lowerF = trimmedF.toLowerCase();
+                // Check if this feature is food related
+                const isFoodRelated = ['food', 'catering', 'dish', 'menu', 'meal', 'buffet', 'beverage'].some(keyword => lowerF.includes(keyword));
+                
+                // Only append the dish count to the actual food item, DO NOT duplicate it
+                if (isFoodRelated && selectedPkg.dish_limit > 0) {
+                    return `${trimmedF} (${selectedPkg.dish_limit} Dishes)`;
+                }
+                return trimmedF;
+            });
         } else {
             dynamicInclusions = [
                 `Food/Catering (${editModalBooking.dish_limit || 7} Dishes)`, 
@@ -269,6 +278,7 @@ const BookingRequests = () => {
             ];
         }
 
+        // Merge keeping them unique
         combinedInclusions = Array.from(new Set([...dynamicInclusions, ...currentServices])).filter(Boolean);
     }
 
@@ -643,7 +653,7 @@ const BookingRequests = () => {
                         </div>
 
                         {/* FIXED FOOTER */}
-                        <div className="flex justify-end gap-3 pt-4 mt-2 border-t dark:border-gray-700 shrink-0">
+                        <div className="flex justify-end gap-3 pt-4 mt-2 border-t dark:border-gray-700 px-2 shrink-0">
                             <button type="button" onClick={() => setEditModalBooking(null)} className="px-5 py-2.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition font-bold text-sm">Cancel</button>
                             <button type="submit" className="px-6 py-2.5 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 transition shadow-md text-sm flex items-center gap-2"><FaEdit /> Save Changes</button>
                         </div>
