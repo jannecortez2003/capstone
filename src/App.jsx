@@ -28,6 +28,7 @@ import ChatBot from './components/ChatBot';
 import AdminPackages from './pages/admin/AdminPackages';
 import Auth from './pages/Auth';
 import UserProfile from './pages/UserProfile';
+import RoleManagement from './pages/admin/RoleManagement';
 import './App.css';
 
 function App() {
@@ -228,6 +229,7 @@ function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="packages" element={<AdminPackages />} />
           <Route path="verification" element={<VerificationRequests />} />
+          <Route path="access-control" element={<RoleManagement />} />
           <Route path="activity-logs" element={<ActivityLogs />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

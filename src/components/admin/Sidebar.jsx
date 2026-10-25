@@ -7,7 +7,7 @@ import {
   FaHome, FaCalendarAlt, FaBox, FaUtensils, FaComments, 
   FaUsers, FaMoneyBillWave, FaChartBar, FaUserCheck, 
   FaBars, FaTimes, FaSignOutAlt, FaIdBadge, FaHistory, 
-  FaTags 
+  FaTags, FaUserShield 
 } from 'react-icons/fa';
 
 const Sidebar = () => {
@@ -53,6 +53,7 @@ const Sidebar = () => {
     { path: '/admin/verification', icon: <FaUserCheck />, label: 'Verification', roles: ['admin', 'manager', 'staff'] },
     { path: '/admin/accounts', icon: <FaIdBadge />, label: 'Accounts', roles: ['admin', 'manager'] },
     { path: '/admin/activity-logs', icon: <FaHistory />, label: 'Activity Logs', roles: ['admin'] },
+    { path: '/admin/access-control', icon: <FaUserShield />, label: 'Access Control', roles: ['admin'] },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(userRole));
